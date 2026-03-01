@@ -1,3 +1,4 @@
+from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.geometry import Offset
 

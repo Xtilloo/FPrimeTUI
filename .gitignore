@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing / Dummy Projects
+FPrimeSampleProject/
+dummy_project/
+
+# Logs and Textual 
+*.log
+textual.log
+
+# IDEs and OS Files
+.vscode/
+.idea/
+.DS_Store
+*.swp

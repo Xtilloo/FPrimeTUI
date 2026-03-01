@@ -1,6 +1,8 @@
 #!/bin/bash
 # Project launch script for F-Prime-TUI (Mission Control)
 
+ORIGINAL_DIR=$(pwd)
+
 # Ensure the script is run from the project root (handles symlinks)
 if [[ -L "$0" ]]; then
     SCRIPT_PATH=$(readlink "$0")
@@ -17,4 +19,6 @@ if [ ! -d "venv" ]; then
 fi
 
 # Run the TUI
-exec ./venv/bin/python3 TUI/app.py
+export PYTHONPATH=./TUI
+cd "$ORIGINAL_DIR"
+exec "$ROOT_DIR/venv/bin/python3" "$ROOT_DIR/TUI/app.py"

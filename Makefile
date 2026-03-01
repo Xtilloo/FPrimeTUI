@@ -26,6 +26,11 @@ clean: ## Remove temporary and build files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 
+test: ## Run simple syntax and import validation tests
+	@echo "🧪 Validating Python syntax and imports..."
+	@PYTHONPATH=./TUI $(PYTHON) -m py_compile TUI/*.py
+	@PYTHONPATH=./TUI $(PYTHON) -c "import app, fprime_ai_client, shell, tools, utils, widgets; print('✅ All modules imported successfully!')"
+
 help: ## Show this help message
 	@echo "Mission Control Commands:"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
