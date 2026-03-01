@@ -1,0 +1,42 @@
+Screen {
+    background: #0b0b0b;
+    color: #e0e0e0;
+    layout: vertical;
+}
+
+#chat-container {
+    height: 1fr;
+    background: #0b0b0b;
+    overflow-y: scroll;
+    padding: 1 2;
+}
+
+#chat-log {
+    width: 100%;
+}
+
+#input-area {
+    height: auto;
+    margin: 1;
+}
+
+#ai-input {
+    background: #1a1a1a;
+    border: tall #f39c12;
+}
+
+#ai-input:focus {
+    border: tall #f39c12;
+}
+
+#autocomplete-list {
+    background: #121212;
+    border: solid #f39c12;
+    height: 10;
+    display: none;
+}
+
+Markdown {
+    margin-bottom: 0;
+    padding: 0;
+}

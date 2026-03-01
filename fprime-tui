@@ -1,0 +1,20 @@
+#!/bin/bash
+# Project launch script for F-Prime-TUI (Mission Control)
+
+# Ensure the script is run from the project root (handles symlinks)
+if [[ -L "$0" ]]; then
+    SCRIPT_PATH=$(readlink "$0")
+else
+    SCRIPT_PATH="$0"
+fi
+ROOT_DIR=$(cd "$(dirname "$SCRIPT_PATH")" && pwd)
+cd "$ROOT_DIR"
+
+# Check if venv exists
+if [ ! -d "venv" ]; then
+    echo "❌ Error: Virtual environment (venv) not found. Run 'make install' first."
+    exit 1
+fi
+
+# Run the TUI
+exec ./venv/bin/python3 TUI/app.py

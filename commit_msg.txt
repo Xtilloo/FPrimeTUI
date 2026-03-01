@@ -1,0 +1,15 @@
+feat: Implement core TUI features and AI integration
+
+This commit establishes the foundational architecture and features of the F-Prime Mission Control TUI:
+- Added `TUI/app.py` as the main Textual application with asynchronous AI chat capabilities.
+- Added `TUI/fprime_ai_client.py` for Ollama integration.
+- Added `TUI/widgets.py` and `TUI/style.tcss` for custom UI components and styling.
+- Implemented file context injection and `/` command execution.
+- Configured keyboard shortcuts:
+  - `Tab`: Exclusively triggers autocomplete without breaking focus.
+  - `Ctrl+C`: Cancels active generation, or requires a double-press to exit the TUI.
+  - `Ctrl+L`: Clear chat history.
+  - `Ctrl+K`: Clear input field.
+- Provided `Makefile` for streamlined installation and aliasing.
+- Updated `README.md` with comprehensive setup and usage instructions.
+- Added `fprime-tui` entry point script.
