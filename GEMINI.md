@@ -48,10 +48,15 @@ All primary actions are managed via the `Makefile`:
 - **Styling:** UI styling is managed via a CSS string within `TUI/app.py`. Follow existing color schemes (e.g., `#f39c12` for highlights, `#0b0b0b` for background).
 - **Context Awareness:** The AI assistant uses `@filename` mentions to inject local file content into the prompt context.
 
-### AI Integration
+### AI Integration & Target F' Environment
 - The system prompt instructs the AI to act as a **Senior Principal Flight Software Engineer at NASA JPL**.
 - It prioritizes **flight-safe C++** and **FPP (F' Prime Prescriptive)** code.
 - It adheres to **JPL's C++ Coding Standards**.
+
+> **CRITICAL REFERENCE:** 
+> When developing logic for how the agent interacts with F' codebases, always refer to the strict constraints listed in:
+> - `docs/fprime_commands.md` (CLI tooling rules)
+> - `docs/fprime_conventions.md` (NASA's 10 rules, Memory Safety, FPP workflow)
 
 ---
 
