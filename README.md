@@ -13,13 +13,13 @@ Mission Control serves as a direct "co-pilot" residing in your terminal. Powered
 
 ## Directory Structure
 - **TUI/**: Core UI logic, async subprocess handlers, tool execution, and the AI ReAct loop client.
-- **docs/**: Architectural design docs, software implementation details, and F' conventions.
-- **Ollama/**: Documentation and setup scripts for the local LLM.
+- **docs/**: Architectural design docs, software implementation details, F' conventions, and Ollama installation guides.
 - **Makefile**: Automation for installation, testing, and global aliasing.
 - **fprime-tui**: The main bash entry point script that handles working directory context mapping.
 
 ## Installation & Setup
-1. **Prerequisites**: Ensure you have Python 3.9+ and [Ollama](https://ollama.com/) installed with the `qwen3:8b` model pulled (`ollama pull qwen3:8b`).
+1. **Prerequisites**: Ensure you have Python 3.9+ and [Ollama](https://ollama.com/) installed with the `qwen3:8b` model pulled (`ollama pull qwen3:8b`). 
+   *For detailed instructions on setting up Ollama, please refer to the [Ollama Installation Guide](docs/Ollama_install.md).*
 2. **Setup**:
    ```bash
    make install
