@@ -35,16 +35,21 @@ def test_find_venv_missing(tmp_path):
 async def test_run_command_invalid_venv():
     """Verifies behavior with an invalid venv path (should fail)."""
     # This test doesn't need a real command to run, as it should fail early.
-    res = await run_fprime_command(Path("/tmp/nonexistent-venv"), "info", "", ".")
-    assert res['exit_code'] != 0
-    assert "source" in res['stderr'] or "No such file" in res['stderr']
+    res = await run_fprime_command("info", "", ".", venv_path=Path("/tmp/nonexistent-venv"))
+    assert res['exit_code'] == -1
+    assert "Could not find fprime-venv" in res['stderr']
 
 @pytest.mark.asyncio
 @patch("TUI.shell.asyncio.create_subprocess_shell")
-async def test_run_command_timeout(mock_create_subprocess):
+async def test_run_command_timeout(mock_create_subprocess, tmp_path):
     """
     Tests that run_fprime_command correctly handles a command that times out.
     """
+    # Setup a dummy venv
+    venv_dir = tmp_path / "venv"
+    (venv_dir / "bin").mkdir(parents=True)
+    (venv_dir / "bin" / "activate").touch()
+
     # Configure the mock process. kill() is sync, communicate/wait are async.
     mock_process = MagicMock()
     mock_process.communicate = AsyncMock(side_effect=asyncio.TimeoutError)
@@ -54,7 +59,7 @@ async def test_run_command_timeout(mock_create_subprocess):
     # Call the function with a very short timeout
     timeout_duration = 0.1
     res = await run_fprime_command(
-        Path("/dummy/venv"), "build", "", ".", timeout=timeout_duration
+        "build", "", str(tmp_path), timeout=timeout_duration, venv_path=venv_dir
     )
 
     # Verify that a timeout error was reported

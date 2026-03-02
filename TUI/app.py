@@ -13,6 +13,7 @@ from textual.widgets import Markdown, TextArea, OptionList, LoadingIndicator, St
 from textual.widgets.option_list import Option
 from textual.events import Key
 
+<<<<<<< HEAD
 from fprime_ai_client import FPrimeAIClient
 from command_definitions import TUIMode, COMMANDS
 from widgets import FadingScrollContainer
@@ -20,11 +21,19 @@ from shell import run_fprime_command, check_environment, get_project_settings
 from utils import find_fprime_venv, escape_markdown
 from tools import execute_read_file, execute_replace_in_file, execute_list_directory, execute_grep_docs
 from command_definitions import COMMAND_REGISTRY
+=======
+from .fprime_ai_client import FPrimeAIClient
+from .widgets import FadingScrollContainer
+from .shell import run_fprime_command, check_environment, get_project_settings
+from .utils import find_fprime_venv, escape_markdown
+from .tools import execute_read_file, execute_replace_in_file, execute_list_directory, execute_grep_docs
+from .command_definitions import COMMAND_REGISTRY
+>>>>>>> b7bb4f7 (feat: (WIP) Mission Control v2 - Modular Autonomous Loop & Self-Correcting Help System)
 
 # New Controllers
-from controllers.ai_handler import AIHandler
-from controllers.mission import MissionController
-from controllers.command_guard import CommandGuard
+from .controllers.ai_handler import AIHandler
+from .controllers.mission import MissionController
+from .controllers.command_guard import CommandGuard
 
 # FPRIME_LOGO = """ ▛▀▀ '
 #  ▙▄
@@ -351,6 +360,14 @@ class FPrimeTUI(App):
         display_text = full_res.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
         tool_json = self.ai_handler.parse_tool_call(text=full_res)
         
+        # Normalize args to string if they are a list
+        if tool_json and "args" in tool_json:
+            args = tool_json.get("args", "")
+            if isinstance(args, list):
+                tool_json["args"] = " ".join([str(a) for a in args])
+            else:
+                tool_json["args"] = str(args)
+
         if tool_json and not self._show_agent_thoughts:
              # Find where the tool call starts to clean up the display
              tool_match = re.search(r"```json|({[\s\n]*\"tool_name\")", full_res)
@@ -427,17 +444,10 @@ class FPrimeTUI(App):
             result_text = f"Exit code: {res['exit_code']}\nStdout: {res['stdout']}\nStderr: {res['stderr']}"
             if res.get('recovery_hint'):
                 result_text += f"\nRECOVERY HINT: {res['recovery_hint']}"
-            
-            # Update Mission Log
-            success = (res['exit_code'] == 0)
-            self.mission_log.append({"cmd": f"{tool_json.get('executable', 'fprime-util')} {tool_json.get('command', '')}", "success": success})
-            if success: self.mission_stats["successes"] += 1
-            else: self.mission_stats["failures"] += 1
 
             if res['stdout']: self._add_to_chat_history(f"\n```\n{res['stdout']}\n```\n", is_agent_thought=True)
             if res['stderr']: self._add_to_chat_history(f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n", is_agent_thought=True)
             if res.get('recovery_hint'): self._add_to_chat_history(f"\n**[HINT]**: {res['recovery_hint']}\n", is_agent_thought=True)
-
         elif tool_name == "read_file": result_text = await execute_read_file(tool_json.get("path"))
         elif tool_name == "list_directory": result_text = await execute_list_directory(tool_json.get("path"))
         elif tool_name == "grep_docs": result_text = await execute_grep_docs(tool_json.get("query"))
@@ -483,7 +493,7 @@ class FPrimeTUI(App):
         # Apply Recovery Hierarchy
         if not success:
             prompt_msg = f"SYSTEM: Tool execution FAILED.\n\nTOOL RESULT:\n{result_text}\n\n"
-            prompt_msg += self.mission_controller.get_recovery_directive(str(tool_json))
+            prompt_msg += self.mission_controller.get_recovery_directive(tool_json)
         else:
             prompt_msg = f"SYSTEM: Tool execution SUCCESSFUL.\n\nTOOL RESULT:\n{result_text}"
             prompt_msg += "\n\nINSTRUCTION: Continue with the next step of your Flight Plan. If finished, summarize for the user."

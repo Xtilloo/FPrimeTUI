@@ -19,6 +19,6 @@ if [ ! -d "venv" ]; then
 fi
 
 # Run the TUI
-export PYTHONPATH=./TUI
+export PYTHONPATH="$ROOT_DIR"
 cd "$ORIGINAL_DIR"
-exec "$ROOT_DIR/venv/bin/python3" "$ROOT_DIR/TUI/app.py"
+exec "$ROOT_DIR/venv/bin/python3" -m TUI.app

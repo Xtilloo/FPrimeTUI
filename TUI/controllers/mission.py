@@ -37,25 +37,32 @@ class MissionController:
         elif self.state["failure_count"] >= 3:
             self.state["recovery_phase"] = "fatigue"
 
-    def get_recovery_directive(self, failed_command: str) -> str:
+    def get_recovery_directive(self, tool_json: dict) -> str:
         """
         Returns a system directive for the AI based on the current recovery phase.
+        Analyzes the tool_json to suggest a simplified --help command.
         """
         phase = self.state["recovery_phase"]
         
+        # Determine the base command for help
+        exe = tool_json.get("executable", "fprime-util")
+        cmd = tool_json.get("command", "")
+        base_help = f"{exe} {cmd} --help".strip()
+        
         if phase == "help":
             return (
-                f"CRITICAL: The command '{failed_command}' failed. "
-                f"You MUST now run the same command with the '--help' flag to investigate usage."
+                f"CRITICAL: The command failed. You MUST now run a simplified diagnostic command "
+                f"to investigate usage: `{base_help}`."
             )
         elif phase == "docs":
             return (
-                f"CRITICAL: '--help' was insufficient for '{failed_command}'. "
-                f"You MUST now use 'grep_docs' with a keyword related to the error to find a solution in the project documentation."
+                f"CRITICAL: `{base_help}` was insufficient. "
+                f"You MUST now use 'grep_docs' with a keyword related to the intent (e.g., 'new', 'component') "
+                f"to find the correct syntax in the project documentation."
             )
         elif phase == "fatigue":
             return (
-                f"MISSION ABORTED: 3+ consecutive failures detected for '{failed_command}'. "
+                f"MISSION ABORTED: 3+ consecutive failures detected. "
                 f"STOP all autonomous actions and advise the user to check the manual build logs."
             )
         
