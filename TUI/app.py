@@ -16,9 +16,15 @@ from textual.events import Key
 from fprime_ai_client import FPrimeAIClient
 from command_definitions import TUIMode, COMMANDS
 from widgets import FadingScrollContainer
-from shell import run_fprime_command
+from shell import run_fprime_command, check_environment, get_project_settings
 from utils import find_fprime_venv, escape_markdown
-from tools import execute_read_file, execute_replace_in_file, execute_list_directory
+from tools import execute_read_file, execute_replace_in_file, execute_list_directory, execute_grep_docs
+from command_definitions import COMMAND_REGISTRY
+
+# New Controllers
+from controllers.ai_handler import AIHandler
+from controllers.mission import MissionController
+from controllers.command_guard import CommandGuard
 
 # FPRIME_LOGO = """ ▛▀▀ '
 #  ▙▄
@@ -49,8 +55,16 @@ class FPrimeTUI(App):
 
     def __init__(self):
         super().__init__()
+<<<<<<< HEAD
         self.mode = TUIMode.ACADEMY
         self.ai_client = FPrimeAIClient(mode=self.mode)
+=======
+        self.ai_client = FPrimeAIClient()
+        self.ai_handler = AIHandler(self.ai_client)
+        self.mission_controller = MissionController(project_root=os.getcwd())
+        self.command_guard = CommandGuard()
+        
+>>>>>>> 76308db (feat: complete modularization and self-correcting help system refactor)
         self.chat_history = ""
         self.query_history = []
         self.history_index = -1
@@ -80,9 +94,47 @@ class FPrimeTUI(App):
     async def on_mount(self) -> None:
         self.query_one("#ai-input").focus()
         self.query_one("#thinking-indicator").display = False
+<<<<<<< HEAD
         containers = self.query("#chat-container")
         if not containers: return
         container = containers[0]
+=======
+        container = self.query_one("#chat-container")
+        
+        # Direct mount for status to avoid turn logic overhead at boot
+        status_md = Markdown("# Mission Control Online\nI am ready for the mission. Use `@file` to share context, or `/command` for manual tools. I will provide a **Flight Plan** for complex operations.", classes="ai-response selection-enabled")
+        status_md.can_focus = True
+        status_md.content_selectable = True
+        status_md.code_indent_guides = False
+        status_md.code_dark_theme = "monokai"
+        await container.mount(status_md)
+        
+        # Silent Bootstrap Environmental Probe
+        self._probe_environment()
+
+    @work
+    async def _probe_environment(self) -> None:
+        """Silently gathers project context for the AI handler."""
+        venv = find_fprime_venv()
+        if not venv:
+            return
+
+        # Gather version and help context
+        ver_res = await run_fprime_command("version", venv_path=venv)
+        help_res = await run_fprime_command("--help", venv_path=venv)
+        
+        probe_msg = (
+            f"SYSTEM: Environment probe complete.\n"
+            f"Project root: {os.getcwd()}\n"
+            f"Venv: {venv}\n"
+            f"F' Version: {ver_res['stdout'][:100]}\n"
+            f"Top-level Commands: {help_res['stdout'][:500]}..."
+        )
+        self.ai_handler.add_message("system", probe_msg)
+        self.query_one("#ai-input").focus()
+        self.query_one("#thinking-indicator").display = False
+        container = self.query_one("#chat-container")
+>>>>>>> 76308db (feat: complete modularization and self-correcting help system refactor)
         # Direct mount for status to avoid turn logic overhead at boot
         status_md = Markdown("# Mission Control Online\nI am ready for the mission. Use `@file` to share context, or `/command` for manual tools. I will provide a **Flight Plan** for complex operations.", classes="ai-response selection-enabled")
         status_md.can_focus = True
@@ -133,7 +185,7 @@ class FPrimeTUI(App):
         else:
             await self._mount_user_turn("Declined")
             result_text = "User rejected the edit."
-        await self._execute_tool_sequence(tool_json.get("tool_name"), result_text)
+        await self._execute_tool_sequence(tool_json, result_text)
 
     async def _mount_header(self, text: str):
         containers = self.query("#chat-container")
@@ -266,71 +318,63 @@ class FPrimeTUI(App):
             self._add_to_chat_history("\n\n**[SYSTEM]: Maximum tool depth reached (10).**\n")
             return
         
-        full_res = ""
         await self._mount_ai_turn()
-        tool_json_str = None
         initial_turn_prefix = self.turn_buffer
+        full_res = ""
         
         try:
+            # Stream directly into the UI widget
             async for chunk in self.ai_client.stream_chat(context=extra_ctx):
                 if chunk:
                     self.query_one("#thinking-indicator").display = False
                 full_res += chunk
                 
-                if full_res.strip():
-                    display_text = full_res
-                    # Detect Flight Plan and wrap it in a special block if found
-                    if "### FLIGHT PLAN" in display_text:
-                        # Ensure there is a newline before the flight plan to separate from previous status
-                        display_text = display_text.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
-
-                    if not self._show_agent_thoughts:
-                        match_start = full_res.find("```json")
-                        if match_start != -1:
-                            display_text = display_text[:match_start]
-                    
-                    if self.active_ai_widget:
-                        current_time = time.time()
-                        if current_time - self.last_update_time > 0.05: # Throttle to 20fps
-                            self.active_ai_widget.update(initial_turn_prefix + display_text)
-                            self._scroll_to_end_if_at_bottom()
-                            self.last_update_time = current_time
+                # Visual formatting for user
+                display_text = full_res.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
+                
+                # Hide raw JSON from user if thoughts are disabled
+                if not self._show_agent_thoughts:
+                    m = re.search(r"```json|({[\s\n]*\"tool_name\")", display_text)
+                    if m:
+                        display_text = display_text[:m.start()].strip()
+                
+                if self.active_ai_widget:
+                    current_time = time.time()
+                    if current_time - self.last_update_time > 0.05: # Throttle UI updates
+                        self.active_ai_widget.update(initial_turn_prefix + display_text)
+                        self._scroll_to_end_if_at_bottom()
+                        self.last_update_time = current_time
         except Exception as e:
             full_res += f"\n\n> **[AI ERROR]: {e}**"
-        
-        final_displayed_seg = full_res
-        if "### FLIGHT PLAN" in final_displayed_seg:
-            final_displayed_seg = final_displayed_seg.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
 
-        tool_match = re.search(r"```json\s*(.*?)\s*```", full_res, re.DOTALL)
-        if tool_match:
-            tool_json_str = tool_match.group(1)
-            if not self._show_agent_thoughts:
-                # We need to find where the tool block starts in the MODIFIED final_displayed_seg
-                # but it's easier to just slice the original full_res and then apply the replace
-                final_displayed_seg = full_res[:tool_match.start()]
-                if "### FLIGHT PLAN" in final_displayed_seg:
-                    final_displayed_seg = final_displayed_seg.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
+        # Final UI Sync
+        display_text = full_res.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
+        tool_json = self.ai_handler.parse_tool_call(text=full_res)
         
-        # Sync turn buffer and memory
-        if final_displayed_seg.strip():
-            self.turn_buffer = initial_turn_prefix + final_displayed_seg
-            self.chat_history += final_displayed_seg
-        
-        self.ai_client.add_message("assistant", full_res)
+        if tool_json and not self._show_agent_thoughts:
+             # Find where the tool call starts to clean up the display
+             tool_match = re.search(r"```json|({[\s\n]*\"tool_name\")", full_res)
+             if tool_match:
+                 display_text = full_res[:tool_match.start()].strip().replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
+
+        self.turn_buffer = initial_turn_prefix + display_text
+        self.chat_history += display_text
+        self.ai_handler.add_message("assistant", full_res)
         if self.active_ai_widget:
             self.active_ai_widget.update(self.turn_buffer)
-        self._scroll_to_end_if_at_bottom()
         
-        if tool_json_str:
-            try:
-                tool_json = json.loads(tool_json_str)
-                # Pause to let UI render the text BEFORE the tool starts
-                await asyncio.sleep(0.1)
-                await self._dispatch_tool(tool_json)
-            except Exception:
-                self.ai_client.add_message("user", "System Error: Invalid JSON emitted by AI.")
+        if tool_json:
+            # Validate with CommandGuard before executing
+            is_valid, correction = self.command_guard.validate(tool_json, self.mission_controller)
+            if not is_valid:
+                self._add_to_chat_history(f"\n\n> *[SYNTAX ERROR: {correction}]*\n", is_agent_thought=True)
+                self.ai_handler.add_message("user", f"SYSTEM ERROR: {correction}")
                 await self._stream_and_handle_tools()
+                return
+
+            # Pause to let UI render the text BEFORE the tool starts
+            await asyncio.sleep(0.1)
+            await self._dispatch_tool(tool_json)
 
     async def _dispatch_tool(self, tool_json: dict):
         tool_name = tool_json.get("tool_name")
@@ -345,6 +389,10 @@ class FPrimeTUI(App):
             action = f"Listing {tool_json.get('path')}"
         elif tool_name == "replace_in_file":
             action = f"Updating {os.path.basename(tool_json.get('path'))}"
+        elif tool_name == "check_environment":
+            action = f"Probing environment in {tool_json.get('cwd', '.')}"
+        elif tool_name == "get_project_settings":
+            action = f"Reading project settings in {tool_json.get('cwd', '.')}"
         else:
             action = f"Executing {tool_name}"
 
@@ -369,63 +417,86 @@ class FPrimeTUI(App):
             
         result_text = ""
         if tool_name == "run_fprime_command":
-            cwd = tool_json.get("cwd", "."); venv = find_fprime_venv(Path(cwd))
-            if not venv: venv = find_fprime_venv() # Fallback to project root venv
-            if not venv: result_text = f"Error: venv not found in {cwd} or root."
-            else:
-                # Use absolute path for venv
-                res = await run_fprime_command(
-                    venv.resolve(), 
-                    tool_json.get("command", ""), 
-                    tool_json.get("args", ""), 
-                    cwd=cwd,
-                    executable=tool_json.get("executable", "fprime-util")
-                )
-                result_text = f"Exit code: {res['exit_code']}\nStdout: {res['stdout']}\nStderr: {res['stderr']}"
-                if res['stdout']: self._add_to_chat_history(f"\n```\n{res['stdout']}\n```\n", is_agent_thought=True)
-                if res['stderr']: self._add_to_chat_history(f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n", is_agent_thought=True)
+            cwd = tool_json.get("cwd", ".")
+            res = await run_fprime_command(
+                tool_json.get("command", ""), 
+                tool_json.get("args", ""), 
+                cwd=cwd,
+                executable=tool_json.get("executable", "fprime-util")
+            )
+            result_text = f"Exit code: {res['exit_code']}\nStdout: {res['stdout']}\nStderr: {res['stderr']}"
+            if res.get('recovery_hint'):
+                result_text += f"\nRECOVERY HINT: {res['recovery_hint']}"
+            
+            # Update Mission Log
+            success = (res['exit_code'] == 0)
+            self.mission_log.append({"cmd": f"{tool_json.get('executable', 'fprime-util')} {tool_json.get('command', '')}", "success": success})
+            if success: self.mission_stats["successes"] += 1
+            else: self.mission_stats["failures"] += 1
+
+            if res['stdout']: self._add_to_chat_history(f"\n```\n{res['stdout']}\n```\n", is_agent_thought=True)
+            if res['stderr']: self._add_to_chat_history(f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n", is_agent_thought=True)
+            if res.get('recovery_hint'): self._add_to_chat_history(f"\n**[HINT]**: {res['recovery_hint']}\n", is_agent_thought=True)
+
         elif tool_name == "read_file": result_text = await execute_read_file(tool_json.get("path"))
         elif tool_name == "list_directory": result_text = await execute_list_directory(tool_json.get("path"))
+        elif tool_name == "grep_docs": result_text = await execute_grep_docs(tool_json.get("query"))
+        elif tool_name == "check_environment": 
+            res = await check_environment(tool_json.get("cwd", "."))
+            result_text = json.dumps(res, indent=2)
+        elif tool_name == "get_project_settings":
+            res = get_project_settings(tool_json.get("cwd", "."))
+            result_text = json.dumps(res, indent=2)
         else: result_text = f"Error: Tool '{tool_name}' not found."
-        await self._execute_tool_sequence(tool_name, result_text)
+        await self._execute_tool_sequence(tool_json, result_text)
 
-    async def _execute_tool_sequence(self, tool_name: str, result_text: str):
+    async def _execute_tool_sequence(self, tool_json: dict, result_text: str):
+        tool_name = tool_json.get("tool_name")
         status_final = self.last_status_complete
-        # Check for failure in the result text (specific to our run_fprime_command output format)
-        if "Exit code:" in result_text:
-            try:
-                # Extract exit code: "Exit code: 1"
-                parts = result_text.split("\n")[0].split(":")
-                if len(parts) > 1 and int(parts[1].strip()) != 0:
-                    status_final = self.last_status_complete.replace("COMPLETE", "FAILED")
-            except: pass
-        elif result_text.startswith("Error:"):
+        
+        # Determine Success/Failure
+        success = True
+        if "Error:" in result_text or "Exit code: -1" in result_text:
+            success = False
+        elif tool_name == "run_fprime_command":
+            # Extract exit code from result_text string: "Exit code: X"
+            m = re.search(r"Exit code:\s*(\d+)", result_text)
+            if m and int(m.group(1)) != 0:
+                success = False
+        
+        if not success:
             status_final = self.last_status_complete.replace("COMPLETE", "FAILED")
+            self.mission_controller.on_tool_fail()
+        else:
+            self.mission_controller.on_tool_success()
 
+        # Update UI Status
         if hasattr(self, 'last_status_tag') and self.active_ai_widget:
             updated = self.turn_buffer.replace(self.last_status_tag, status_final)
             self.turn_buffer = updated
             self.active_ai_widget.update(self.turn_buffer)
             self.chat_history = self.chat_history.replace(self.last_status_tag, status_final)
             
-        trunc = result_text if len(result_text) < 500 else result_text[:500] + "...[TRUNCATED]..."
+        trunc = result_text if len(result_text) < 1000 else result_text[:1000] + "...[TRUNCATED]..."
         self._add_to_chat_history(f"\n> *Tool Result:*\n```\n{trunc}\n```\n", is_agent_thought=True)
         
-        # If it failed, we explicitly tell the AI it MUST run --help
-        if "FAILED" in status_final:
-            prompt_msg = f"Tool Response (FAILED):\n{result_text}\n\nCRITICAL: The last command failed. You MUST now run the same command with the '--help' flag to investigate the usage. Do not attempt manual fixes yet."
+        # Apply Recovery Hierarchy
+        if not success:
+            prompt_msg = f"SYSTEM: Tool execution FAILED.\n\nTOOL RESULT:\n{result_text}\n\n"
+            prompt_msg += self.mission_controller.get_recovery_directive(str(tool_json))
         else:
-            prompt_msg = f"Tool Response:\n{result_text}"
-            
-        self.ai_client.add_message("user", prompt_msg)
+            prompt_msg = f"SYSTEM: Tool execution SUCCESSFUL.\n\nTOOL RESULT:\n{result_text}"
+            prompt_msg += "\n\nINSTRUCTION: Continue with the next step of your Flight Plan. If finished, summarize for the user."
+
+        self.ai_handler.add_message("user", prompt_msg)
         
-        # We MUST ensure the AI loop continues or input is restored
-        try:
-            await self._stream_and_handle_tools()
-        finally:
-            # If tool_call_depth returns to 0 (or loop ends), input is restored in _ai_loop
-            # but _stream_and_handle_tools is recursive, so we handle re-enable at the root.
-            pass
+        # Stop loop if Fatigue reached
+        if self.mission_controller.state["recovery_phase"] == "fatigue":
+             self._add_to_chat_history("\n\n**[MISSION ABORTED]: Too many consecutive failures. Human intervention required.**\n", is_agent_thought=False)
+             self._re_enable_input()
+             return
+
+        await self._stream_and_handle_tools()
 
     def _re_enable_input(self):
         if self._closing: return
