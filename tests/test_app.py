@@ -123,8 +123,9 @@ async def test_ui_hitl_flow(mock_execute, mock_ai_client, tmp_path):
 
     async with app.run_test() as pilot:
         await submit_query(pilot, app, "replace hello with goodbye")
+        await pilot.pause(0.5)
         await pilot.wait_for_scheduled_animations()
-        await pilot.pause()
+        await pilot.pause(0.5)
 
         chat_log = app.chat_history
         assert "Action Required:" in chat_log

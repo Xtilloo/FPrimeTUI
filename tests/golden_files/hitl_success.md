@@ -6,7 +6,8 @@ User: replace hello with goodbye
 
 I will replace the content.
 
-> *[Updating test.txt... (PENDING)]*
+> *[Step 1: Updating test.txt... (RUNNING)]*
+
 
 **Action Required:** AI wants to modify `test.txt`.
 Do you approve? (1: Approve, 2: Decline)

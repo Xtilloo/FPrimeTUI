@@ -10,3 +10,5 @@
     - Smooth out the prompt input bar at the bottom (remove the weird border lines on the left and right).
     - Fix the appearance of the scrollbar to make it less intrusive and cleaner.
     - Change the main application background color from harsh black to a softer dark grey.
+
+    8. **Enhanced Flight Plan Visualization**: Currently, Flight Plans are rendered as standard Markdown headers with an emoji. In the future, this should be a specialized UI widget (e.g., a side-panel checklist or a collapsible tree) that updates in real-time as the agent completes each step.

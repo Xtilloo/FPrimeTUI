@@ -1,9 +1,9 @@
 import asyncio
 from pathlib import Path
 
-async def run_fprime_command(venv_path: Path, command: str, args: str = "", cwd: str = ".", timeout: int = None) -> dict:
+async def run_fprime_command(venv_path: Path, command: str, args: str = "", cwd: str = ".", timeout: int = None, executable: str = "fprime-util") -> dict:
     activation_cmd = f"source {venv_path}/bin/activate"
-    full_cmd = f"{activation_cmd} && fprime-util {command} {args}"
+    full_cmd = f"{activation_cmd} && {executable} {command} {args}"
     
     # Debug: Print to console (will show up in the terminal that launched the TUI)
     print(f"DEBUG: Executing command in {cwd}")

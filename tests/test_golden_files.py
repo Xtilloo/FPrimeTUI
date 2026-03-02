@@ -48,11 +48,13 @@ async def test_hitl_golden_output(mock_execute, mock_ai_client, tmp_path):
         # 1. User makes a request
 
         await submit_query(pilot, app, "replace hello with goodbye")
+        await pilot.pause(0.5)
         await pilot.wait_for_scheduled_animations()
-        await pilot.pause()
+        await pilot.pause(0.5)
 
         # 2. User approves the HITL prompt
         await submit_query(pilot, app, "1")
+
         await pilot.wait_for_scheduled_animations()
         await pilot.pause()
 
