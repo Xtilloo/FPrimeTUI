@@ -77,6 +77,24 @@ COMMAND_REGISTRY = {
         "required_files": ["settings.ini"],
         "safe_args": ["--component", "--deployment", "--module", "--help"],
         "description": "Create new F' objects (Interactive Wizard).",
+    },
+    "channels": {
+        "executable": "fprime-cli",
+        "required_files": ["settings.ini"],
+        "safe_args": ["-l", "--logs", "--list", "-i", "-c", "--help"],
+        "description": "GDS: Monitor telemetry channels.",
+    },
+    "events": {
+        "executable": "fprime-cli",
+        "required_files": ["settings.ini"],
+        "safe_args": ["-l", "--logs", "--list", "-i", "-c", "--help"],
+        "description": "GDS: Monitor events data.",
+    },
+    "command-send": {
+        "executable": "fprime-cli",
+        "required_files": ["settings.ini"],
+        "safe_args": ["--arguments", "--help"],
+        "description": "GDS: Send commands to flight software.",
     }
 }
 
@@ -97,6 +115,11 @@ ERROR_FINGERPRINTS = [
         "hint": "The build cache is missing. You MUST run 'fprime-util generate' first."
     },
     {
+        "id": "build_cache_invalid",
+        "regex": r"is not a valid build cache",
+        "hint": "The build cache is invalid or missing. You MUST run 'fprime-util generate' at the project root before this command will work."
+    },
+    {
         "id": "autocoder_error",
         "regex": r"\[ERROR\] Autocoder failed",
         "hint": "Autocoder failed. Check your FPP files for syntax errors or missing port connections."
@@ -110,5 +133,25 @@ ERROR_FINGERPRINTS = [
         "id": "python_dependency",
         "regex": r"ModuleNotFoundError: No module named '(\w+)'",
         "hint": "Missing Python dependency: {0}. Try running 'pip install {0}' in the fprime-venv."
+    },
+    {
+        "id": "command_not_found",
+        "regex": r"/bin/bash: ([\w-]+): command not found",
+        "hint": "Command '{0}' not found. Most F' tasks use 'fprime-util <command>'. For creating components, use 'fprime-util new --component'."
+    },
+    {
+        "id": "gds_artifacts_missing",
+        "regex": r"Exception: (.*) does not exist\. Make sure to build\.",
+        "hint": "GDS artifacts not found at {0}. You must run 'fprime-util build' to generate artifacts before using 'fprime-cli'."
+    },
+    {
+        "id": "ninja_missing",
+        "regex": r"ninja: error: loading 'build.ninja': No such file or directory",
+        "hint": "Build control file (build.ninja) is missing. You MUST run 'fprime-util generate' first."
+    },
+    {
+        "id": "invalid_object_name",
+        "regex": r"ValueError: Unacceptable (\w+) name:? (.*)\. Do not use spaces or special characters",
+        "hint": "Invalid {0} name '{1}'. F' object names (components, deployments, etc.) must not contain spaces or special characters."
     }
 ]

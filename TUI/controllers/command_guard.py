@@ -19,6 +19,10 @@ class CommandGuard:
             {
                 "pattern": r"create\s+(component|deployment)",
                 "correction": "Did you mean fprime-util new --component or --deployment?"
+            },
+            {
+                "pattern": r"fpp-component",
+                "correction": "fpp-component is not a tool. Use fprime-util new --component."
             }
         ]
 
@@ -35,11 +39,14 @@ class CommandGuard:
         args = tool_json.get("args", "")
         full_cmd_str = f"{command} {args}".strip()
 
-        # Check for deprecated executables
-        if executable == "fprime-gen":
-            return False, "fprime-gen is deprecated. Use fprime-util."
+        # Check for deprecated or hallucinated executables
+        if executable in ["fprime-gen", "fpp-component", "fpp-generate", "fpp-to-cpp", "fpp-to-json"]:
+            return False, f"INVALID EXECUTABLE. '{executable}' is not a valid tool. Most F' tasks use 'fprime-util'."
 
         # Check for hallucinated syntax in fprime-util
+        if command == "create":
+            return False, "INVALID SYNTAX. Use 'fprime-util new --component' or 'fprime-util new --deployment'."
+
         for entry in self.intent_map:
             if re.search(entry["pattern"], full_cmd_str):
                 return False, f"INVALID SYNTAX. {entry['correction']}"

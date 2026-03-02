@@ -85,7 +85,7 @@ async def check_environment(cwd: str = ".") -> dict:
     checks = {
         "cmake": f"{activation_cmd}cmake --version",
         "ninja": f"{activation_cmd}ninja --version",
-        "fprime-util": f"{activation_cmd}fprime-util --version",
+        "fprime-util": f"{activation_cmd}fprime-util -h",
     }
     results = {}
     for name, cmd in checks.items():

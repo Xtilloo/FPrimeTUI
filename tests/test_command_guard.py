@@ -38,7 +38,7 @@ def test_command_guard_deprecated(tmp_path):
     is_valid, error_msg = guard.validate(tool_json, state)
     
     assert is_valid is False
-    assert "fprime-gen is deprecated" in error_msg
+    assert "fprime-gen is not a valid tool" in error_msg
 
 def test_command_guard_missing_generate(tmp_path):
     guard = CommandGuard()

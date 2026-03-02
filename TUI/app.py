@@ -323,8 +323,9 @@ class FPrimeTUI(App):
 
     async def _stream_and_handle_tools(self, extra_ctx: str = "") -> None:
         self.tool_call_depth += 1
-        if self.tool_call_depth > 10:
-            self._add_to_chat_history("\n\n**[SYSTEM]: Maximum tool depth reached (10).**\n")
+        if self.tool_call_depth > 20:
+            self._add_to_chat_history("\n\n**[SYSTEM]: Maximum tool depth reached (20). Human intervention required.**\n")
+            self._re_enable_input()
             return
         
         await self._mount_ai_turn()
@@ -401,9 +402,11 @@ class FPrimeTUI(App):
             args = tool_json.get('args', '')
             action = f"{exe} {cmd} {args}".strip()
         elif tool_name == "read_file":
-            action = f"Reading {os.path.basename(tool_json.get('path'))}"
+            p = tool_json.get('path') or tool_json.get('args') or "unknown"
+            action = f"Reading {os.path.basename(p)}"
         elif tool_name == "list_directory":
-            action = f"Listing {tool_json.get('path')}"
+            p = tool_json.get('path') or tool_json.get('args') or tool_json.get('cwd') or "."
+            action = f"Listing {p}"
         elif tool_name == "replace_in_file":
             action = f"Updating {os.path.basename(tool_json.get('path'))}"
         elif tool_name == "check_environment":
@@ -448,9 +451,15 @@ class FPrimeTUI(App):
             if res['stdout']: self._add_to_chat_history(f"\n```\n{res['stdout']}\n```\n", is_agent_thought=True)
             if res['stderr']: self._add_to_chat_history(f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n", is_agent_thought=True)
             if res.get('recovery_hint'): self._add_to_chat_history(f"\n**[HINT]**: {res['recovery_hint']}\n", is_agent_thought=True)
-        elif tool_name == "read_file": result_text = await execute_read_file(tool_json.get("path"))
-        elif tool_name == "list_directory": result_text = await execute_list_directory(tool_json.get("path"))
-        elif tool_name == "grep_docs": result_text = await execute_grep_docs(tool_json.get("query"))
+        elif tool_name == "read_file": 
+            target_path = tool_json.get("path") or tool_json.get("args")
+            result_text = await execute_read_file(target_path)
+        elif tool_name == "list_directory": 
+            target_path = tool_json.get("path") or tool_json.get("args") or "."
+            result_text = await execute_list_directory(target_path)
+        elif tool_name == "grep_docs": 
+            q = tool_json.get("query") or tool_json.get("args")
+            result_text = await execute_grep_docs(q)
         elif tool_name == "check_environment": 
             res = await check_environment(tool_json.get("cwd", "."))
             result_text = json.dumps(res, indent=2)
