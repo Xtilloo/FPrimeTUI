@@ -25,7 +25,7 @@ from command_definitions import COMMAND_REGISTRY
 from .fprime_ai_client import FPrimeAIClient
 from .widgets import FadingScrollContainer
 from .shell import run_fprime_command, check_environment, get_project_settings
-from .utils import find_fprime_venv, escape_markdown
+from .utils import find_fprime_venv
 from .tools import execute_read_file, execute_replace_in_file, execute_list_directory, execute_grep_docs
 from .command_definitions import COMMAND_REGISTRY
 >>>>>>> b7bb4f7 (feat: (WIP) Mission Control v2 - Modular Autonomous Loop & Self-Correcting Help System)
@@ -142,6 +142,7 @@ class FPrimeTUI(App):
         self.ai_handler.add_message("system", probe_msg)
         self.query_one("#ai-input").focus()
         self.query_one("#thinking-indicator").display = False
+<<<<<<< HEAD
         container = self.query_one("#chat-container")
 >>>>>>> 76308db (feat: complete modularization and self-correcting help system refactor)
         # Direct mount for status to avoid turn logic overhead at boot
@@ -151,6 +152,8 @@ class FPrimeTUI(App):
         status_md.code_indent_guides = False
         status_md.code_dark_theme = "monokai"
         await container.mount(status_md)
+=======
+>>>>>>> d3d0b12 (chore: cleanup obsolete files and unused code)
 
     def trigger_query(self, text: str) -> None:
         if not text.strip(): return
