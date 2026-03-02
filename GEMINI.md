@@ -66,12 +66,59 @@ Any tool or action that modifies the user's file system or F' project state **MU
 
 ---
 
+## 🧪 Testing Strategy
+The project employs a robust, deterministic testing suite to ensure UI stability, tool correctness, and AI reliability without requiring a live Ollama server or F' installation.
+
+### 1. Mocking the Brain
+- **`MockAIClient`:** Inherits from `FPrimeAIClient` and uses an internal queue to yield predefined token chunks. This makes UI tests 100% deterministic and removes external API dependencies.
+- **Auto-Patching:** `conftest.py` automatically replaces the real AI client with the mock version for all tests.
+
+### 2. UI Pilot Testing
+- **Input Simulation:** The `submit_query` helper reliably simulates user interaction by clicking the input widget, typing text, and manually triggering the Enter key event to bypass event-loop race conditions.
+- **Workflow Verification:** Tests cover complex flows including:
+    - **HITL Approval:** Simulating the full request -> diff display -> user approval (1/2) -> tool execution cycle.
+    - **Autocomplete:** Verifying that typing `/` triggers suggestions and `Tab` or `Enter` applies them correctly.
+    - **Worker Cancellation:** Ensuring `Ctrl+C` successfully stops the active AI worker and restores TUI state.
+
+### 3. Tool & Shell Validation
+- **Edge Case Coverage:** Verifies truncation of oversized files in `read_file` and handles command timeouts in `run_fprime_command`.
+- **Environment Discovery:** Tests `find_fprime_venv` with both absolute and relative paths to ensure the AI can always locate the project environment.
+
+### 4. Golden File Testing
+- **Visual Consistency:** Compares the final state of the `chat_history` against reference Markdown files (`tests/golden_files/`). This catches formatting regressions and accidental UI changes in the conversational output.
+
+### 5. Running Tests
+Execute the full suite via the Makefile:
+```bash
+make test
+```
+This runs `pytest` on the `tests/` directory with `PYTHONPATH` correctly configured.
+
+---
+
 ## Troubleshooting & Post-Mortem
 
 ### Textual UI Rendering & Modals
 - **The "No 'code_inline' key" Crash:** Do not use `push_screen()` to overlay modals while an async worker is updating the main screen's Markdown DOM. This causes a race condition where the styling engine gets lost. Use conversational inline prompts instead.
 - **Scroll Freezing:** Calling `scroll_end(animate=False)` on every single token chunk during an AI generation fights the user's manual scroll wheel and causes the UI to freeze.
 - **Layout Collapse:** `1fr` containers require a clear vertical context. Always set `layout: vertical;` on the `Screen` in `.tcss`.
+
+### Markdown Styling & UI Consistency (Textual 0.85+)
+To maintain the **JPL Mars Theme** and prevent default Textual highlights (like the teal "accent" on focused blocks):
+- **Disable Focus:** Set `can_focus = False` on the `Markdown` widget in Python to prevent the TUI from highlighting blocks during navigation.
+- **Disable Indent Guides:** Set `code_indent_guides = False` to remove syntax-highlighter vertical lines that often inherit the default theme's accent color.
+- **Target Sub-Widgets:** Use TCSS type selectors for the Markdown implementation:
+    - `MarkdownH1` through `MarkdownH6` for headers.
+    - `MarkdownFence` for code blocks.
+    - `MarkdownBlockQuote` for blockquotes.
+- **Override Syntax Highlighting:** To force a specific color scheme on generated code, use the wild-card selector within a fence:
+  ```css
+  MarkdownFence * {
+      color: #f5f5f5 !important;
+      background: transparent !important;
+  }
+  ```
+- **Component Classes:** Use `.markdown--code_inline` for inline code segments rather than the generic `code` tag.
 
 ### Pathing & Portability
 - **Wrapper Script Working Directory:** The `fprime-tui` bash wrapper MUST save the caller's working directory (`ORIGINAL_DIR`), locate its own `venv` to launch python, and then `cd` back to `ORIGINAL_DIR` before running `app.py`. This ensures dynamic environment discovery (`fprime-venv`) works properly based on where the user *is*, not where the tool is installed.

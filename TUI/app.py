@@ -2,34 +2,62 @@ import re
 import os
 import time
 import json
+import asyncio
 from pathlib import Path
+from typing import Optional
+
 from textual import on, work
 from textual.app import App, ComposeResult
-from textual.containers import Vertical
-from textual.widgets import Markdown, Input, OptionList
+from textual.containers import Vertical, Horizontal
+from textual.widgets import Markdown, TextArea, OptionList, LoadingIndicator, Static
 from textual.widgets.option_list import Option
 from textual.events import Key
 
 from fprime_ai_client import FPrimeAIClient
 from widgets import FadingScrollContainer
 from shell import run_fprime_command
-from utils import find_fprime_venv
+from utils import find_fprime_venv, escape_markdown
 from tools import execute_read_file, execute_replace_in_file, execute_list_directory
+
+# FPRIME_LOGO = """ ▛▀▀ '
+#  ▙▄
+#  ▌ """
+
+FPRIME_LOGO = ">"
 
 COMMANDS = [
     ("/clear", "Clear chat history"),
     ("/help", "Show help documentation"),
-    ("/build", "Trigger F' build process"),
-    ("/info", "Show F' project configuration and variables"),
     ("/exit", "Exit Mission Control"),
+    ("/build", "Build components, deployments, and unit tests"),
+    ("/check", "Run unit tests with optional test coverage"),
+    ("/generate", "Generate build caches"),
+    ("/purge", "Remove build caches"),
+    ("/fpp-check", "Run fpp-check utility"),
+    ("/fpp-to-dict", "Run fpp-to-dict utility"),
+    ("/visualize", "Visualize FPP model in web GUI"),
+    ("/impl", "Generate implementation templates"),
+    ("/hash-to-file", "Convert FW_ASSERT hash to path"),
+    ("/info", "Print contextual target and cache info"),
+    ("/version-check", "Print toolchain versions"),
+    ("/new", "Generate a new fprime object (component, deployment, etc.)"),
+    ("/format", "Format C/C++ files using clang-format"),
 ]
+
+class CommandInput(TextArea):
+    """A TextArea specifically tuned for command entry."""
+    def on_key(self, event: Key) -> None:
+        if event.key == "enter":
+            event.prevent_default()
+            event.stop()
+            self.app.trigger_query(self.text)
 
 class FPrimeTUI(App):
     """
     F-Prime-TUI: Mission Control (Refined & Modular)
     """
     TITLE = "F-PRIME MISSION CONTROL"
-    CSS_PATH = "style.tcss"
+    CSS_PATH = Path(__file__).parent / "style.tcss"
 
     BINDINGS = [
         ("ctrl+c", "cancel_generation", "Cancel"),
@@ -40,123 +68,329 @@ class FPrimeTUI(App):
     def __init__(self):
         super().__init__()
         self.ai_client = FPrimeAIClient()
-        self.chat_history = "# Mission Control Online\nAwaiting command. Use `@file` or `/command`.\n"
+        self.chat_history = ""
         self.query_history = []
         self.history_index = -1
         self.temp_query = ""
         self.active_worker = None
         self.last_ctrl_c_time = 0
         self.pending_action = None
+        self._show_agent_thoughts = False
+        self.suggestion_mode = ""
+        self.tool_call_depth = 0
+        self.active_ai_widget = None
+        self.in_ai_turn = False
+        self.turn_buffer = "" # Tracks content for the current isolated Turn widget
 
     def compose(self) -> ComposeResult:
         with FadingScrollContainer(id="chat-container"):
-            yield Markdown(self.chat_history, id="chat-log")
+            pass
         with Vertical(id="input-area"):
             yield OptionList(id="autocomplete-list")
-            yield Input(placeholder="> Ask FPrime AI...", id="ai-input")
+            yield LoadingIndicator(id="thinking-indicator")
+            with Horizontal(id="input-container"):
+                yield Static(FPRIME_LOGO, id="prompt-label")
+                yield CommandInput(id="ai-input")
 
     async def on_mount(self) -> None:
         self.query_one("#ai-input").focus()
+        self.query_one("#thinking-indicator").display = False
+        container = self.query_one("#chat-container")
+        # Direct mount for status to avoid turn logic overhead at boot
+        status_md = Markdown("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.", classes="ai-response")
+        status_md.can_focus = False
+        status_md.code_indent_guides = False
+        status_md.code_dark_theme = "monokai"
+        await container.mount(status_md)
+
+    def trigger_query(self, text: str) -> None:
+        if not text.strip(): return
+        self.active_worker = self._ai_loop(text)
+
+    @work
+    async def _ai_loop(self, user_query: str) -> None:
+        try:
+            if self.pending_action:
+                await self._handle_hitl_approval(user_query)
+                return
+            if user_query.startswith("/"):
+                await self._handle_slash_command(user_query)
+                return
+            await self._process_standard_query(user_query)
+        except Exception as e:
+            self._add_to_chat_history(f"\n\n**[SYSTEM ERROR]: {str(e)}**\n")
+        finally:
+            self._re_enable_input()
+
+    async def _handle_hitl_approval(self, user_query: str):
+        q_lower = user_query.strip().lower()
+        approved = None
+        if q_lower in ["1", "approve", "yes", "y"]: approved = True
+        elif q_lower in ["2", "decline", "no", "n"]: approved = False
+        if approved is None: return
+        tool_json = self.pending_action
+        self.pending_action = None
+        self._prepare_for_generation()
+        path = tool_json.get("path"); old_c = tool_json.get("old_content"); new_c = tool_json.get("new_content")
+        if approved:
+            await self._mount_user_turn("Approved")
+            result_text = await execute_replace_in_file(path, old_c, new_c)
+        else:
+            await self._mount_user_turn("Declined")
+            result_text = "User rejected the edit."
+        await self._execute_tool_sequence(tool_json.get("tool_name"), result_text)
+
+    async def _mount_header(self, text: str):
+        containers = self.query("#chat-container")
+        if not containers: return
+        await containers[0].mount(Static(text, classes="chat-header"))
+
+    async def _mount_user_turn(self, text: str):
+        self.in_ai_turn = False
+        self.active_ai_widget = None
+        self.turn_buffer = ""
+        await self._mount_header("User:")
+        containers = self.query("#chat-container")
+        if not containers: return
+        await containers[0].mount(Static(text, classes="user-prompt"))
+        self.chat_history += f"\n\nUser: {text}\n\n"
+        self._scroll_to_end_if_at_bottom()
+
+    async def _mount_ai_turn(self, initial_text: str = ""):
+        if not self.in_ai_turn or not self.active_ai_widget:
+            if not self.in_ai_turn:
+                await self._mount_header("Mission Control:")
+                self.in_ai_turn = True
+            
+            containers = self.query("#chat-container")
+            if not containers: return
+            new_md = Markdown(initial_text, classes="ai-response")
+            new_md.can_focus = False
+            new_md.code_indent_guides = False
+            new_md.code_dark_theme = "monokai"
+            await containers[0].mount(new_md)
+            self.active_ai_widget = new_md
+            self.turn_buffer = initial_text
+        elif initial_text:
+            self._add_to_chat_history(initial_text)
+            
+        if initial_text: self.chat_history += f"Mission Control:\n{initial_text}"
+        self._scroll_to_end_if_at_bottom()
+
+    def _add_to_chat_history(self, message: str, is_agent_thought: bool = False) -> None:
+        """Appends to the current Turn's widget and the global memory."""
+        if is_agent_thought and not self._show_agent_thoughts: return
+        
+        self.chat_history += message
+        if self.active_ai_widget:
+            self.turn_buffer += message
+            self.active_ai_widget.update(self.turn_buffer)
+        else:
+            asyncio.create_task(self._mount_ai_turn(message))
+        self._scroll_to_end_if_at_bottom()
+
+    async def _handle_slash_command(self, user_query: str):
+        self.tool_call_depth = 0
+        if user_query.startswith("/clear"):
+            self.action_clear_chat(); self.query_one("#ai-input", CommandInput).text = ""; return
+        elif user_query.startswith("/exit"): self.exit(); return
+        command = user_query[1:].strip()
+        self._prepare_for_generation(); await self._mount_user_turn(user_query)
+        self._add_to_chat_history(f"\n> *Running fprime-util {command}...*\n", is_agent_thought=True)
+        venv = find_fprime_venv()
+        if not venv: result_text = "Error: fprime-venv not found."
+        else:
+            parts = command.split(" ", 1); cmd = parts[0]; args = parts[1] if len(parts) > 1 else ""
+            res = await run_fprime_command(venv, cmd, args, cwd=".")
+            result_text = f"Manual Result (Exit {res['exit_code']}):\n{res['stdout']}\n{res['stderr']}"
+            if res['stdout']: self._add_to_chat_history(f"\n```\n{res['stdout']}\n```\n", is_agent_thought=True)
+            if res['stderr']: self._add_to_chat_history(f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n", is_agent_thought=True)
+        self.ai_client.add_message("user", f"I manually ran '{user_query}'. Result: {result_text}. Please summarize.")
+        await self._stream_and_handle_tools()
+
+    async def _process_standard_query(self, user_query: str):
+        self.tool_call_depth = 0
+        if not self.query_history or self.query_history[-1] != user_query: self.query_history.append(user_query)
+        self.history_index = -1; self._prepare_for_generation(); await self._mount_user_turn(user_query)
+        mentions = re.findall(r"@([\w./-]+)", user_query); extra_ctx = ""
+        for filename in mentions:
+            file_path = Path(filename)
+            if file_path.exists() and file_path.is_file():
+                try: extra_ctx += f"\nFILE: {filename}\n---\n{file_path.read_text()}\n---\n"
+                except: pass
+        self.ai_client.add_message("user", user_query); await self._stream_and_handle_tools(extra_ctx)
+
+    def _prepare_for_generation(self):
+        try:
+            input_widget = self.query_one("#ai-input", CommandInput)
+            input_widget.text = ""
+            input_widget.disabled = True
+            self.query_one("#thinking-indicator").display = True
+            self.add_class("generating")
+        except: pass
+
+    async def _stream_and_handle_tools(self, extra_ctx: str = ""):
+        self.tool_call_depth += 1
+        if self.tool_call_depth > 5:
+            self._add_to_chat_history("\n\n**[SYSTEM]: Maximum depth reached.**\n"); return
+        
+        full_res = ""; await self._mount_ai_turn(); tool_json_str = None
+        # Start of a stream: full_res is empty. Turn buffer already contains previous tool results if recursive.
+        initial_turn_prefix = self.turn_buffer
+        
+        try:
+            async for chunk in self.ai_client.stream_chat(context=extra_ctx):
+                if chunk: self.query_one("#thinking-indicator").display = False
+                full_res += chunk
+                
+                if full_res.strip():
+                    display_text = full_res
+                    if not self._show_agent_thoughts:
+                        match_start = full_res.find("```json")
+                        if match_start != -1: display_text = full_res[:match_start]
+                    
+                    if self.active_ai_widget:
+                        self.active_ai_widget.update(initial_turn_prefix + display_text)
+                    self._scroll_to_end_if_at_bottom()
+        except Exception as e: full_res += f"\n\n> **[AI ERROR]: {e}**"
+        
+        final_displayed_seg = full_res
+        tool_match = re.search(r"```json\s*(.*?)\s*```", full_res, re.DOTALL)
+        if tool_match:
+            tool_json_str = tool_match.group(1)
+            if not self._show_agent_thoughts: final_displayed_seg = full_res[:tool_match.start()]
+        
+        # Sync turn buffer and memory
+        if final_displayed_seg.strip():
+            self.turn_buffer = initial_turn_prefix + final_displayed_seg
+            self.chat_history += final_displayed_seg
+        
+        self.ai_client.add_message("assistant", full_res)
+        if self.active_ai_widget: self.active_ai_widget.update(self.turn_buffer)
+        self._scroll_to_end_if_at_bottom()
+        
+        if tool_json_str:
+            try:
+                tool_json = json.loads(tool_json_str)
+                await self._dispatch_tool(tool_json)
+            except:
+                self.ai_client.add_message("user", "System Error: Invalid JSON."); await self._stream_and_handle_tools()
+
+    async def _dispatch_tool(self, tool_json: dict):
+        tool_name = tool_json.get("tool_name")
+        if tool_name == "run_fprime_command": status_msg = f"Running fprime-util {tool_json.get('command', '')}..."
+        elif tool_name == "read_file": status_msg = f"Reading {os.path.basename(tool_json.get('path'))}..."
+        elif tool_name == "list_directory": status_msg = f"Listing {tool_json.get('path')}..."
+        elif tool_name == "replace_in_file": status_msg = f"Updating {os.path.basename(tool_json.get('path'))}..."
+        else: status_msg = f"Executing {tool_name}..."
+
+        pending_tag = f"\n\n> *[{status_msg} (PENDING)]*"
+        # Status lines should always be visible to user
+        self._add_to_chat_history(pending_tag, is_agent_thought=False)
+        self.last_status_tag = pending_tag
+        self.last_status_complete = f"\n\n> *[{status_msg} COMPLETE]*"
+
+        
+        if tool_name == "replace_in_file":
+            path = tool_json.get("path"); self.pending_action = tool_json
+            self._add_to_chat_history(f"\n\n**Action Required:** AI wants to modify `{os.path.basename(path)}`.\nDo you approve? (1: Approve, 2: Decline)\n", is_agent_thought=False)
+            self._re_enable_input(); return
+            
+        result_text = ""
+        if tool_name == "run_fprime_command":
+            cwd = tool_json.get("cwd", "."); venv = find_fprime_venv(Path(cwd))
+            if not venv: result_text = f"Error: venv not found in {cwd}."
+            else:
+                res = await run_fprime_command(venv, tool_json.get("command", ""), tool_json.get("args", ""), cwd=cwd)
+                result_text = f"Exit code: {res['exit_code']}\nStdout: {res['stdout']}\nStderr: {res['stderr']}"
+                if res['stdout']: self._add_to_chat_history(f"\n```\n{res['stdout']}\n```\n", is_agent_thought=True)
+                if res['stderr']: self._add_to_chat_history(f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n", is_agent_thought=True)
+        elif tool_name == "read_file": result_text = await execute_read_file(tool_json.get("path"))
+        elif tool_name == "list_directory": result_text = await execute_list_directory(tool_json.get("path"))
+        else: result_text = f"Error: Tool '{tool_name}' not found."
+        await self._execute_tool_sequence(tool_name, result_text)
+
+    async def _execute_tool_sequence(self, tool_name: str, result_text: str):
+        if hasattr(self, 'last_status_tag') and self.active_ai_widget:
+            updated = self.turn_buffer.replace(self.last_status_tag, self.last_status_complete)
+            self.turn_buffer = updated
+            self.active_ai_widget.update(self.turn_buffer)
+            self.chat_history = self.chat_history.replace(self.last_status_tag, self.last_status_complete)
+            
+        trunc = result_text if len(result_text) < 500 else result_text[:500] + "...[TRUNCATED]..."
+        self._add_to_chat_history(f"\n> *Tool Result:*\n```\n{trunc}\n```\n", is_agent_thought=True)
+        self.ai_client.add_message("user", f"Tool Response:\n{result_text}"); await self._stream_and_handle_tools()
+
+    def _re_enable_input(self):
+        if self._closing: return
+        self.remove_class("generating")
+        try:
+            self.query_one("#thinking-indicator").display = False
+            input_widget = self.query_one("#ai-input", CommandInput)
+            input_widget.disabled = False
+            input_widget.focus()
+        except: pass
 
     def on_key(self, event: Key) -> None:
-        input_widget = self.query_one("#ai-input")
         list_widget = self.query_one("#autocomplete-list")
-
-        if event.key == "tab":
-            event.prevent_default()
-            event.stop()
-            if list_widget.display:
-                self._apply_suggestion()
-
+        if event.key in ["enter", "tab"] and list_widget.display: event.prevent_default(); event.stop(); self._apply_suggestion()
         elif event.key == "up":
-            if list_widget.display:
-                event.prevent_default()
-                list_widget.action_cursor_up()
-            else:
-                self._history_nav(1)
-                
+            if list_widget.display: event.prevent_default(); list_widget.action_cursor_up()
+            else: self._history_nav(1)
         elif event.key == "down":
-            if list_widget.display:
-                event.prevent_default()
-                list_widget.action_cursor_down()
-            else:
-                self._history_nav(-1)
+            if list_widget.display: event.prevent_default(); list_widget.action_cursor_down()
+            else: self._history_nav(-1)
 
     def _history_nav(self, delta: int) -> None:
-        input_widget = self.query_one("#ai-input")
+        input_widget = self.query_one("#ai-input", CommandInput)
         if not self.query_history: return
-        
-        if self.history_index == -1:
-            self.temp_query = input_widget.value
-            
+        if self.history_index == -1: self.temp_query = input_widget.text
         new_index = self.history_index + delta
         if -1 <= new_index < len(self.query_history):
             self.history_index = new_index
-            if self.history_index == -1:
-                input_widget.value = self.temp_query
-            else:
-                input_widget.value = self.query_history[-(self.history_index + 1)]
-            input_widget.cursor_position = len(input_widget.value)
+            input_widget.text = self.temp_query if self.history_index == -1 else self.query_history[-(self.history_index + 1)]
+            lines = input_widget.text.splitlines()
+            input_widget.cursor_location = (len(lines)-1, len(lines[-1])) if lines else (0, 0)
 
     def action_cancel_generation(self) -> None:
         if self.active_worker and self.active_worker.is_running:
-            self.active_worker.cancel()
-            self.chat_history += "\n\n> *(Generation cancelled)*"
-            try:
-                self.query_one("#chat-log", Markdown).update(self.chat_history)
-            except: pass
-            self._re_enable_input()
-            self.last_ctrl_c_time = 0
+            self.active_worker.cancel(); self._add_to_chat_history("\n\n> *(Cancelled)*", is_agent_thought=True); self._re_enable_input()
         else:
-            current_time = time.time()
-            if current_time - self.last_ctrl_c_time < 1.0:
-                self.exit()
-            else:
-                self.last_ctrl_c_time = current_time
-                self.notify("Press Ctrl+C again to exit")
+            if time.time() - self.last_ctrl_c_time < 1.0: self.exit()
+            else: self.last_ctrl_c_time = time.time(); self.notify("Press Ctrl+C again to exit")
 
     def action_clear_chat(self) -> None:
-        self.chat_history = "# Mission Control Cleared\n"
-        self.ai_client.clear_history()
+        self.chat_history = ""; self.ai_client.clear_history(); self.turn_buffer = ""; self.active_ai_widget = None
         try:
-            self.query_one("#chat-log", Markdown).update(self.chat_history)
+            container = self.query_one("#chat-container")
+            for child in list(container.children): child.remove()
+            asyncio.create_task(self._mount_ai_turn("# Mission Control Cleared"))
         except: pass
 
     def action_clear_input(self) -> None:
-        input_widget = self.query_one("#ai-input", Input)
-        input_widget.value = ""
+        self.query_one("#ai-input", CommandInput).text = ""
         self.query_one("#autocomplete-list").display = False
 
-    @on(Input.Changed, "#ai-input")
-    def handle_input_changed(self, event: Input.Changed) -> None:
-        text = event.value
-        cursor_pos = event.input.cursor_position
-        if not text:
-            self.query_one("#autocomplete-list").display = False
-            return
-        if cursor_pos > 0 and cursor_pos <= len(text) and text[cursor_pos-1] == " ":
-            self.query_one("#autocomplete-list").display = False
-            return
-        if not text[:cursor_pos].strip():
-            self.query_one("#autocomplete-list").display = False
-            return
-        last_part = text[:cursor_pos].split()[-1]
-        
-        if self.pending_action:
-            if "1" in last_part:
-                self._update_suggestions(last_part, [("1", "Approve")], "")
-            elif "2" in last_part:
-                self._update_suggestions(last_part, [("2", "Decline")], "")
-            else:
-                self._update_suggestions(last_part, [("1", "Approve"), ("2", "Decline")], "")
-            return
+    def _scroll_to_end_if_at_bottom(self) -> None:
+        container = self.query_one("#chat-container")
+        if container.scroll_offset.y >= container.max_scroll_y - 2: container.scroll_end(animate=False)
 
-        if last_part.startswith("/"):
-            self._update_suggestions(last_part[1:], COMMANDS, "/")
-        elif last_part.startswith("@"):
-            self._update_suggestions(last_part[1:], self._get_file_suggestions(last_part[1:]), "@")
-        else:
-            self.query_one("#autocomplete-list").display = False
+    @on(TextArea.Changed, "#ai-input")
+    def handle_input_changed(self, event: TextArea.Changed) -> None:
+        input_widget = event.text_area; row, col = input_widget.cursor_location; lines = input_widget.text.splitlines()
+        if not lines: self.query_one("#autocomplete-list").display = False; return
+        current_line = lines[row] if row < len(lines) else ""; text_before_cursor = current_line[:col]
+        if not text_before_cursor.strip() or text_before_cursor.endswith(" "): self.query_one("#autocomplete-list").display = False; return
+        last_part = text_before_cursor.split()[-1]
+        if self.pending_action:
+            if last_part in ["1", "2"]: self.query_one("#autocomplete-list").display = False; return
+            items = [("1", "Approve"), ("2", "Decline")]
+            if "1" in last_part: items = [("1", "Approve")]
+            elif "2" in last_part: items = [("2", "Decline")]
+            self._update_suggestions(last_part, items, "")
+        elif last_part.startswith("/"): self._update_suggestions(last_part[1:], COMMANDS, "/")
+        elif last_part.startswith("@"): self._update_suggestions(last_part[1:], self._get_file_suggestions(last_part[1:]), "@")
+        else: self.query_one("#autocomplete-list").display = False
 
     def _get_file_suggestions(self, partial: str):
         try:
@@ -165,235 +399,19 @@ class FPrimeTUI(App):
         except: return []
 
     def _update_suggestions(self, partial: str, items: list, mode: str):
-        self.suggestion_mode = mode
-        list_widget = self.query_one("#autocomplete-list")
-        list_widget.clear_options()
-        p_low = partial.lower()
-        matches = [Option(f"{label} - {desc}", id=label) for label, desc in items if p_low in label.lower()]
-        if matches:
-            list_widget.add_options(matches)
-            list_widget.display = True
-        else:
-            list_widget.display = False
+        self.suggestion_mode = mode; list_widget = self.query_one("#autocomplete-list"); list_widget.clear_options()
+        matches = [Option(f"{label} - {desc}", id=label) for label, desc in items if partial.lower() in label.lower()]
+        if matches: list_widget.add_options(matches); list_widget.display = True
+        else: list_widget.display = False
 
     def _apply_suggestion(self):
-        list_widget = self.query_one("#autocomplete-list")
-        input_widget = self.query_one("#ai-input")
+        list_widget = self.query_one("#autocomplete-list"); input_widget = self.query_one("#ai-input", CommandInput)
         if list_widget.highlighted is None: return
-        label = list_widget.get_option_at_index(list_widget.highlighted).id
-        
-        val = input_widget.value
-        cursor = input_widget.cursor_position
-        before_cursor = val[:cursor]
-        after_cursor = val[cursor:]
-        
-        last_space_idx = before_cursor.rfind(" ")
-        if last_space_idx == -1:
-            prefix = ""
-        else:
-            prefix = before_cursor[:last_space_idx + 1]
-            
-        if label.startswith(self.suggestion_mode):
-            new_word = f"{label} "
-        else:
-            new_word = f"{self.suggestion_mode}{label} "
-            
-        new_val = prefix + new_word + after_cursor
-        
-        input_widget.value = new_val
-        input_widget.cursor_position = len(prefix) + len(new_word)
-        list_widget.display = False
-
-    @work(exclusive=True)
-    async def run_direct_command(self, command: str):
-        self.chat_history += f"\n\n> *Running fprime-util {command}...*\n"
-        self.query_one("#chat-log", Markdown).update(self.chat_history)
-        self.query_one("#chat-container").scroll_end(animate=False)
-        
-        venv = find_fprime_venv()
-        if not venv:
-            self.chat_history += "\n**Error: fprime-venv not found.**\n"
-        else:
-            parts = command.split(" ", 1)
-            cmd = parts[0]
-            args = parts[1] if len(parts) > 1 else ""
-            res = await run_fprime_command(venv, cmd, args)
-            
-            if res['stdout']:
-                self.chat_history += f"\n```\n{res['stdout']}\n```\n"
-            if res['stderr']:
-                self.chat_history += f"\n**[ERROR]**:\n```\n{res['stderr']}\n```\n"
-            self.chat_history += f"\n*(Exit code: {res['exit_code']})*\n"
-            
-        self.query_one("#chat-log", Markdown).update(self.chat_history)
-        self.query_one("#chat-container").scroll_end(animate=False)
-        self._re_enable_input()
-
-    @on(Input.Submitted, "#ai-input")
-    async def handle_ai_query(self, event: Input.Submitted) -> None:
-        if self.query_one("#autocomplete-list").display:
-            self._apply_suggestion()
-            return
-        user_query = event.value
-        if not user_query.strip(): return
-        
-        if self.pending_action:
-            q_lower = user_query.strip().lower()
-            if q_lower in ["1", "1 - approve", "1 approve", "approve", "yes", "y", "1 "]:
-                approved = True
-            elif q_lower in ["2", "2 - decline", "2 decline", "decline", "no", "n", "2 "]:
-                approved = False
-            else:
-                return # Ignore invalid input
-                
-            tool_json = self.pending_action
-            self.pending_action = None
-            
-            input_widget = self.query_one("#ai-input")
-            input_widget.value = ""
-            input_widget.disabled = True
-            self.add_class("generating")
-            
-            path = tool_json.get("path")
-            old_c = tool_json.get("old_content")
-            new_c = tool_json.get("new_content")
-            
-            if approved:
-                self.chat_history += f"\n\n> **User:** Approved\n"
-                result_text = await execute_replace_in_file(path, old_c, new_c)
-            else:
-                self.chat_history += f"\n\n> **User:** Declined\n"
-                result_text = "User rejected the edit."
-                
-            await self._finish_tool_call(tool_json.get("tool_name"), result_text)
-            return
-
-        if user_query.startswith("/clear"):
-            self.action_clear_chat()
-            self.query_one("#ai-input").value = ""
-            return
-        elif user_query.startswith("/exit"):
-            self.exit()
-            return
-        elif user_query.startswith("/"):
-            command = user_query[1:].strip()
-            self.query_one("#ai-input").value = ""
-            self.query_one("#ai-input").disabled = True
-            self.add_class("generating")
-            self.run_direct_command(command)
-            return
-
-        if not self.query_history or self.query_history[-1] != user_query:
-            self.query_history.append(user_query)
-        self.history_index = -1
-        
-        input_widget = self.query_one("#ai-input")
-        input_widget.value = ""
-        input_widget.disabled = True
-        
-        self.add_class("generating")
-        self.chat_history += f"\n\n> **User:** {user_query}\n\n"
-        self.query_one("#chat-log", Markdown).update(self.chat_history + "\n\n*Thinking...*")
-        self.query_one("#chat-container").scroll_end(animate=False)
-        
-        mentions = re.findall(r"@([\w./-]+)", user_query)
-        extra_ctx = ""
-        for filename in mentions:
-            file_path = Path(filename)
-            if file_path.exists() and file_path.is_file():
-                try: extra_ctx += f"\nFILE: {filename}\n---\n{file_path.read_text()}\n---\n"
-                except: pass
-                
-        self.ai_client.add_message("user", user_query)
-        self.active_worker = self.run_worker(self.stream_ai_response(extra_ctx))
-
-    async def stream_ai_response(self, extra_ctx: str = "") -> None:
-        full_res = ""
-        chat_log = self.query_one("#chat-log", Markdown)
-        chat_container = self.query_one("#chat-container")
-        try:
-            async for chunk in self.ai_client.stream_chat(context=extra_ctx):
-                full_res += chunk
-                if full_res.strip():
-                    chat_log.update(self.chat_history + full_res)
-                    chat_container.scroll_end(animate=False)
-        except Exception as e:
-            if not full_res:
-                full_res += f"\n\n> **[ERROR]: {e}**"
-        finally:
-            self.chat_history += full_res
-            self.ai_client.add_message("assistant", full_res)
-            chat_log.update(self.chat_history)
-            chat_container.scroll_end(animate=False)
-            
-            # Check for JSON Tool Call
-            tool_match = re.search(r"```json\s*(.*?)\s*```", full_res, re.DOTALL)
-            if tool_match:
-                tool_json_str = tool_match.group(1)
-                try:
-                    tool_json = json.loads(tool_json_str)
-                    await self.handle_tool_call(tool_json)
-                except json.JSONDecodeError:
-                    self.ai_client.add_message("user", "System Error: Invalid JSON format.")
-                    self.active_worker = self.run_worker(self.stream_ai_response(extra_ctx))
-            else:
-                self._re_enable_input()
-
-    async def handle_tool_call(self, tool_json: dict):
-        tool_name = tool_json.get("tool_name")
-        result_text = ""
-        
-        self.chat_history += f"\n\n> *Executing {tool_name}...*\n"
-        self.query_one("#chat-log", Markdown).update(self.chat_history)
-        
-        if tool_name == "run_fprime_command":
-            venv = find_fprime_venv()
-            if not venv:
-                result_text = "Error: fprime-venv not found."
-            else:
-                command = tool_json.get("command", "")
-                args = tool_json.get("args", "")
-                res = await run_fprime_command(venv, command, args)
-                result_text = f"Exit code: {res['exit_code']}\nStdout: {res['stdout']}\nStderr: {res['stderr']}"
-                
-        elif tool_name == "read_file":
-            path = tool_json.get("path")
-            result_text = await execute_read_file(path)
-            
-        elif tool_name == "list_directory":
-            path = tool_json.get("path")
-            result_text = await execute_list_directory(path)
-            
-        elif tool_name == "replace_in_file":
-            path = tool_json.get("path")
-            old_c = tool_json.get("old_content")
-            new_c = tool_json.get("new_content")
-            
-            self.pending_action = tool_json
-            self.chat_history += f"\n\n**Action Required:** AI wants to modify `{path}`.\n\nOld:\n```\n{old_c}\n```\nNew:\n```\n{new_c}\n```\n\nDo you approve these changes?\n- Type **1** to Approve\n- Type **2** to Decline\n"
-            self.query_one("#chat-log", Markdown).update(self.chat_history)
-            self.query_one("#chat-container").scroll_end(animate=False)
-            self._re_enable_input()
-            return
-        else:
-            result_text = f"Error: Tool '{tool_name}' not found."
-
-        await self._finish_tool_call(tool_name, result_text)
-
-    async def _finish_tool_call(self, tool_name: str, result_text: str):
-        trunc_result = result_text if len(result_text) < 500 else result_text[:500] + "\n...[TRUNCATED IN UI]..."
-        self.chat_history += f"\n> *Tool Result:*\n```\n{trunc_result}\n```\n"
-        self.query_one("#chat-log", Markdown).update(self.chat_history)
-        self.query_one("#chat-container").scroll_end(animate=False)
-        
-        self.ai_client.add_message("user", f"Tool Response:\n{result_text}")
-        self.active_worker = self.run_worker(self.stream_ai_response(""))
-
-    def _re_enable_input(self):
-        self.remove_class("generating")
-        input_widget = self.query_one("#ai-input")
-        input_widget.disabled = False
-        input_widget.focus()
+        label = list_widget.get_option_at_index(list_widget.highlighted).id; row, col = input_widget.cursor_location; lines = input_widget.text.splitlines()
+        before = lines[row][:col]; after = lines[row][col:]; last_space = before.rfind(" ")
+        prefix = "" if last_space == -1 else before[:last_space + 1]
+        new_word = f"{label} " if label.startswith(self.suggestion_mode) else f"{self.suggestion_mode}{label} "
+        lines[row] = prefix + new_word + after; input_widget.text = "\n".join(lines); input_widget.cursor_location = (row, len(prefix) + len(new_word)); list_widget.display = False
 
 if __name__ == "__main__":
     FPrimeTUI().run()
