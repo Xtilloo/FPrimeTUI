@@ -47,3 +47,49 @@ async def execute_list_directory(path: str) -> str:
         return "\n".join(items)
     except Exception as e:
         return f"Error listing directory: {str(e)}"
+
+async def execute_grep_docs(query: str, project_root: str = ".") -> str:
+    """
+    Search for a keyword within the project's docs/ directory.
+    Returns a list of files and matching line snippets, capped at 1000 chars.
+    """
+    from pathlib import Path
+    
+    docs_path = Path(project_root) / "docs"
+    if not docs_path.exists():
+        return "Error: 'docs/' directory not found at project root."
+        
+    results = []
+    total_len = 0
+    query_lower = query.lower()
+    
+    # Standard walk to find all markdown files
+    for md_file in docs_path.rglob("*.md"):
+        try:
+            with open(md_file, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                
+            matches_in_file = []
+            for i, line in enumerate(lines):
+                if query_lower in line.lower():
+                    matches_in_file.append(f"L{i+1}: {line.strip()}")
+            
+            if matches_in_file:
+                file_rel = md_file.relative_to(project_root)
+                header = f"\n--- {file_rel} ---\n"
+                content = "\n".join(matches_in_file)
+                entry = header + content
+                
+                if total_len + len(entry) > 1000:
+                    results.append(entry[:1000 - total_len] + "...[TRUNCATED]...")
+                    break
+                
+                results.append(entry)
+                total_len += len(entry)
+        except Exception:
+            continue
+            
+    if not results:
+        return f"No matches found for '{query}' in documentation."
+        
+    return "".join(results)
