@@ -87,7 +87,12 @@ The project employs a robust, deterministic testing suite to ensure UI stability
 ### 4. Golden File Testing
 - **Visual Consistency:** Compares the final state of the `chat_history` against reference Markdown files (`tests/golden_files/`). This catches formatting regressions and accidental UI changes in the conversational output.
 
-### 5. Running Tests
+### 5. Headless Missions (Live Pilot)
+- **Reality Verification:** Uses `scripts/live_test.py` to fly the TUI against a **real local Ollama instance**.
+- **Bridging the Gap:** This ensures the `CommandGuard` and `MissionController` correctly handle real-world LLM hallucinations and environmental errors without manual TUI interaction.
+- **Workflow:** See `docs/11-Live-Pilot-Testing.md` for execution instructions.
+
+### 6. Running Tests
 Execute the full suite via the Makefile:
 ```bash
 make test
