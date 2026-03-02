@@ -46,7 +46,8 @@ class CommandGuard:
 
         # Check for dependencies
         if command == "build":
-            build_dir = mission_state.project_root / "build-fprime-automatic-native"
+            root = Path(mission_state.project_root)
+            build_dir = root / "build-fprime-automatic-native"
             if not build_dir.exists():
                 return False, "Error: Build cache not found. You MUST run 'generate' first."
 
