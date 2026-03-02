@@ -7,6 +7,7 @@ class MissionController:
     """
     def __init__(self, project_root: str = "."):
         self.project_root = project_root
+        self.discovered_project_root = None
         self.failure_count = 0
         self.recovery_phase = "none" # none, help, docs, fatigue
 
@@ -16,7 +17,8 @@ class MissionController:
         return {
             "failure_count": self.failure_count,
             "recovery_phase": self.recovery_phase,
-            "project_root": self.project_root
+            "project_root": self.project_root,
+            "discovered_project_root": self.discovered_project_root
         }
 
     def on_tool_success(self):

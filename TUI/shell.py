@@ -102,8 +102,17 @@ async def check_environment(cwd: str = ".") -> dict:
         except:
             results[name] = False
     
-    # Check for settings.ini
-    results["settings.ini"] = (Path(cwd) / "settings.ini").exists() or (Path(cwd).parent / "settings.ini").exists()
+    # Check for settings.ini and find project root
+    settings_ini_path = Path(cwd) / "settings.ini"
+    project_root = str(Path(cwd).absolute()) if settings_ini_path.exists() else None
+    
+    if not project_root:
+        settings_ini_path = Path(cwd).parent / "settings.ini"
+        if settings_ini_path.exists():
+            project_root = str(Path(cwd).parent.absolute())
+
+    results["settings.ini"] = project_root is not None
+    results["project_root"] = project_root
     results["venv_path"] = str(venv_path) if venv_path else None
     
     return results

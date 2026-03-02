@@ -382,7 +382,19 @@ class FPrimeTUI(App):
             self.active_ai_widget.update(self.turn_buffer)
         
         if tool_json:
-            # Validate with CommandGuard before executing
+            # 1. Repair common hallucinations
+            repaired_json = self.command_guard.repair(tool_json, self.mission_controller)
+            if repaired_json:
+                orig_cmd = f"{tool_json.get('executable', 'fprime-util')} {tool_json.get('command', '')}".strip()
+                new_cmd = f"{repaired_json.get('executable', 'fprime-util')} {repaired_json.get('command', '')}".strip()
+                # If only CWD changed, report that
+                if repaired_json.get("cwd") != tool_json.get("cwd"):
+                    self._add_to_chat_history(f"\n\n> *[REPAIR: Auto-set CWD to `{repaired_json.get('cwd')}` for `{new_cmd}`]*\n", is_agent_thought=True)
+                else:
+                    self._add_to_chat_history(f"\n\n> *[REPAIR: Auto-corrected `{orig_cmd}` to `{new_cmd}`]*\n", is_agent_thought=True)
+                tool_json = repaired_json
+
+            # 2. Validate with CommandGuard before executing
             is_valid, correction = self.command_guard.validate(tool_json, self.mission_controller)
             if not is_valid:
                 self._add_to_chat_history(f"\n\n> *[SYNTAX ERROR: {correction}]*\n", is_agent_thought=True)
@@ -462,6 +474,8 @@ class FPrimeTUI(App):
             result_text = await execute_grep_docs(q)
         elif tool_name == "check_environment": 
             res = await check_environment(tool_json.get("cwd", "."))
+            if res.get("project_root"):
+                self.mission_controller.discovered_project_root = res["project_root"]
             result_text = json.dumps(res, indent=2)
         elif tool_name == "get_project_settings":
             res = get_project_settings(tool_json.get("cwd", "."))
