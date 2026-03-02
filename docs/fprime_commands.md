@@ -64,3 +64,23 @@ Runs a wizard (or accepts flags) to create new objects in F'.
 *   `--overwrite`: Generated files will overwrite existing ones.
 *   `--no-venv`: Prevent updating the virtual environment during project creation.
 *   `--force`: Override warning about creating a new deployment/component within an existing one.
+
+---
+
+### COMMAND REFERENCE (AI Guidance Map)
+- **Intent:** Create a new component
+  **Command:** `fprime-util new --component`
+- **Intent:** Create a new deployment
+  **Command:** `fprime-util new --deployment`
+- **Intent:** Generate build cache
+  **Command:** `fprime-util generate`
+- **Intent:** Build component or project
+  **Command:** `fprime-util build`
+- **Intent:** Run unit tests
+  **Command:** `fprime-util check`
+- **Intent:** Generate implementation templates
+  **Command:** `fprime-util impl`
+- **Intent:** Purge build caches
+  **Command:** `fprime-util purge`
+- **Intent:** Visualize FPP model
+  **Command:** `fprime-util visualize`
