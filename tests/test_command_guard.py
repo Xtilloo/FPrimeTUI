@@ -5,6 +5,7 @@ from TUI.controllers.command_guard import CommandGuard
 class MockMissionState:
     def __init__(self, project_root):
         self.project_root = Path(project_root)
+        self.discovered_project_root = None
 
 def test_command_guard_hallucination(tmp_path):
     guard = CommandGuard()
@@ -38,7 +39,7 @@ def test_command_guard_deprecated(tmp_path):
     is_valid, error_msg = guard.validate(tool_json, state)
     
     assert is_valid is False
-    assert "fprime-gen is not a valid tool" in error_msg
+    assert "'fprime-gen' is not a valid tool" in error_msg
 
 def test_command_guard_missing_generate(tmp_path):
     guard = CommandGuard()
@@ -75,3 +76,32 @@ def test_command_guard_valid(tmp_path):
     
     assert is_valid is True
     assert error_msg is None
+
+def test_command_guard_repair():
+    guard = CommandGuard()
+    
+    # Test fpp-generate repair
+    tool_json = {
+        "tool_name": "run_fprime_command",
+        "executable": "fpp-generate",
+        "command": "component",
+        "args": "MyComp"
+    }
+    
+    repaired = guard.repair(tool_json)
+    assert repaired is not None
+    assert repaired["executable"] == "fprime-util"
+    assert repaired["command"] == "new"
+    assert "--component" in repaired["args"]
+    
+    # Test create repair
+    tool_json = {
+        "tool_name": "run_fprime_command",
+        "executable": "fprime-util",
+        "command": "create",
+        "args": "--component MyComp"
+    }
+    
+    repaired = guard.repair(tool_json)
+    assert repaired is not None
+    assert repaired["command"] == "new"
