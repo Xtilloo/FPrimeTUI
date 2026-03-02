@@ -2,7 +2,6 @@ import pytest
 import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
-from textual.widgets import Markdown
 from TUI.app import FPrimeTUI
 from tests.test_helpers import submit_query
 
@@ -42,9 +41,14 @@ async def test_hitl_golden_output(mock_execute, mock_ai_client, tmp_path):
     app.chat_history = ""
     async with app.run_test() as pilot:
         await pilot.pause()
-        # Re-mount initial message to match golden expectations (includes Mission Control: header)
-        await app._mount_ai_turn("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.")
 
+        # Reset history and active widget to ensure we start clean for golden comparison
+        app.chat_history = ""
+        app.active_ai_widget = None
+        app.in_ai_turn = False
+
+        # Re-mount initial message to match golden expectations
+        await app._mount_ai_turn("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.")
         # 1. User makes a request
 
         await submit_query(pilot, app, "replace hello with goodbye")
