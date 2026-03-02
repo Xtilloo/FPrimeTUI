@@ -1,49 +1,58 @@
-# Software Design Document (SDD)
+# Software Design Document (SDD) - Mission Control v2
 
 This document describes the individual Python files that make up the F-Prime-TUI (Mission Control) application, detailing their purpose, key classes, and main functions.
 
-## 1. `TUI/app.py`
-**Purpose:** The main entry point and controller for the Terminal User Interface. It integrates the UI rendering, the async ReAct loop, and tool execution dispatch.
+## 1. Core Application
+### `TUI/app.py`
+**Purpose:** The UI orchestrator. It manages the Textual layout and routes interactions between the user and the logic controllers.
+*   `FPrimeTUI (App)`: Main application class.
+    *   `_ai_loop()`: Orchestrates the ReAct cycle by coordinating the AI Handler, Command Guard, and Mission Controller.
+    *   `_dispatch_tool()`: Maps validated tool calls to the underlying execution functions in `tools.py` and `shell.py`.
 
-**Key Components:**
-*   `FPrimeTUI (App)`: The core Textual application class.
-    *   `compose()`: Defines the layout (chat container, input area, autocomplete list).
-    *   `handle_input_changed()` / `handle_ai_query()`: Captures user input, handles autocomplete, routes fast-path commands (`/`), and triggers AI generations.
-    *   `stream_ai_response()`: The main async worker that streams chunks from the Ollama client to the UI, updates the chat history, and looks for JSON tool requests.
-    *   `handle_tool_call()`: Intercepts JSON tool requests, triggers Human-In-The-Loop approval (if required), executes the corresponding function from `tools.py` or `shell.py`, and formats the result.
-    *   `_finish_tool_call()`: Passes the result of a tool back to the AI client and recursively restarts the generation worker to close the ReAct loop.
+### `TUI/fprime_ai_client.py`
+**Purpose:** Asynchronous client for the local Ollama instance.
+*   `FPrimeAIClient`: Manages chat history and streaming interaction with the LLM.
 
-## 2. `TUI/fprime_ai_client.py`
-**Purpose:** The Brain wrapper. It manages asynchronous communication with the local Ollama instance and maintains the conversational state.
+## 2. Controllers (The Brain)
+See [Controllers Deep-Dive](controllers.md) for more detail.
 
-**Key Components:**
-*   `FPrimeAIClient`: 
-    *   `__init__()`: Initializes the `ollama.AsyncClient` and the `chat_history` list.
-    *   `_get_system_prompt()`: Dynamically constructs the strict system prompt detailing the ReAct loop rules, JSON formatting constraints, and available tools.
-    *   `stream_chat()`: Appends context, formats the payload, and yields an asynchronous stream of response tokens from the local LLM.
+### `TUI/controllers/ai_handler.py`
+**Purpose:** Manages the AI interaction loop and robust parsing.
+*   `AIHandler`: 
+    *   `parse_tool_call()`: Uses regex and JSON parsing to reliably extract tool requests from LLM markdown streams.
+    *   `add_message()`: Maintains the synchronous history for the AI client.
 
-## 3. `TUI/shell.py`
-**Purpose:** The environment execution handler. It provides an async bridge to the underlying bash shell.
+### `TUI/controllers/command_guard.py`
+**Purpose:** The safety and repair engine.
+*   `CommandGuard`:
+    *   `validate()`: Checks commands against the `COMMAND_REGISTRY` and identifies missing dependencies (e.g., build cache).
+    *   `repair()`: **Auto-corrects** hallucinated commands (e.g., `fpp-generate`) and sets the correct `cwd` based on project root discovery.
 
-**Key Components:**
-*   `run_fprime_command()`: Uses `asyncio.create_subprocess_shell` to execute a command. Crucially, it sources the dynamic `fprime-venv` activation script in the same shell execution to ensure `fprime-util` has the proper context. It captures and returns standard output, standard error, and the exit code.
+### `TUI/controllers/mission.py`
+**Purpose:** Manages the autonomous mission state.
+*   `MissionController`:
+    *   `on_tool_fail()` / `on_tool_success()`: Tracks failure streaks.
+    *   `get_recovery_directive()`: Implements the **Fair Process Recovery Hierarchy**, escalating from a simple `help` hint to a mandatory `grep_docs` search before final fatigue.
 
-## 4. `TUI/tools.py`
-**Purpose:** The file system manipulation toolbox for the AI agent.
+## 3. Execution Layer (The Hands)
+### `TUI/shell.py`
+**Purpose:** Bridge to the bash shell and F' utilities.
+*   `run_fprime_command()`: Executes commands within the virtual environment and applies **Error Fingerprinting** to provide context-aware hints for common F' failures.
+*   `check_environment()`: Discovers `fprime-venv`, `settings.ini`, and the project root.
 
-**Key Components:**
-*   `execute_read_file()`: Asynchronously reads file contents using `aiofiles`. Contains length truncation logic to protect the LLM context window from massive files.
-*   `execute_replace_in_file()`: Safely edits a file. Requires an exact match of an `old_content` string to prevent accidental overwrites or partial replacements. 
-*   `execute_list_directory()`: Wraps `os.listdir` to return directory contents.
+### `TUI/tools.py`
+**Purpose:** Agent-accessible file system tools.
+*   `execute_read_file()`: Reads file content with intelligent truncation.
+*   `execute_replace_in_file()`: Performs atomic, exact-match string replacements.
+*   `execute_list_directory()`: Standard directory traversal.
+*   `execute_grep_docs()`: High-performance keyword search through the `docs/` folder.
 
-## 5. `TUI/utils.py`
-**Purpose:** Helper functions for environment discovery.
+## 4. Definitions & Utilities
+### `TUI/command_definitions.py`
+**Purpose:** Structured registry for valid F' commands and known error patterns.
+*   `COMMAND_REGISTRY`: Defines safe arguments and required files for utilities.
+*   `ERROR_FINGERPRINTS`: Regex-based database of known F' errors and their recovery hints.
+*   `SLASH_COMMANDS`: Registry for TUI-level fast-path commands.
 
-**Key Components:**
-*   `find_fprime_venv()`: Traverses the directory tree upwards from a starting path (defaulting to the current working directory) to locate the active `fprime-venv` directory needed to run F' builds.
-
-## 6. `TUI/widgets.py`
-**Purpose:** Custom UI components built on top of Textual.
-
-**Key Components:**
-*   `FadingScrollContainer`: A specialized `VerticalScroll` container that watches scroll offset events to dynamically hide the scrollbar when inactive, providing a cleaner, more immersive terminal experience.
+### `TUI/utils.py`
+**Purpose:** Helper functions for path resolution and environment discovery.

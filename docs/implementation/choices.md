@@ -25,3 +25,11 @@ This document outlines the reasoning behind key technical decisions made during 
 ## 5. Wrapper Script Directory Resolution
 **Choice:** The `fprime-tui` bash entry script explicitly saves the caller's working directory (`ORIGINAL_DIR`), locates its own virtual environment to launch python, and then `cd`s back to `ORIGINAL_DIR` before running the TUI.
 **Rationale:** The AI needs contextual awareness of the F' project the user is currently working in. If the python script launched from the tool's installation directory, it would fail to find the project's `fprime-venv` or local files. Resolving the execution path dynamically allows the tool to be symlinked globally (`/usr/local/bin/fprime-tui`) and used in any arbitrary project folder.
+
+## 6. Modular "Brain" (Controllers)
+**Choice:** Moving logic out of `app.py` and into specialized controllers (`AIHandler`, `CommandGuard`, `MissionController`).
+**Rationale:** In v1, `app.py` became a "God Object" managing both UI state and complex ReAct loop logic. Modularizing these concerns makes the codebase easier to test (allowing deterministic unit tests for the Guard and Parser without a full UI) and allows for more complex autonomous behaviors (like the recovery hierarchy) to be implemented cleanly.
+
+## 7. Automated Command Repair
+**Choice:** Intercepting and fixing AI tool calls before they are executed, rather than just reporting errors.
+**Rationale:** LLMs often hallucinate FPP-specific tools (like `fpp-generate`) or forget to set the correct working directory. By automatically repairing these common mistakes (e.g., redirecting `fpp-generate` to `fprime-util new`), we reduce the number of ReAct turns required to achieve a goal, making the agent feel significantly faster and more competent.

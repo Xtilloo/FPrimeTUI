@@ -29,12 +29,16 @@ F-Prime-TUI, also known as **Mission Control**, is a Terminal User Interface (TU
 ### Key Technologies
 - **TUI Framework:** [Textual](https://textual.textualize.io/) (Async, CSS-driven)
 - **Formatting:** [Rich](https://rich.readthedocs.io/) for terminal styling
-- **AI Backend:** [Ollama](https://ollama.com/) (defaulting to `qwen3:8b`)
+- **AI Backend:** [Ollama](https://ollama.com/) (Optimized for `glm-4.7-flash` or `qwen3:8b`)
 - **Integration:** `ollama-python` for async LLM communication
 
-### Architecture
+### Architecture (Mission Control v2)
 See `docs/implementation/` for deep-dive architecture, software design documents, and technical rationale.
-- `TUI/app.py`: The main entry point and UI ReAct loop manager.
+- `TUI/app.py`: The main entry point and UI layout manager.
+- `TUI/controllers/`: Specialized logic for autonomous operation.
+    - `ai_handler.py`: Manages the AI interaction loop, streaming, and tool parsing.
+    - `command_guard.py`: Intercepts, validates, and **repairs** AI tool calls for F' command syntax.
+    - `mission.py`: Manages the autonomous lifecycle and progressive failure recovery hierarchy.
 - `TUI/fprime_ai_client.py`: Asynchronous client for interacting with the local Ollama instance.
 - `TUI/tools.py` & `TUI/shell.py`: The execution layer for file I/O and F' environment commands.
 
@@ -44,12 +48,12 @@ See `docs/implementation/` for deep-dive architecture, software design documents
 
 ### Prerequisites
 - Python 3.9+
-- A running [Ollama](https://ollama.com/) instance with `qwen3:8b` pulled.
+- A running [Ollama](https://ollama.com/) instance with the configured model pulled.
 
 ### Commands
 All primary actions are managed via the `Makefile`:
 - `make install`: Create venv and install requirements.
-- `make test`: Run syntax and module import validations.
+- `make test`: Run the full deterministic test suite.
 - `make alias`: Symlink the launch script globally.
 
 ---
@@ -58,7 +62,7 @@ All primary actions are managed via the `Makefile`:
 
 ### Coding Style
 - **Asynchronous Execution:** The TUI and AI client are fully asynchronous. Use `async/await` and Textual's `@work` or `run_worker` for non-blocking operations. NEVER use synchronous `time.sleep()` or blocking I/O on the main thread.
-- **Styling:** Follow the **JPL F' Theme**. Use space/Mars-themed colors (deep space greys, NASA blues, Mars reds). 
+- **Styling:** Follow the **JPL F' Theme**. Use space/Mars-themed colors.
 - **Context Awareness:** The AI assistant uses `@filename` mentions to inject local file content into the prompt context.
 
 ### The Human-In-The-Loop (HITL) Rule
@@ -67,63 +71,36 @@ Any tool or action that modifies the user's file system or F' project state **MU
 ---
 
 ## 🧪 Testing Strategy
-The project employs a robust, deterministic testing suite to ensure UI stability, tool correctness, and AI reliability without requiring a live Ollama server or F' installation.
+The project employs a robust, deterministic testing suite to ensure UI stability, tool correctness, and AI reliability.
 
 ### 1. Mocking the Brain
-- **`MockAIClient`:** Inherits from `FPrimeAIClient` and uses an internal queue to yield predefined token chunks. This makes UI tests 100% deterministic and removes external API dependencies.
+- **`MockAIClient`:** Inherits from `FPrimeAIClient` and uses an internal queue to yield predefined token chunks. 
 - **Auto-Patching:** `conftest.py` automatically replaces the real AI client with the mock version for all tests.
 
 ### 2. UI Pilot Testing
-- **Input Simulation:** The `submit_query` helper reliably simulates user interaction by clicking the input widget, typing text, and manually triggering the Enter key event to bypass event-loop race conditions.
-- **Workflow Verification:** Tests cover complex flows including:
-    - **HITL Approval:** Simulating the full request -> diff display -> user approval (1/2) -> tool execution cycle.
-    - **Autocomplete:** Verifying that typing `/` triggers suggestions and `Tab` or `Enter` applies them correctly.
-    - **Worker Cancellation:** Ensuring `Ctrl+C` successfully stops the active AI worker and restores TUI state.
+- **Input Simulation:** The `submit_query` helper reliably simulates user interaction.
+- **Workflow Verification:** Tests cover complex flows including HITL Approval, Autocomplete, and recovery scenarios.
 
 ### 3. Tool & Shell Validation
-- **Edge Case Coverage:** Verifies truncation of oversized files in `read_file` and handles command timeouts in `run_fprime_command`.
-- **Environment Discovery:** Tests `find_fprime_venv` with both absolute and relative paths to ensure the AI can always locate the project environment.
+- **Edge Case Coverage:** Verifies truncation of oversized files and handles command timeouts.
+- **Environment Discovery:** Ensures the AI can locate the project environment and virtual environment.
 
 ### 4. Golden File Testing
-- **Visual Consistency:** Compares the final state of the `chat_history` against reference Markdown files (`tests/golden_files/`). This catches formatting regressions and accidental UI changes in the conversational output.
+- **Visual Consistency:** Compares the final state of the `chat_history` against reference Markdown files (`tests/golden_files/`).
 
-### 5. Headless Missions (Live Pilot)
-- **Reality Verification:** Uses `scripts/live_test.py` to fly the TUI against a **real local Ollama instance**.
-- **Bridging the Gap:** This ensures the `CommandGuard` and `MissionController` correctly handle real-world LLM hallucinations and environmental errors without manual TUI interaction.
-- **Workflow:** See `docs/11-Live-Pilot-Testing.md` for execution instructions.
+### 5. Regression Testing
+- **Core Mandates:** `tests/test_regressions.py` enforces that critical features like slash-command bypass, `@file` context, and autocomplete remain functional.
 
-### 6. Running Tests
-Execute the full suite via the Makefile:
-```bash
-make test
-```
-This runs `pytest` on the `tests/` directory with `PYTHONPATH` correctly configured.
+### 6. Headless Missions (Live Pilot)
+- **Reality Verification:** Uses `scripts/live_test.py` to fly the TUI against a **real local Ollama instance** to verify end-to-end mission success.
 
 ---
 
 ## Troubleshooting & Post-Mortem
 
-### Textual UI Rendering & Modals
-- **The "No 'code_inline' key" Crash:** Do not use `push_screen()` to overlay modals while an async worker is updating the main screen's Markdown DOM. This causes a race condition where the styling engine gets lost. Use conversational inline prompts instead.
-- **Scroll Freezing:** Calling `scroll_end(animate=False)` on every single token chunk during an AI generation fights the user's manual scroll wheel and causes the UI to freeze.
+### Textual UI Rendering
 - **Layout Collapse:** `1fr` containers require a clear vertical context. Always set `layout: vertical;` on the `Screen` in `.tcss`.
-
-### Markdown Styling & UI Consistency (Textual 0.85+)
-To maintain the **JPL Mars Theme** and prevent default Textual highlights (like the teal "accent" on focused blocks):
-- **Disable Focus:** Set `can_focus = False` on the `Markdown` widget in Python to prevent the TUI from highlighting blocks during navigation.
-- **Disable Indent Guides:** Set `code_indent_guides = False` to remove syntax-highlighter vertical lines that often inherit the default theme's accent color.
-- **Target Sub-Widgets:** Use TCSS type selectors for the Markdown implementation:
-    - `MarkdownH1` through `MarkdownH6` for headers.
-    - `MarkdownFence` for code blocks.
-    - `MarkdownBlockQuote` for blockquotes.
-- **Override Syntax Highlighting:** To force a specific color scheme on generated code, use the wild-card selector within a fence:
-  ```css
-  MarkdownFence * {
-      color: #f5f5f5 !important;
-      background: transparent !important;
-  }
-  ```
-- **Component Classes:** Use `.markdown--code_inline` for inline code segments rather than the generic `code` tag.
+- **Throttling Updates:** AI token streaming should be throttled (e.g., every 0.05s) to avoid UI freezing.
 
 ### Pathing & Portability
-- **Wrapper Script Working Directory:** The `fprime-tui` bash wrapper MUST save the caller's working directory (`ORIGINAL_DIR`), locate its own `venv` to launch python, and then `cd` back to `ORIGINAL_DIR` before running `app.py`. This ensures dynamic environment discovery (`fprime-venv`) works properly based on where the user *is*, not where the tool is installed.
+- **Wrapper Script:** The `fprime-tui` bash wrapper saves the caller's working directory (`ORIGINAL_DIR`) to ensure dynamic environment discovery works based on where the user *is*.

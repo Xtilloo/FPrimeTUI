@@ -67,6 +67,33 @@ Runs a wizard (or accepts flags) to create new objects in F'.
 
 ---
 
+## The `fprime-cli` Command (GDS)
+
+Used for interacting with a running F' system via the Ground Data System (GDS).
+
+### Common Commands
+*   `channels`: Receives telemetry data (channels) from the GDS.
+*   `events`: Receives events data from the GDS.
+*   `command-send`: Sends commands to the flight software through the GDS.
+
+### Examples
+**Monitor Telemetry Channels**
+```bash
+fprime-cli channels
+```
+
+**List Available Commands**
+```bash
+fprime-cli command-send --list
+```
+
+**Send a Command**
+```bash
+fprime-cli command-send <component>.<command> --arguments <arg1> <arg2>
+```
+
+---
+
 ### COMMAND REFERENCE (AI Guidance Map)
 - **Intent:** Create a new component
   **Command:** `fprime-util new --component`
@@ -84,3 +111,9 @@ Runs a wizard (or accepts flags) to create new objects in F'.
   **Command:** `fprime-util purge`
 - **Intent:** Visualize FPP model
   **Command:** `fprime-util visualize`
+- **Intent:** Monitor telemetry
+  **Command:** `fprime-cli channels`
+- **Intent:** Monitor events
+  **Command:** `fprime-cli events`
+- **Intent:** Send GDS command
+  **Command:** `fprime-cli command-send`
