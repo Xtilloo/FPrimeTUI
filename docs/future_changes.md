@@ -11,4 +11,9 @@
     - Fix the appearance of the scrollbar to make it less intrusive and cleaner.
     - Change the main application background color from harsh black to a softer dark grey.
 
-    8. **Enhanced Flight Plan Visualization**: Currently, Flight Plans are rendered as standard Markdown headers with an emoji. In the future, this should be a specialized UI widget (e.g., a side-panel checklist or a collapsible tree) that updates in real-time as the agent completes each step.
+8. **Enhanced Flight Plan Visualization**: Currently, Flight Plans are rendered as standard Markdown headers with an emoji. In the future, this should be a specialized UI widget (e.g., a side-panel checklist or a collapsible tree) that updates in real-time as the agent completes each step.
+
+9. **Visual Diffs**: Enhance HITL approval for `replace_in_file` and `write_file` by showing a colored unified diff or preview in the chat history.
+10. **Project-Specific Autocomplete**: Extend autocomplete to suggest component names and deployment folders by scanning the project tree on startup.
+11. **Token Usage Tracking**: Add a footer widget to track estimated cost/tokens used in the current mission.
+12. **Improved CWD Awareness**: Enhance `CommandGuard.repair` to automatically find the correct component folder if a command fails due to being in the wrong directory.

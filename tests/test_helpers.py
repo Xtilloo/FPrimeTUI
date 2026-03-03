@@ -40,6 +40,8 @@ class MockAIClient(FPrimeAIClient):
         self.chat_history = []
         self.responses: asyncio.Queue[List[str]] = asyncio.Queue()
         self.stream_chat_calls = []
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
 
     def add_message(self, role: str, content: str):
         """Adds a message to the internal chat history."""

@@ -1,17 +1,17 @@
 /* F-Prime Mission Control - JPL/NASA Theme */
 
 Screen {
-    background: #121212;
+    background: #1e1e1e;
     color: #F5F5F5;
     layout: vertical;
 }
 
 #chat-container {
     height: 1fr;
-    background: #121212;
+    background: #1e1e1e;
     overflow-y: scroll;
     padding: 1 2;
-    scrollbar-color: #34495e;
+    scrollbar-color: #333333;
     scrollbar-color-hover: #e67e22;
     scrollbar-color-active: #e67e22;
 }
@@ -19,9 +19,9 @@ Screen {
 #input-area {
     dock: bottom;
     height: auto;
-    margin: 0 1 1 1;
+    margin: 0;
     border-top: solid #333333;
-    background: #1a1a1a;
+    background: #252525;
 }
 
 #input-container {
@@ -39,9 +39,11 @@ Screen {
 }
 
 #ai-input {
-    background: #1a1a1a;
+    background: #252525;
     border: none;
-    height: 5;
+    min-height: 3;
+    max-height: 10;
+    height: auto;
     padding: 0 1;
     color: #ffffff;
     width: 1fr;
@@ -53,13 +55,13 @@ Screen {
 
 #thinking-indicator {
     height: 1;
-    color: #e67e22;
+    color: #3498db; /* NASA Blue */
     margin: 0 1;
     display: none;
 }
 
 #autocomplete-list {
-    background: #1a1a1a;
+    background: #252525;
     border: solid #e67e22;
     height: 10;
     display: none;
@@ -68,7 +70,7 @@ Screen {
 
 /* Chat turn headers - Full width bars */
 .chat-header {
-    background: #1a1a1a;
+    background: #252525;
     color: #e67e22;
     text-style: bold;
     padding: 0 1;
@@ -109,7 +111,7 @@ MarkdownH1, MarkdownH2, MarkdownH3, MarkdownH4, MarkdownH5, MarkdownH6 {
 
 /* --- Code Blocks (User Fixed) --- */
 MarkdownFence {
-    background: #1a1a1a !important;
+    background: #252525 !important;
     border-left: solid #e67e22 !important;
     margin: 1 0;
     padding: 1 2;
@@ -117,7 +119,7 @@ MarkdownFence {
 }
 
 MarkdownFence:focus {
-    background: #1a1a1a !important;
+    background: #252525 !important;
 }
 
 /* This targets the actual lines of code rendered inside the fence */
@@ -135,7 +137,7 @@ MarkdownFence * {
 /* Inline code styling */
 .markdown--code_inline, .markdown--inline-code {
     background: #3c3c3c !important;
-    color: #e67e22 !important;
+    color: #3498db !important; /* NASA Blue */
     text-style: bold;
 }
 
@@ -146,7 +148,7 @@ MarkdownBlockQuote, MarkdownBullet, .markdown--strong, .markdown--em, .markdown-
 
 MarkdownBlockQuote {
     border-left: solid #e67e22 !important;
-    background: #1a1a1a !important;
+    background: #252525 !important;
     margin: 1 0;
     padding: 0 1;
 }

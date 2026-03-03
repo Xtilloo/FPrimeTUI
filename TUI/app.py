@@ -3,13 +3,14 @@ import os
 import time
 import json
 import asyncio
+import difflib
 from pathlib import Path
 from typing import Optional, Dict, Any, Callable
 
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.containers import Vertical, Horizontal
-from textual.widgets import Markdown, TextArea, OptionList, LoadingIndicator, Static
+from textual.widgets import Markdown, TextArea, OptionList, LoadingIndicator, Static, Footer
 from textual.widgets.option_list import Option
 from textual.events import Key
 
@@ -26,11 +27,15 @@ from .fprime_ai_client import FPrimeAIClient
 from .widgets import FadingScrollContainer
 from .shell import run_fprime_command, check_environment, get_project_settings
 from .utils import find_fprime_venv
+<<<<<<< HEAD
 from .tools import execute_read_file, execute_replace_in_file, execute_list_directory, execute_grep_docs
 <<<<<<< HEAD
 from .command_definitions import COMMAND_REGISTRY
 >>>>>>> b7bb4f7 (feat: (WIP) Mission Control v2 - Modular Autonomous Loop & Self-Correcting Help System)
 =======
+=======
+from .tools import execute_read_file, execute_write_file, execute_replace_in_file, execute_list_directory, execute_grep_docs
+>>>>>>> 72e5843 (feat: implement Mission Control v2 enhancements and autonomous toolkit)
 from .command_definitions import COMMAND_REGISTRY, SLASH_COMMANDS
 >>>>>>> 6636b14 (perf: optimize TUI logic and centralize command definitions)
 
@@ -60,6 +65,7 @@ class FPrimeTUI(App):
         ("ctrl+c", "cancel_generation", "Cancel"),
         ("ctrl+l", "clear_chat", "Clear"),
         ("ctrl+k", "clear_input", "Clear Input"),
+        ("ctrl+t", "toggle_agent_thoughts", "Toggle Thoughts"),
     ]
 
     def __init__(self):
@@ -89,6 +95,7 @@ class FPrimeTUI(App):
         self.turn_buffer = "" 
         self.last_update_time = 0
         self.is_generating = False
+        self.project_components = []
 
     def compose(self) -> ComposeResult:
         with FadingScrollContainer(id="chat-container"):
@@ -99,6 +106,7 @@ class FPrimeTUI(App):
             with Horizontal(id="input-container"):
                 yield Static(FPRIME_LOGO, id="prompt-label")
                 yield CommandInput(id="ai-input")
+        yield Footer()
 
     async def on_mount(self) -> None:
         self.query_one("#ai-input").focus()
@@ -124,6 +132,16 @@ class FPrimeTUI(App):
         """Silently gathers project context for the AI handler."""
         venv = find_fprime_venv()
         if not venv: return
+
+        # Scan for components
+        try:
+            for d in ["Components", "Deployments"]:
+                p = Path(os.getcwd()) / d
+                if p.exists() and p.is_dir():
+                    for sub in p.iterdir():
+                        if sub.is_dir():
+                            self.project_components.append((sub.name, f"{d[:-1]}: {sub.name}"))
+        except: pass
 
         ver_res = await run_fprime_command("version", venv_path=venv)
         help_res = await run_fprime_command("--help", venv_path=venv)
@@ -192,7 +210,10 @@ class FPrimeTUI(App):
         
         if approved:
             await self._mount_user_turn("Approved")
-            result_text = await execute_replace_in_file(tool_json.get("path"), tool_json.get("old_content"), tool_json.get("new_content"))
+            if tool_json.get("tool_name") == "write_file":
+                result_text = await execute_write_file(tool_json.get("path"), tool_json.get("content"))
+            else:
+                result_text = await execute_replace_in_file(tool_json.get("path"), tool_json.get("old_content"), tool_json.get("new_content"))
         else:
             await self._mount_user_turn("Declined")
             result_text = "User rejected the edit."
@@ -360,6 +381,8 @@ class FPrimeTUI(App):
         except Exception as e:
             full_res += f"\n\n> **[AI ERROR]: {e}**"
 
+        self.sub_title = f"Tokens - Prompt: {self.ai_client.total_prompt_tokens} | Completion: {self.ai_client.total_completion_tokens}"
+
         display_text = full_res.replace("### FLIGHT PLAN", "\n\n## ✈️ FLIGHT PLAN")
         tool_json = self.ai_handler.parse_tool_call(text=full_res)
         
@@ -396,6 +419,7 @@ class FPrimeTUI(App):
         actions = {
             "run_fprime_command": lambda t: f"{t.get('executable', 'fprime-util')} {t.get('command', '')} {t.get('args', '')}".strip(),
             "read_file": lambda t: f"Reading {os.path.basename(t.get('path') or t.get('args', 'unknown'))}",
+            "write_file": lambda t: f"Writing {os.path.basename(t.get('path', 'unknown'))}",
             "list_directory": lambda t: f"Listing {t.get('path') or t.get('args') or t.get('cwd', '.')}",
             "replace_in_file": lambda t: f"Updating {os.path.basename(t.get('path', 'unknown'))}",
             "check_environment": lambda t: f"Probing environment in {t.get('cwd', '.')}",
@@ -410,9 +434,20 @@ class FPrimeTUI(App):
         self.last_status_tag = pending_tag
         self.last_status_complete = f"\n\n> *[{status_msg} COMPLETE]*\n"
 
-        if tool_name == "replace_in_file":
+        if tool_name in ["replace_in_file", "write_file"]:
             self.pending_action = tool_json
-            self._add_to_chat_history(f"\n\n**Action Required:** AI wants to modify `{os.path.basename(tool_json.get('path', ''))}`.\nDo you approve? (1: Approve, 2: Decline)\n", is_agent_thought=False)
+            action_verb = "modify" if tool_name == "replace_in_file" else "create/overwrite"
+            
+            diff_text = ""
+            if tool_name == "replace_in_file":
+                old_lines = tool_json.get("old_content", "").splitlines(keepends=True)
+                new_lines = tool_json.get("new_content", "").splitlines(keepends=True)
+                diff = list(difflib.unified_diff(old_lines, new_lines, fromfile="Current", tofile="Proposed", n=3))
+                if diff: diff_text = "\n```diff\n" + "".join(diff) + "\n```\n"
+            elif tool_name == "write_file":
+                diff_text = "\n```text\n" + str(tool_json.get("content", ""))[:1000] + ("\n...[TRUNCATED]" if len(str(tool_json.get("content", ""))) > 1000 else "") + "\n```\n"
+
+            self._add_to_chat_history(f"\n\n**Action Required:** AI wants to {action_verb} `{os.path.basename(tool_json.get('path', ''))}`.\n{diff_text}Do you approve? (1: Approve, 2: Decline)\n", is_agent_thought=False)
             self._re_enable_input(); return
             
         result_text = ""
@@ -455,7 +490,7 @@ class FPrimeTUI(App):
         if not success:
             prompt_msg = f"SYSTEM: Tool execution FAILED.\n\nTOOL RESULT:\n{result_text}\n\n{self.mission_controller.get_recovery_directive(tool_json)}"
         else:
-            prompt_msg = f"SYSTEM: Tool execution SUCCESSFUL.\n\nTOOL RESULT:\n{result_text}\n\nINSTRUCTION: Continue with Flight Plan. If finished, summarize."
+            prompt_msg = f"SYSTEM: Tool execution SUCCESSFUL.\n\nTOOL RESULT:\n{result_text}\n\nINSTRUCTION: Briefly summarize this result in 1-2 sentences. Then, continue with the next step of your Flight Plan. If finished, say so."
 
         self.ai_handler.add_message("user", prompt_msg)
         if self.mission_controller.state["recovery_phase"] == "fatigue":
@@ -513,6 +548,11 @@ class FPrimeTUI(App):
         self.query_one("#ai-input", CommandInput).text = ""
         self.query_one("#autocomplete-list").display = False
 
+    def action_toggle_agent_thoughts(self) -> None:
+        self._show_agent_thoughts = not self._show_agent_thoughts
+        state = "shown" if self._show_agent_thoughts else "hidden"
+        self.notify(f"Agent thoughts are now {state} for future turns.")
+
     def _scroll_to_end_if_at_bottom(self) -> None:
         containers = self.query("#chat-container")
         if not containers: return
@@ -540,6 +580,7 @@ class FPrimeTUI(App):
         elif last_part.startswith("/"): self._update_suggestions(last_part[1:], SLASH_COMMANDS, "/")
 >>>>>>> 6636b14 (perf: optimize TUI logic and centralize command definitions)
         elif last_part.startswith("@"): self._update_suggestions(last_part[1:], self._get_file_suggestions(last_part[1:]), "@")
+        elif last_part.startswith("#"): self._update_suggestions(last_part[1:], self.project_components, "#")
         else: self.query_one("#autocomplete-list").display = False
 
     def _get_file_suggestions(self, partial: str):

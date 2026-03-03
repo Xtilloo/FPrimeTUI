@@ -11,6 +11,8 @@ class FPrimeAIClient:
         self.mode = mode
         self.client = ollama.AsyncClient()
         self.chat_history = []
+        self.total_prompt_tokens = 0
+        self.total_completion_tokens = 0
 
     def _get_system_prompt(self, context: str = "") -> str:
         if self.mode == TUIMode.MISSION_CONTROL:
@@ -100,4 +102,7 @@ class FPrimeAIClient:
             messages=messages,
             stream=True,
         ):
+            if chunk.get('done'):
+                self.total_prompt_tokens += chunk.get('prompt_eval_count', 0)
+                self.total_completion_tokens += chunk.get('eval_count', 0)
             yield chunk['message']['content']

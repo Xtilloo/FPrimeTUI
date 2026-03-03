@@ -37,6 +37,17 @@ async def execute_replace_in_file(path: str, old_content: str, new_content: str)
     except Exception as e:
         return f"Error modifying file: {str(e)}"
 
+async def execute_write_file(path: str, content: str) -> str:
+    """
+    Creates or overwrites a file with the given content.
+    """
+    try:
+        async with aiofiles.open(path, mode='w') as f:
+            await f.write(content)
+        return f"File '{os.path.basename(path)}' written successfully."
+    except Exception as e:
+        return f"Error writing file: {str(e)}"
+
 async def execute_list_directory(path: str) -> str:
     if not os.path.exists(path):
          return f"Error: Directory {path} not found."

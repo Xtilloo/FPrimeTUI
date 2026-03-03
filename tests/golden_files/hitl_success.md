@@ -10,6 +10,13 @@ I will replace the content.
 
 
 **Action Required:** AI wants to modify `test.txt`.
+
+```diff
+--- Current
++++ Proposed
+@@ -1 +1 @@
+-Hello+Goodbye
+```
 Do you approve? (1: Approve, 2: Decline)
 
 

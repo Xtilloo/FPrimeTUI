@@ -79,6 +79,18 @@ class CommandGuard:
                         new_json["cwd"] = root_rel
                         repaired = True
 
+        # Repair 5: Auto-discover missing directories (e.g. AI guesses 'GpsComponent' but it's in 'Components/GpsComponent')
+        if tool_name == "run_fprime_command" and cwd not in [".", "./"] and not Path(cwd).exists():
+            target_name = os.path.basename(cwd.rstrip("/"))
+            search_root = mission_state.discovered_project_root if mission_state and mission_state.discovered_project_root else os.getcwd()
+            for root, dirs, files in os.walk(search_root):
+                # Ignore build caches and git
+                if ".git" in root or "build-fprime" in root: continue
+                if target_name in dirs:
+                    new_json["cwd"] = os.path.relpath(os.path.join(root, target_name), os.getcwd())
+                    repaired = True
+                    break
+
         return new_json if repaired else None
 
     def validate(self, tool_json: dict, mission_state) -> Tuple[bool, Optional[str]]:
