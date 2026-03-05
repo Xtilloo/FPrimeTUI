@@ -15,9 +15,18 @@ dummy_project/
 # Logs and Textual 
 *.log
 textual.log
+**/logs/
+
+# Build Artifacts
+build-fprime-automatic-*/
+bin/
 
 # IDEs and OS Files
 .vscode/
 .idea/
 .DS_Store
 *.swp
+
+# Gemini CLI Skills & Assets
+.gemini/
+*.skill
