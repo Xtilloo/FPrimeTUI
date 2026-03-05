@@ -49,7 +49,7 @@ class FPrimeTUI(App):
 
     def __init__(self):
         super().__init__()
-        self.mode = TUIMode.MISSION_CONTROL
+        self.mode = TUIMode.ACADEMY
         self.ai_client = FPrimeAIClient(mode=self.mode)
         self.chat_history = ""
         self.query_history = []
