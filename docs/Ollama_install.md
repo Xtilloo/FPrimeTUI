@@ -22,10 +22,15 @@ Follow these steps to ensure your environment is setup correctly:
 
 ### 2. Pull the model
 
-We use `Qwen3:8b` for its reasoning capabilities and FPP syntax accuracy.
+Selection of the correct model is critical for performance and reasoning accuracy. Choose a model based on your system's available **VRAM** (Video RAM):
 
-Run: 
-```ollama pull qwen3:8b```
+| Hardware / VRAM | Recommended Model | Command |
+| :--- | :--- | :--- |
+| **High Performance (12GB+ VRAM)** | `glm-4.7-flash:latest` | `ollama pull glm-4.7-flash:latest` |
+| **Standard (8GB VRAM)** | `qwen3:8b` | `ollama pull qwen3:8b` |
+| **Budget / Integrated (4GB-6GB VRAM)** | `phi3:mini` | `ollama pull phi3:mini` |
+
+*Note: For the best balance of F' domain knowledge and speed, `qwen3:8b` is the default recommendation.*
 
 ### 3. Python Integration
 

@@ -1,4 +1,4 @@
-# F-Prime-TUI (Mission Control)
+# <img src="FPrimeLogo.png" alt="F' Logo" width="100"/> F-Prime-TUI (Mission Control)
 
 A high-performance, asynchronous Terminal User Interface (TUI) for NASA F' (F Prime) v4.0 development. 
 
