@@ -1,6 +1,6 @@
 import ollama
 from typing import AsyncGenerator
-from command_definitions import TUIMode
+from TUI.command_definitions import TUIMode
 
 class FPrimeAIClient:
     """

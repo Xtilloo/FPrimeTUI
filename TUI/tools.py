@@ -93,7 +93,7 @@ async def execute_create_component(data: dict) -> str:
     Executes fprime-util new --component with non-interactive piped input.
     Ensures the command is run from the correct directory.
     """
-    from .shell import run_fprime_command
+    from TUI.shell import run_fprime_command
     
     name = data.get("name", "MyComponent")
     desc = data.get("desc", "F' Component")

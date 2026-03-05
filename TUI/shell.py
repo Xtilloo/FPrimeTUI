@@ -3,7 +3,7 @@ import re
 import os
 import signal
 from pathlib import Path
-from .command_definitions import ERROR_FINGERPRINTS
+from TUI.command_definitions import ERROR_FINGERPRINTS
 
 # Track the currently active subprocess for cancellation
 _active_process = None
@@ -11,7 +11,7 @@ _active_process = None
 async def run_fprime_command(command: str, args: str = "", cwd: str = ".", timeout: int = 300, executable: str = "fprime-util", venv_path: Path = None) -> dict:
     """Executes an F' command with automatic venv activation and process tracking."""
     global _active_process
-    from .utils import find_fprime_venv
+    from TUI.utils import find_fprime_venv
     
     actual_venv = venv_path
     if not actual_venv or not (actual_venv / "bin" / "activate").exists():
@@ -106,7 +106,7 @@ def fingerprint_error(output: str) -> str:
 
 async def check_environment(cwd: str = ".") -> dict:
     """Probe the environment for dependencies, including fprime-venv activation."""
-    from .utils import find_fprime_venv
+    from TUI.utils import find_fprime_venv
     
     venv_path = find_fprime_venv(Path(cwd))
     if not venv_path:

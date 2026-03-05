@@ -32,6 +32,9 @@ COMMANDS = [
     CommandMetadata("/hash-to-file", "Convert FW_ASSERT hash to path", {TUIMode.MISSION_CONTROL}),
     CommandMetadata("/new", "Generate a new fprime object (component, deployment, etc.)", {TUIMode.MISSION_CONTROL}),
     CommandMetadata("/format", "Format C/C++ files using clang-format", {TUIMode.MISSION_CONTROL}),
+    CommandMetadata("/channels", "GDS: Monitor telemetry channels", {TUIMode.MISSION_CONTROL}),
+    CommandMetadata("/events", "GDS: Monitor events data", {TUIMode.MISSION_CONTROL}),
+    CommandMetadata("/command-send", "GDS: Send commands to flight software", {TUIMode.MISSION_CONTROL}),
 ]
 
 """
@@ -97,25 +100,6 @@ COMMAND_REGISTRY = {
         "description": "GDS: Send commands to flight software.",
     }
 }
-
-SLASH_COMMANDS = [
-    ("/clear", "Clear chat history"),
-    ("/help", "Show help documentation"),
-    ("/exit", "Exit Mission Control"),
-    ("/build", "Build components, deployments, and unit tests"),
-    ("/check", "Run unit tests with optional test coverage"),
-    ("/generate", "Generate build caches"),
-    ("/purge", "Remove build caches"),
-    ("/fpp-check", "Run fpp-check utility"),
-    ("/fpp-to-dict", "Run fpp-to-dict utility"),
-    ("/visualize", "Visualize FPP model in web GUI"),
-    ("/impl", "Generate implementation templates"),
-    ("/hash-to-file", "Convert FW_ASSERT hash to path"),
-    ("/info", "Print contextual target and cache info"),
-    ("/version-check", "Print toolchain versions"),
-    ("/new", "Generate a new fprime object (component, deployment, etc.)"),
-    ("/format", "Format C/C++ files using clang-format"),
-]
 
 ERROR_FINGERPRINTS = [
     {
