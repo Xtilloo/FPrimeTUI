@@ -68,7 +68,9 @@ async def test_verify_json_tool_hiding_but_code_preservation(mock_ai_client):
     await mock_ai_client.queue_response(["Tool call finished."])
 
     async with app.run_test() as pilot:
+        await pilot.wait_for_scheduled_animations()
         await pilot.pause(0.5)
+        await app._mount_ai_turn("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.")
         
         # Trigger the first stream
         await submit_query(pilot, app, "Read the file and show example.")

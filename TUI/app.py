@@ -14,6 +14,7 @@ from textual.widgets.option_list import Option
 from textual.events import Key
 
 from fprime_ai_client import FPrimeAIClient
+from command_definitions import TUIMode, COMMANDS
 from widgets import FadingScrollContainer
 from shell import run_fprime_command
 from utils import find_fprime_venv, escape_markdown
@@ -24,25 +25,6 @@ from tools import execute_read_file, execute_replace_in_file, execute_list_direc
 #  ▌ """
 
 FPRIME_LOGO = ">"
-
-COMMANDS = [
-    ("/clear", "Clear chat history"),
-    ("/help", "Show help documentation"),
-    ("/exit", "Exit Mission Control"),
-    ("/build", "Build components, deployments, and unit tests"),
-    ("/check", "Run unit tests with optional test coverage"),
-    ("/generate", "Generate build caches"),
-    ("/purge", "Remove build caches"),
-    ("/fpp-check", "Run fpp-check utility"),
-    ("/fpp-to-dict", "Run fpp-to-dict utility"),
-    ("/visualize", "Visualize FPP model in web GUI"),
-    ("/impl", "Generate implementation templates"),
-    ("/hash-to-file", "Convert FW_ASSERT hash to path"),
-    ("/info", "Print contextual target and cache info"),
-    ("/version-check", "Print toolchain versions"),
-    ("/new", "Generate a new fprime object (component, deployment, etc.)"),
-    ("/format", "Format C/C++ files using clang-format"),
-]
 
 class CommandInput(TextArea):
     """A TextArea specifically tuned for command entry."""
@@ -67,7 +49,8 @@ class FPrimeTUI(App):
 
     def __init__(self):
         super().__init__()
-        self.ai_client = FPrimeAIClient()
+        self.mode = TUIMode.MISSION_CONTROL
+        self.ai_client = FPrimeAIClient(mode=self.mode)
         self.chat_history = ""
         self.query_history = []
         self.history_index = -1
@@ -95,7 +78,9 @@ class FPrimeTUI(App):
     async def on_mount(self) -> None:
         self.query_one("#ai-input").focus()
         self.query_one("#thinking-indicator").display = False
-        container = self.query_one("#chat-container")
+        containers = self.query("#chat-container")
+        if not containers: return
+        container = containers[0]
         # Direct mount for status to avoid turn logic overhead at boot
         status_md = Markdown("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.", classes="ai-response")
         status_md.can_focus = False
@@ -191,9 +176,45 @@ class FPrimeTUI(App):
 
     async def _handle_slash_command(self, user_query: str):
         self.tool_call_depth = 0
+        cmd_name = user_query.split(" ")[0]
+        
+        # Find command metadata
+        cmd_meta = next((c for c in COMMANDS if c.name == cmd_name), None)
+        if not cmd_meta:
+            self._add_to_chat_history(f"\n\n**[SYSTEM]: Unknown command '{cmd_name}'.**\n")
+            return
+
+        # Check mode
+        if self.mode not in cmd_meta.allowed_modes:
+            allowed = ", ".join([m.value for m in cmd_meta.allowed_modes])
+            self._add_to_chat_history(f"\n\n**[SYSTEM]: Command '{cmd_name}' is not available in {self.mode.value} mode. (Allowed in: {allowed})**\n")
+            return
+
         if user_query.startswith("/clear"):
             self.action_clear_chat(); self.query_one("#ai-input", CommandInput).text = ""; return
         elif user_query.startswith("/exit"): self.exit(); return
+        elif user_query.startswith("/mode"):
+            parts = user_query.split(" ")
+            if len(parts) > 1:
+                new_mode_str = parts[1].lower()
+                if new_mode_str in ["dev", "mission_control"]:
+                    self.mode = TUIMode.MISSION_CONTROL
+                elif new_mode_str in ["academy", "learning"]:
+                    self.mode = TUIMode.ACADEMY
+                else:
+                    self._add_to_chat_history(f"\n\n**[SYSTEM]: Invalid mode '{new_mode_str}'. Use 'dev' or 'academy'.**\n")
+                    return
+                
+                self.ai_client.mode = self.mode
+                mode_title = "MISSION CONTROL" if self.mode == TUIMode.MISSION_CONTROL else "F' ACADEMY"
+                self.TITLE = f"F-PRIME {mode_title}"
+                self._add_to_chat_history(f"\n\n**[SYSTEM]: Switched to {mode_title} mode.**\n")
+                self.query_one("#ai-input", CommandInput).text = ""
+                return
+            else:
+                self._add_to_chat_history(f"\n\n**[SYSTEM]: Current mode: {self.mode.value}. Use /mode <dev|academy> to switch.**\n")
+                return
+
         command = user_query[1:].strip()
         self._prepare_for_generation(); await self._mount_user_turn(user_query)
         self._add_to_chat_history(f"\n> *Running fprime-util {command}...*\n", is_agent_thought=True)
@@ -362,7 +383,9 @@ class FPrimeTUI(App):
     def action_clear_chat(self) -> None:
         self.chat_history = ""; self.ai_client.clear_history(); self.turn_buffer = ""; self.active_ai_widget = None
         try:
-            container = self.query_one("#chat-container")
+            containers = self.query("#chat-container")
+            if not containers: return
+            container = containers[0]
             for child in list(container.children): child.remove()
             asyncio.create_task(self._mount_ai_turn("# Mission Control Cleared"))
         except: pass
@@ -372,7 +395,9 @@ class FPrimeTUI(App):
         self.query_one("#autocomplete-list").display = False
 
     def _scroll_to_end_if_at_bottom(self) -> None:
-        container = self.query_one("#chat-container")
+        containers = self.query("#chat-container")
+        if not containers: return
+        container = containers[0]
         if container.scroll_offset.y >= container.max_scroll_y - 2: container.scroll_end(animate=False)
 
     @on(TextArea.Changed, "#ai-input")
@@ -388,7 +413,9 @@ class FPrimeTUI(App):
             if "1" in last_part: items = [("1", "Approve")]
             elif "2" in last_part: items = [("2", "Decline")]
             self._update_suggestions(last_part, items, "")
-        elif last_part.startswith("/"): self._update_suggestions(last_part[1:], COMMANDS, "/")
+        elif last_part.startswith("/"):
+            filtered_cmds = [(c.name, c.description) for c in COMMANDS if self.mode in c.allowed_modes]
+            self._update_suggestions(last_part[1:], filtered_cmds, "/")
         elif last_part.startswith("@"): self._update_suggestions(last_part[1:], self._get_file_suggestions(last_part[1:]), "@")
         else: self.query_one("#autocomplete-list").display = False
 
@@ -400,7 +427,12 @@ class FPrimeTUI(App):
 
     def _update_suggestions(self, partial: str, items: list, mode: str):
         self.suggestion_mode = mode; list_widget = self.query_one("#autocomplete-list"); list_widget.clear_options()
-        matches = [Option(f"{label} - {desc}", id=label) for label, desc in items if partial.lower() in label.lower()]
+        matches = []
+        for label, desc in items:
+            if partial.lower() in label.lower():
+                display_label = label if label.startswith(mode) else f"{mode}{label}"
+                matches.append(Option(f"{display_label} - {desc}", id=label))
+        
         if matches: list_widget.add_options(matches); list_widget.display = True
         else: list_widget.display = False
 

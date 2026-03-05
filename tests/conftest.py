@@ -18,8 +18,8 @@ def patch_ai_client(monkeypatch, mock_ai_client):
     the client with `FPrimeAIClient()`, so we replace the class with a factory
     that returns our single mock instance.
     """
-    monkeypatch.setattr("TUI.app.FPrimeAIClient", lambda: mock_ai_client)
-    monkeypatch.setattr("TUI.fprime_ai_client.FPrimeAIClient", lambda: mock_ai_client)
+    monkeypatch.setattr("TUI.app.FPrimeAIClient", lambda **kwargs: mock_ai_client)
+    monkeypatch.setattr("TUI.fprime_ai_client.FPrimeAIClient", lambda **kwargs: mock_ai_client)
 
 @pytest.fixture
 def temp_project(tmp_path):
