@@ -120,7 +120,8 @@ async def test_regression_ai_turn_lifecycle(mock_ai_client):
                     break
             
             assert "I will check the files." in app.chat_history
-            assert "Tool Result:" in app.chat_history
+            assert "[Tool Result]" in app.chat_history
+
             assert "file1.txt" in app.chat_history
             assert "I see the files now." in app.chat_history
 

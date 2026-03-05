@@ -36,7 +36,8 @@ async def test_ui_hides_json_streaming(mock_ai_client):
 
     async with app.run_test() as pilot:
         await pilot.pause()
-        await app._stream_and_handle_tools()
+        # In the new iterative loop, we trigger a query or call _ai_loop directly
+        await app._ai_loop("Show me the tool call.")
         await pilot.pause()
 
         chat_log = app.chat_history
@@ -139,7 +140,8 @@ async def test_ui_hitl_flow(mock_execute, mock_ai_client, tmp_path):
 
         chat_log = app.chat_history
         assert "User: Approved" in chat_log
-        assert "Tool Result:" in chat_log
+        assert "[Tool Result]" in chat_log
+
         assert "File updated successfully." in chat_log
         assert "Okay, I have updated the file" in chat_log
 

@@ -120,4 +120,4 @@ async def test_user_unclosed_code_block_plain_text(mock_ai_client):
         # In the new architecture, the user's ``` is plain text in a Static widget.
         # The history string still records it literally.
         assert "User: ```" in history
-        assert "Mission Control:" in history
+        assert "I see you typed some backticks." in history

@@ -42,7 +42,7 @@ async def test_scenario_syntax_interception(mock_ai_client):
             
             # 4. Assert Interception
             chat_log = app.chat_history
-            assert "SYNTAX ERROR" in chat_log
+            assert "[SYNTAX ERROR]" in chat_log.upper()
             assert "Did you mean fprime-util new --component?" in chat_log
             
             # 5. Assert the shell command was NEVER executed

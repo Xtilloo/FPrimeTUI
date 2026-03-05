@@ -1,11 +1,16 @@
 import asyncio
 import re
 import os
+import signal
 from pathlib import Path
 from .command_definitions import ERROR_FINGERPRINTS
 
-async def run_fprime_command(command: str, args: str = "", cwd: str = ".", timeout: int = None, executable: str = "fprime-util", venv_path: Path = None) -> dict:
-    """Executes an F' command with automatic venv activation."""
+# Track the currently active subprocess for cancellation
+_active_process = None
+
+async def run_fprime_command(command: str, args: str = "", cwd: str = ".", timeout: int = 300, executable: str = "fprime-util", venv_path: Path = None) -> dict:
+    """Executes an F' command with automatic venv activation and process tracking."""
+    global _active_process
     from .utils import find_fprime_venv
     
     actual_venv = venv_path
@@ -21,44 +26,73 @@ async def run_fprime_command(command: str, args: str = "", cwd: str = ".", timeo
         }
 
     activation_cmd = f"source {actual_venv}/bin/activate"
+    # Ensure non-interactive mode for fprime-util if possible
     full_cmd = f"{activation_cmd} && {executable} {command} {args}"
     
     try:
+        # We use a process group (preexec_fn) to ensure we can kill children if needed
+        # Note: start_new_session=True is a cleaner way to handle this in modern Python
         process = await asyncio.create_subprocess_shell(
             full_cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             executable='/bin/bash',
-            cwd=cwd
+            cwd=cwd,
+            start_new_session=True 
         )
+        _active_process = process
 
-        stdout_data, stderr_data = await asyncio.wait_for(process.communicate(), timeout=timeout)
-        
-        stdout = stdout_data.decode().strip()
-        stderr = stderr_data.decode().strip()
-        
-        print(f"DEBUG: Exit code: {process.returncode}")
+        try:
+            stdout_data, stderr_data = await asyncio.wait_for(process.communicate(), timeout=timeout)
+            stdout = stdout_data.decode().strip()
+            stderr = stderr_data.decode().strip()
+            return_code = process.returncode
+        except asyncio.TimeoutError:
+            process.kill() # Call kill() for mock compatibility
+            await kill_active_process()
+            return {
+                "exit_code": -1,
+                "stdout": "",
+                "stderr": f"Command timed out after {timeout} seconds.",
+                "recovery_hint": "Command timed out. This might happen during slow builds or if waiting for input."
+            }
+        except asyncio.CancelledError:
+            await kill_active_process()
+            raise
+        finally:
+            _active_process = None
         
         # Apply error fingerprinting
         recovery_hint = None
-        if process.returncode != 0:
+        if return_code != 0:
             recovery_hint = fingerprint_error(stdout + "\n" + stderr)
         
         return {
-            "exit_code": process.returncode,
+            "exit_code": return_code,
             "stdout": stdout,
             "stderr": stderr,
             "recovery_hint": recovery_hint
         }
-    except asyncio.TimeoutError:
-        process.kill()
-        await process.wait()
+    except Exception as e:
+        if isinstance(e, asyncio.CancelledError): raise
         return {
             "exit_code": -1,
             "stdout": "",
-            "stderr": f"Command timed out after {timeout} seconds.",
-            "recovery_hint": "Command timed out. This might happen during slow builds or if waiting for input."
+            "stderr": f"Execution Error: {str(e)}",
+            "recovery_hint": "System execution error. Check permissions and paths."
         }
+
+async def kill_active_process():
+    """Forcefully kills the currently active subprocess and its children."""
+    global _active_process
+    if _active_process and _active_process.returncode is None:
+        try:
+            # Kill the entire process group
+            os.killpg(os.getpgid(_active_process.pid), signal.SIGKILL)
+            await _active_process.wait()
+        except:
+            pass
+    _active_process = None
 
 def fingerprint_error(output: str) -> str:
     """Scan output for known F' error patterns and return a recovery hint."""
@@ -102,7 +136,6 @@ async def check_environment(cwd: str = ".") -> dict:
         except:
             results[name] = False
     
-    # Check for settings.ini and find project root
     settings_ini_path = Path(cwd) / "settings.ini"
     project_root = str(Path(cwd).absolute()) if settings_ini_path.exists() else None
     
@@ -121,7 +154,7 @@ def get_project_settings(cwd: str = ".") -> dict:
     """Extract toolchain and platform from settings.ini if it exists."""
     settings_path = Path(cwd) / "settings.ini"
     if not settings_path.exists():
-        settings_path = Path(cwd).parent / "settings.ini" # check parent if in component
+        settings_path = Path(cwd).parent / "settings.ini" 
     
     settings = {"toolchain": "native", "platform": "native"}
     if settings_path.exists():
