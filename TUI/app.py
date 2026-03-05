@@ -53,7 +53,14 @@ class FPrimeTUI(App):
 
     def __init__(self):
         super().__init__()
+        # The TUI defaults to ACADEMY (educational) mode to provide a safe onboarding 
+        # experience. Engineering commands are restricted until switched to MISSION_CONTROL.
         self.mode = TUIMode.ACADEMY
+        
+        # AI orchestration is modularized into specialized controllers:
+        # - ai_handler: Parses tools from text
+        # - mission_controller: Tracks multi-step task success/failure
+        # - command_guard: Validates and repairs F' command syntax
         self.ai_client = FPrimeAIClient(mode=self.mode)
         self.ai_handler = AIHandler(self.ai_client)
         self.mission_controller = MissionController(project_root=os.getcwd())
@@ -297,6 +304,10 @@ class FPrimeTUI(App):
         return success
 
     async def _handle_slash_command(self, user_query: str):
+        """
+        Processes manual commands. 
+        Filters availability based on the current TUIMode (Academy vs Mission Control).
+        """
         cmd_name = user_query.split(" ")[0]
         cmd_meta = next((c for c in COMMANDS if c.name == cmd_name), None)
         
