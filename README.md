@@ -4,7 +4,7 @@ A high-performance, asynchronous Terminal User Interface (TUI) for NASA F' (F Pr
 
 Mission Control serves as a direct "co-pilot" residing in your terminal. Powered by a local LLM via Ollama, it operates as an **Autonomous Agent** capable of translating natural language requests into concrete actions. It can dynamically discover your F' environment, read codebase files, execute standard `fprime-util` commands, and safely propose code modifications through a Human-in-the-Loop (HITL) approval system—all while adhering to strict flight software safety and coding standards.
 
-## 🚀 Key Features
+## Key Features
 - **Dual-Mode Operation:** 
     - **F' Academy (Learning Mode):** The default educational state. AI acts as a patient instructor, restricted to read-only tools and concept explanations. Perfect for onboarding.
     - **Mission Control (Dev Mode):** The full engineering state. Enables all tools, including build, generate, and file modification. Optimized for senior flight software engineers.
@@ -29,12 +29,12 @@ Mission Control serves as a direct "co-pilot" residing in your terminal. Powered
    ```bash
    make install
    ```
-3. **Global Access (Optional)**:
+3. **Global Access (Optional, but recommended)**:
    ```bash
    make alias
    ```
 
-## 🎯 Quick Start
+## Quick Start
 Launch the TUI from your F' project directory:
 ```bash
 fprime-tui
@@ -49,7 +49,7 @@ fprime-tui
 *   **Academy:** `Explain what a Port is in F'.`
 *   **Mission Control:** `Create an active component named GpsHandler in the Drv namespace.` (AI will guide you through the process).
 
-## 🧪 Testing
+## Testing
 The project uses `pytest` for comprehensive validation:
 ```bash
 make test
