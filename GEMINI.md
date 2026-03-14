@@ -38,6 +38,30 @@ See `docs/implementation/` for deep-dive architecture, software design documents
 - `TUI/fprime_ai_client.py`: Asynchronous client for interacting with the local Ollama instance.
 - `TUI/tools.py` & `TUI/shell.py`: The execution layer for file I/O and F' environment commands.
 
+## cmux Terminal Interaction
+cmux organizes terminals in a four-level hierarchy:
+- **Window**: macOS window (⌘⇧N).
+- **Workspace (Tab)**: Sidebar entry (CMUX_WORKSPACE_ID).
+- **Pane**: Split region within a workspace.
+- **Surface**: Individual terminal or browser tab (CMUX_SURFACE_ID).
+
+### Hierarchy Reference
+| Level | Term in Socket/CLI | Env Var |
+|-------|-------------------|---------|
+| Sidebar UI | Tab | — |
+| Workspace | `workspace` | `CMUX_WORKSPACE_ID` |
+| Surface | `surface` | `CMUX_SURFACE_ID` |
+
+### Capabilities for Gemini CLI
+As an agent running in a cmux surface, you can use the `cmux` CLI to:
+- **`read-screen`**: Read current output of any surface.
+- **`send`**: Send text/commands to other surfaces.
+- **`browser`**: Interact with embedded browser surfaces (navigate, click, snapshot).
+- **`list-panels`**: See all surfaces in the current workspace.
+- **`notify`**: Send native notifications to the user.
+
+Example: `cmux read-screen --surface 2` to see what's happening in another tab.
+
 ---
 
 ## Building and Running

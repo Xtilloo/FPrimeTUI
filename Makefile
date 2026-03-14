@@ -12,7 +12,7 @@ TUI: ## Launch Mission Control (F-Prime-TUI)
 
 cmux: ## Launch the cmux terminal workspace
 	@echo "🌀 Launching cmux workspace..."
-	@cmux launch F-PRIME-TUI
+	@./scripts/cmux.py
 
 remind: ## Show current task reminders
 	@cmux list-panels --json | jq '.[] | select(.name=="1 plan-stories") | .notes'
