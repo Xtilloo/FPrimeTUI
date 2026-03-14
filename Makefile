@@ -10,6 +10,13 @@ TUI: ## Launch Mission Control (F-Prime-TUI)
 	@echo "🚀 Launching Mission Control..."
 	@PYTHONPATH=./TUI $(PYTHON) TUI/app.py
 
+cmux: ## Launch the cmux terminal workspace
+	@echo "🌀 Launching cmux workspace..."
+	@cmux launch F-PRIME-TUI
+
+remind: ## Show current task reminders
+	@cmux list-panels --json | jq '.[] | select(.name=="1 plan-stories") | .notes'
+
 alias: ## Create a symbolic link to fprime-tui in /usr/local/bin (requires sudo)
 	@echo "🔗 Creating fprime-tui alias..."
 	@sudo ln -sf $(CURDIR)/fprime-tui /usr/local/bin/fprime-tui

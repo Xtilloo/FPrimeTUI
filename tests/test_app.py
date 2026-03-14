@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 from textual.widgets import Markdown, TextArea, OptionList
 from TUI.app import FPrimeTUI
+from command_definitions import TUIMode
 
 # Note: The 'mock_ai_client' fixture is auto-injected by conftest.py
 # and automatically patches the app's AI client.
@@ -48,6 +49,7 @@ async def test_ui_hides_json_streaming(mock_ai_client):
 async def test_slash_command_execution(mock_ai_client):
     """Verifies that / commands execute and show up in history."""
     app = FPrimeTUI()
+    app.mode = TUIMode.MISSION_CONTROL # Ensure we are in Mission Control for /build
     mock_res = {"exit_code": 0, "stdout": "Mock Build Success", "stderr": ""}
     
     # After the command, the app will ask the AI to summarize.
@@ -71,6 +73,7 @@ async def test_slash_command_execution(mock_ai_client):
 async def test_ui_autocomplete_and_apply():
     """Tests that typing a slash command shows autocomplete, and tab applies it."""
     app = FPrimeTUI()
+    app.mode = TUIMode.MISSION_CONTROL # Ensure we are in Mission Control for /build
     async with app.run_test() as pilot:
         await pilot.pause()
         

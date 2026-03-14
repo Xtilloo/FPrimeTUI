@@ -14,6 +14,7 @@ from textual.widgets.option_list import Option
 from textual.events import Key
 
 from fprime_ai_client import FPrimeAIClient
+from rag import FPrimeRAG
 from command_definitions import TUIMode, COMMANDS
 from widgets import FadingScrollContainer
 from shell import run_fprime_command
@@ -51,6 +52,7 @@ class FPrimeTUI(App):
         super().__init__()
         self.mode = TUIMode.ACADEMY
         self.ai_client = FPrimeAIClient(mode=self.mode)
+        self.rag = FPrimeRAG()
         self.chat_history = ""
         self.query_history = []
         self.history_index = -1
@@ -233,7 +235,12 @@ class FPrimeTUI(App):
         self.tool_call_depth = 0
         if not self.query_history or self.query_history[-1] != user_query: self.query_history.append(user_query)
         self.history_index = -1; self._prepare_for_generation(); await self._mount_user_turn(user_query)
-        mentions = re.findall(r"@([\w./-]+)", user_query); extra_ctx = ""
+        
+        # 1. Get RAG Context
+        rag_ctx = await self.rag.retrieve(user_query)
+        
+        # 2. Get Manual File Mentions
+        mentions = re.findall(r"@([\w./-]+)", user_query); extra_ctx = rag_ctx
         for filename in mentions:
             file_path = Path(filename)
             if file_path.exists() and file_path.is_file():
