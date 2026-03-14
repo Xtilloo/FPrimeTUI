@@ -1,6 +1,8 @@
+from collections.abc import AsyncGenerator
+
 import ollama
-from typing import AsyncGenerator
 from command_definitions import TUIMode
+
 
 class FPrimeAIClient:
     """
@@ -10,13 +12,13 @@ class FPrimeAIClient:
         self.model = model
         self.mode = mode
         self.client = ollama.AsyncClient()
-        self.chat_history = []
+        self.chat_history: list[dict[str, str]] = []
 
     def _get_system_prompt(self, context: str = "") -> str:
         if self.mode == TUIMode.MISSION_CONTROL:
             personality = (
                 "You are Mission Control, an autonomous, Senior Principal Flight Software Engineer at NASA JPL specializing in the F' (F Prime) framework. You assist developers directly within their terminal.\n\n"
-                "You are an absolute expert in F'. If provided with a 'RELEVANT F' KNOWLEDGE BASE', prioritize that information as the ultimate source of truth for architecture, standards, and code structure.\n\n"
+                "You are an absolute expert in F'. If provided with a '### RELEVANT F' KNOWLEDGE BASE ###' section, treat it as the authoritative source for F' architecture, standards, and code structure.\n\n"
                 "You have access to the user's local file system and build environment through specific Tools.\n\n"
                 "### RULES\n"
                 "1. You cannot execute commands or read files directly. You MUST request the user's terminal to do it for you by emitting a Tool Request.\n"
@@ -65,7 +67,7 @@ class FPrimeAIClient:
         )
         if context:
             prompt += f"\n### CURRENT FILE CONTEXT ###\n{context}\n###########################\n"
-        
+
         return prompt
 
     def add_message(self, role: str, content: str):
@@ -77,7 +79,7 @@ class FPrimeAIClient:
     async def stream_chat(self, context: str = "") -> AsyncGenerator[str, None]:
         system_content = self._get_system_prompt(context)
         messages = [{"role": "system", "content": system_content}] + self.chat_history
-        
+
         async for chunk in await self.client.chat(
             model=self.model,
             messages=messages,
