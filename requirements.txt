@@ -7,6 +7,15 @@ ollama==0.4.7          # Official Python client for your local Qwen3 brain
 httpx==0.27.0          # For async HTTP requests (talking to Ollama/F' GDS)
 aiofiles==23.2.1       # For async file operations
 
-# --- Testing ---
+# --- Testing & Linting ---
 pytest==8.3.2
 pytest-asyncio==0.23.8
+ruff==0.6.1
+mypy==1.11.2
+
+# --- RAG ---
+chromadb>=0.5.0
+rank-bm25>=0.2.2
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+gitpython>=3.1.40

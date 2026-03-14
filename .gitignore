@@ -29,4 +29,11 @@ bin/
 
 # Gemini CLI Skills & Assets
 .gemini/
+GEMINI.md
 *.skill
+
+.claude/
+CLAUDE.md
+
+TUI/rag/db/
+TUI/rag/raw/
