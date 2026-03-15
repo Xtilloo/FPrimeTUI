@@ -185,6 +185,63 @@ def chunk_cpp(text: str, source: str) -> list[dict]:
     return chunks
 
 
+_AC_METHOD_PATTERN = re.compile(
+    r"^\s+(?:virtual\s+)?(?:[\w:]+\s+)+(\w+)\s*\([^)]*\)(?:\s*(?:const|override|=\s*0))?\s*;",
+    re.MULTILINE,
+)
+# Skip patterns: constructors, destructors, serialization, dispatch, private helpers
+_AC_SKIP_PATTERNS = re.compile(
+    r"(?:~?\w+ComponentBase|serialize|deserialize|dispatchMsg|__\w+|m_p_\w+)"
+)
+
+
+def chunk_autocoded_cpp(text: str, source: str) -> list[dict]:
+    """Extract public/protected API signatures from autocoded *Ac.hpp/*Ac.cpp files."""
+    # Find class name
+    class_match = _CPP_CLASS_OR_STRUCT.search(text)
+    comp_name = class_match.group(1) if class_match else ""
+
+    # Extract sections by visibility
+    # Split into public/protected/private sections
+    signatures: list[str] = []
+    in_api_section = False
+
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("public:") or stripped.startswith("protected:"):
+            in_api_section = True
+            continue
+        elif stripped.startswith("private:"):
+            in_api_section = False
+            continue
+
+        if not in_api_section:
+            continue
+
+        # Check if line looks like a method signature
+        method_match = _AC_METHOD_PATTERN.match(line)
+        if method_match:
+            method_name = method_match.group(1)
+            # Skip constructors, destructors, serialization boilerplate
+            if _AC_SKIP_PATTERNS.search(method_name):
+                continue
+            signatures.append(stripped.rstrip(";").strip())
+
+    if signatures:
+        header = f"Component {comp_name} API:" if comp_name else "API:"
+        sig_text = header + "\n" + "\n".join(f"  {sig}" for sig in signatures)
+    else:
+        sig_text = f"Component {comp_name}: no public/protected API extracted" if comp_name else text[:200]
+
+    return [{
+        "text": _truncate(sig_text),
+        "source_file": source,
+        "chunk_type": "cpp_api",
+        "component_name": comp_name.replace("ComponentBase", "").replace("Base", ""),
+        "content_type": "reference",
+    }]
+
+
 def deduplicate(chunks: list[dict]) -> list[dict]:
     """Remove chunks with identical text content using SHA-256 hashing."""
     seen = set()

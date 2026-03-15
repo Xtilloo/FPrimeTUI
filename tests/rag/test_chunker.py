@@ -1,5 +1,5 @@
 # tests/rag/test_chunker.py
-from rag.chunker import chunk_cpp, chunk_fpp, chunk_markdown, chunk_python, deduplicate, detect_content_type
+from rag.chunker import chunk_autocoded_cpp, chunk_cpp, chunk_fpp, chunk_markdown, chunk_python, deduplicate, detect_content_type
 
 
 def test_chunk_markdown_splits_on_headers():
@@ -166,3 +166,71 @@ def test_chunk_cpp_fallback_whole_file():
     text = "void standalone_function() { return; }"
     chunks = chunk_cpp(text, source="util.cpp")
     assert len(chunks) == 1
+
+
+def test_chunk_autocoded_api_extracts_signatures():
+    text = """
+class HealthComponentBase : public Fw::ActiveComponentBase {
+  public:
+    HealthComponentBase(const char* name);
+    ~HealthComponentBase();
+    void init(NATIVE_INT_TYPE instance = 0);
+
+  protected:
+    void log_WARNING_HI_PingLate(const Fw::StringBase& entry);
+    void tlmWrite_PingLateWarnings(U32 count);
+    void cmdResponse_out(FwOpcodeType opCode, U32 cmdSeq, Fw::CmdResponse response);
+    void pingIn_handler(NATIVE_INT_TYPE portNum, U32 key);
+
+  private:
+    void m_p_cmdIn_in(Fw::PassiveComponentBase* callComp, FwIndexType portNum);
+    FW_SERIALIZE_STATUS serialize();
+};
+"""
+    chunks = chunk_autocoded_cpp(text, source="Svc/Health/HealthComponentAc.hpp")
+    assert len(chunks) >= 1
+    chunk_text = chunks[0]["text"]
+    # Should include protected methods (the API surface)
+    assert "log_WARNING_HI_PingLate" in chunk_text
+    assert "tlmWrite_PingLateWarnings" in chunk_text
+    assert "cmdResponse_out" in chunk_text
+    assert "pingIn_handler" in chunk_text
+    # Should skip private methods and constructors
+    assert "m_p_cmdIn_in" not in chunk_text
+    assert "serialize" not in chunk_text
+    assert chunks[0]["chunk_type"] == "cpp_api"
+
+
+def test_chunk_autocoded_skips_boilerplate():
+    text = """
+class FooComponentBase {
+  public:
+    FooComponentBase(const char* name);
+    ~FooComponentBase();
+
+  protected:
+    void log_ACTIVITY_HI_SomeEvent(U32 arg);
+
+  private:
+    void dispatchMsg(ComponentIpcSerializableBuffer& msg);
+    FW_SERIALIZE_STATUS __serialize(NATIVE_INT_TYPE id);
+    void __deserialize(Fw::SerialBuffer& buffer);
+};
+"""
+    chunks = chunk_autocoded_cpp(text, source="FooAc.hpp")
+    chunk_text = chunks[0]["text"]
+    assert "log_ACTIVITY_HI_SomeEvent" in chunk_text
+    assert "dispatchMsg" not in chunk_text
+    assert "__serialize" not in chunk_text
+
+
+def test_chunk_autocoded_empty_api():
+    text = """
+class BarBase {
+  private:
+    void internal();
+};
+"""
+    chunks = chunk_autocoded_cpp(text, source="BarAc.hpp")
+    # Even with no public/protected methods, should return something
+    assert len(chunks) >= 1
