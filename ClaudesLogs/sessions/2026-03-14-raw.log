@@ -5824,3 +5824,250 @@ The **Svc::FileDownlink** packet protocol is defined through its **ports** and *
 This protocol ensures robust, controlled file downlinking while adhering to spacecraft communication constraints.
 
 *Sources: Svc/FileDownlink/docs/sdd.md · Svc/FileDownlink/docs/sdd.md · Svc/FileDownlinkPorts/FileDownlinkPorts.fpp*
+
+
+---USER---
+What is the Os::File::Mode enum used for?
+---RESPONSE---
+The `Os::File::Mode` enum (defined via constants in `default/config/OsCfg.fpp`) is used to specify **file access permissions** for operations like opening or creating files. It encodes Unix-style permission bits to control:
+
+- **User permissions** (owner): read, write, execute (`IRUSR`, `IWUSR`, `IXUSR`)
+- **Group permissions**: read, write, execute (`IRGRP`, `IWGRP`, `IXGRP`)
+- **Other permissions** (world): read, write, execute (`IROTH`, `IWOTH`, `IXOTH`)
+
+The default mode `FILE_DEFAULT_CREATE_MODE` combines these to `666` (read/write for all), ensuring files are created with broad accessibility while allowing fine-grained control via the enum in code.
+
+*Sources: Svc/Ports/TlmPacketizerPorts/sdd.md · FppTestProject/FppTest/component/active/port_index_enums.fpp · default/config/OsCfg.fpp*
+
+
+---USER---
+Describe the Svc::FileManager 'MoveFile' command.
+---RESPONSE---
+The `Svc::FileManager.MoveFile` command is a command interface used to move files between locations in the file system. Based on the test code and F' framework conventions:
+
+1. **Command Parameters**:
+   - Accepts two arguments:
+     - `source_file`: The name of the file to be moved (e.g., `"PrmDb.dat"`)
+     - `dest_file`: The target destination path (e.g., the filename configured in `Svc.PrmDb.filename`)
+
+2. **Functionality**:
+   - Triggers the file system's `move` operation to relocate the specified file.
+   - Validates the source file exists and the destination path is valid.
+
+3. **Usage Example**:
+   ```python
+   fprime_test_api.send_and_assert_command(
+       "Svc.FileManager.MoveFile",
+       ["PrmDb.dat", "path/to/destination/PrmDb.dat"]
+   )
+   ```
+
+4. **Integration**:
+   - Used in conjunction with `Svc.PrmDb` to relocate files (e.g., moving saved parameter files to their expected storage location).
+
+This command is critical for managing file persistence and location in F' applications.
+
+*Sources: Svc/PrmDb/test/int/test_cmd_PrmDb.py · Svc/ComQueue/docs/sdd.md · fprime-tools/src/fprime/fpp/impl.py*
+
+
+---USER---
+What is the purpose of the Fw::LogPort?
+---RESPONSE---
+The `Fw::LogPort` (specifically the `Log` port in the `Fw` module) serves as a **structured event logging interface** in the F' framework. Its primary purpose is to enable components to emit **timestamped, severity-labeled event records** for system monitoring, diagnostics, and post-mission analysis. Here's its role:
+
+1. **Event Logging**:  
+   Components use this port to send structured event data, including:  
+   - A unique `id` (auto-offset by component base ID for global uniqueness)  
+   - A `timeTag` (timestamp)  
+   - A `severity` level (e.g., `FATAL`, `WARNING_HI`, `ACTIVITY_LO`)  
+   - Serialized arguments via `LogBuffer` (for efficient downlink)
+
+2. **System Traceability**:  
+   Events capture critical system activities (e.g., command execution, state transitions, errors), enabling replay of execution sequences for debugging or analysis.
+
+3. **Severity Filtering**:  
+   The severity level determines whether the event is downlinked (e.g., `FATAL`/`WARNING_HI` are prioritized) or considered diagnostic/debug-only (e.g., `DIAGNOSTIC`).
+
+For **text-based logging** (e.g., human-readable messages), the complementary `LogText` port is used, but it is typically disabled in flight software. Components must explicitly hook their `Log` port to `Svc::EventManager` to participate in event logging.
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · Fw/Log/Log.fpp · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+Describe the Os::Task::Priority enum.
+---RESPONSE---
+The `Os::Task::Priority` enum is not explicitly defined in the provided F' knowledge base sources. The available documentation only includes the `TaskStatus` enum within the `Os` module, which describes the status codes for task operations (e.g., `OP_OK`, `INVALID_HANDLE`, etc.). 
+
+If you need details about `Priority`, please provide additional context or check other source files in the project.
+
+*Sources: FppTestProject/FppTest/component/active/port_index_enums.fpp · Os/Models/Task.fpp · Svc/PrmDb/PrmDb.fpp*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'CycleIn' port used for?
+---RESPONSE---
+The `CycleIn` port in the `Svc::ActiveRateGroup` component is an **asynchronous input port** used to receive the rate group cycle data. Specifically:
+
+- **Purpose**: It serves as the entry point for the rate group's cycle input, allowing external components to send cycle data to this component.
+- **Type**: `async input port CycleIn: Svc.Cycle drop`  
+  - `async` indicates it is an asynchronous port, meaning the component processes cycles as they arrive without blocking.
+  - `Svc.Cycle` is the data type being passed, likely representing timing or scheduling information.
+- **Role**: This port is critical for triggering the rate group's execution cycle, enabling the component to schedule and manage tasks within its defined rate group.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/RateGroupDriver/RateGroupDriver.fpp · Svc/PassiveRateGroup/PassiveRateGroup.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'offset' in FPP?
+---RESPONSE---
+In F Prime's FPP (Flight Software Preprocessor), telemetry channels do **not** have a direct `offset` parameter in their declaration. Instead, **offsets are typically handled through telemetry packet configurations or data processing logic in the ground system** (e.g., ground-derived channels).
+
+### Key Notes:
+1. **Telemetry Channel Definition**:  
+   Telemetry channels are defined with parameters like `id`, `update`, and `name`, but not `offset`. For example:
+   ```cpp
+   telemetry Channel0: U32 id 0x00
+   ```
+
+2. **Offset via Telemetry Packet Sets**:  
+   If you need to define an offset for a telemetry packet (e.g., for scaling or normalization), it is usually specified in the **telemetry packet set** configuration (not the individual channel). For example:
+   ```cpp
+   telemetry_packet_set MyPacketSet {
+     name "MyPacketSet"
+     members {
+       telemetry_packet MyPacket {
+         name "MyPacket"
+         group 0x00
+         members {
+           telemetry_channel Channel0
+           telemetry_channel Channel1
+         }
+       }
+     }
+   }
+   ```
+   Offsets for scaling (e.g., `value = raw_value - offset`) are typically handled in the **ground system** via ground-derived channels or post-processing logic.
+
+3. **Ground-Derived Channels**:  
+   If you need to compute an offset (or any derived value) on the ground, use a **ground-derived channel** plugin. This is done entirely in the GDS and does not require modifying the flight software.
+
+### Summary:
+- **Flight software**: No direct `offset` parameter for telemetry channels.
+- **Ground system**: Use ground-derived channels or telemetry packet sets to define offsets for post-processing. 
+
+For specific scaling or offset logic, consult the [F Prime GDS documentation](https://github.com/nasa/fprime/wiki/GDS) or the [Cosine Example](https://github.com/nasa/fprime-examples/tree/devel/GdsExamples/gds-plugins/src/ground_channels).
+
+*Sources: docs/how-to/derive-channels-on-ground.md · docs/how-to/derive-channels-on-ground.md · docs/reference/fpp-json-dict.md*
+
+
+---USER---
+Describe the purpose of the Fpp::ToCpp::configComponents phase.
+---RESPONSE---
+The **Fpp::ToCpp::configComponents** phase in the F' framework is responsible for **generating C++ code that configures components based on their defined interfaces and parameters**. This phase translates the abstract component definitions from FPP (F Prime Process Programming) files into concrete C++ code that initializes and configures components within the system.
+
+### Key Purposes:
+1. **Component Configuration**: 
+   - Generates code to set up component parameters, ports, and connections as specified in `.fppi` interface files and `.fpp` topology files.
+   - Ensures components are properly initialized with their required inputs/outputs and dependencies.
+
+2. **Interface Implementation**:
+   - Links components to their implemented interfaces (e.g., `Svc::BufferManager`), ensuring handlers for input ports and access to output ports are correctly generated.
+
+3. **System Integration**:
+   - Prepares components for integration into the larger system by defining how they interact with other components via ports and services.
+
+This phase is critical for translating high-level FPP design into executable C++ code that can be compiled and run as part of a NASA mission's software system.
+
+*Sources: .github/ISSUE_TEMPLATE/feature-request.md · Svc/Interfaces/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'Overrun' port used for?
+---RESPONSE---
+The `Svc::ActiveRateGroup` component's `Overrun` port is **not explicitly defined** in the provided `ActiveRateGroup.fpp` source code snippet. Based on the knowledge base and code shown, the component's ports are:
+
+```cpp
+async input port CycleIn: Svc.Cycle drop
+output port RateGroupMemberOut: [ActiveRateGroupOutputPorts] Sched
+async input port PingIn: Ping
+output port PingOut: Ping
+```
+
+### Key Notes:
+1. **Overrun Handling**: The `ActiveRateGroup` component runs on a dedicated thread, which introduces potential jitter. If the component cannot process cycles in time (e.g., due to computational overload), it may experience **overrun** (missed cycles). However, this is typically detected via the `RateGroupCycleSlip` event (not a port) rather than a dedicated `Overrun` port.
+
+2. **Event-Based Feedback**: Overrun conditions are likely reported via the `RateGroupCycleSlip` event, which indicates missed cycles (e.g., `cycle: U32` parameter). This event is triggered when the component fails to process a cycle within the expected timeframe.
+
+3. **No Direct Port**: The `Overrun` port is not part of the component's defined interface in the provided code. If this port exists in your project, it may be defined in a derived component or a different file not included in the knowledge base.
+
+For precise details, check the full `ActiveRateGroup.fpp` file or related documentation in your project.
+
+*Sources: docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' kind in FPP?
+---RESPONSE---
+In F', telemetry channels are inherently of the "update" kind by default. You do not explicitly specify a `kind` attribute for telemetry in FPP. Instead, telemetry channels are defined using the `telemetry` keyword in your `.fpp` file, and their structure is described via data types (e.g., `uint32`, `float`, structs, etc.). 
+
+For example:
+```cpp
+telemetry Counter {
+  uint32 Value;
+};
+```
+This defines a telemetry channel named `Counter` with a single `uint32` field. The "update" semantics are implicit for telemetry, as opposed to "status" or "command" kinds, which require explicit declarations. 
+
+If you're referring to a specific `kind` attribute in a custom context, please clarify, as F' standards do not use a `kind` parameter for telemetry.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the Svc::FileUplink packet protocol.
+---RESPONSE---
+The `Svc::FileUplink` component operates within the F Prime communications protocol, which defines how data is structured and routed in the uplink stack. Here's a breakdown of its packet protocol and integration:
+
+### **F Prime Protocol Structure (Relevant to FileUplink)**
+1. **Start Word**: `0xDEADBEEF` (32-bit)  
+   - Identifies the start of a frame.
+
+2. **Payload Length**: 32-bit  
+   - Specifies the length of the payload data in bytes.
+
+3. **Payload Data**: Variable-length  
+   - Contains an **F Prime packet** (e.g., `Fw::ComPacketType::FW_PACKET_FILE`).  
+   - This packet includes:  
+     - A `FwPacketDescriptorType` field (e.g., `FW_PACKET_FILE`) to identify the packet type.  
+     - Application-specific data (e.g., file content).
+
+4. **CRC**: 32-bit  
+   - Ensures data integrity via cyclic redundancy check.
+
+---
+
+### **FileUplink Integration**
+- **Routing**:  
+  The `Svc::FprimeRouter` routes packets of type `FW_PACKET_FILE` to the `fileOut` port of `Svc::FileUplink` (per **SVC-ROUTER-003**).  
+  - This ensures file data is directed to the FileUplink component for processing.
+
+- **Functionality**:  
+  - The FileUplink component likely handles:  
+    - Receiving and validating file packets.  
+    - Managing storage or transmission of file data (e.g., writing to memory or persistent storage).  
+    - Generating acknowledgment or status responses (if required by the system).
+
+- **Error Handling**:  
+  - If serialization errors occur during packet processing, the router emits warning events (**SVC-ROUTER-005**), aiding in diagnosing uplink issues.
+
+---
+
+### **Key Use Case**
+In the uplink stack (e.g., tutorials), `Svc::FileUplink` works with `Svc::FprimeRouter` and `Svc::CmdDispatcher` to:  
+1. Receive file packets via the F Prime protocol.  
+2. Route them to the FileUplink for storage/transmission.  
+3. Ensure data integrity via CRC checks.  
+
+For deeper details, inspect the `Svc::FileUplink` implementation in your project’s source code (e.g., `FileUplink.cpp` or related `.fpp` files).
+
+*Sources: Svc/FprimeRouter/docs/sdd.md · Svc/FprimeProtocol/docs/sdd.md · Svc/FprimeRouter/docs/sdd.md*
