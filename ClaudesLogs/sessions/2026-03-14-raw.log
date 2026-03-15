@@ -6315,3 +6315,284 @@ command CreateDirectory {
 If you need specifics about your project's implementation, provide the path to the relevant `.fpp` or source files, and I can analyze them for you.
 
 *Sources: Svc/ComQueue/docs/sdd.md · fprime-tools/test/fprime/fbuild/test_new_deployment.py · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What is the Os::File::Descriptor class used for?
+---RESPONSE---
+The `Os::File::Descriptor` class is used to manage the underlying file handle or resource associated with a file in the operating system. It provides an abstraction layer for interacting with files, allowing components to perform operations like reading, writing, and closing files without being tied to specific OS implementations. This abstraction is critical for cross-platform compatibility in F' code, as it encapsulates OS-specific details (e.g., file descriptors in Unix-like systems or handles in Windows) and exposes a uniform interface for file I/O. The `Os::File` class likely uses this descriptor to perform actual file operations while hiding the complexity of OS differences.
+
+*Sources: Fw/DataStructures/docs/SizedContainer.md · docs/user-manual/overview/source-tree.md · Svc/CmdSequencer/docs/AMPCSSequence.md*
+
+
+---USER---
+Describe the Svc::FileManager 'RemoveDirectory' command.
+---RESPONSE---
+The **Svc::FileManager::RemoveDirectory** command is part of the **FileManager** active component in FPrime, designed to delete a specified directory and its contents. Here's a structured description based on standard F' component conventions and JPL practices:
+
+---
+
+### **Command Overview**
+- **Command Name**: `RemoveDirectory`
+- **Component**: `Svc::FileManager`
+- **Purpose**: Recursively remove a directory and all its subdirectories/files.
+- **Parameters**:
+  - `directory_path`: A string specifying the absolute path to the directory to be deleted.
+- **Error Handling**:
+  - If the directory does not exist, the command may log an error (e.g., `FILE_NOT_FOUND`).
+  - If the directory is not empty (and recursive deletion is not permitted), it may fail with `DIRECTORY_NOT_EMPTY`.
+  - Permissions errors (e.g., lack of write access) would trigger `PERMISSION_DENIED`.
+
+---
+
+### **Implementation Notes**
+1. **F' Architecture**:
+   - The command is defined in the `FileManager` component's command list (`FileManagerComponent.cxx` or similar).
+   - It uses F' framework utilities (e.g., `Fw::String`, `Fw::Log`) for string manipulation and logging.
+   - The implementation interacts with OS-specific APIs (e.g., `std::remove`/`std::remove_all` in C++ for POSIX systems).
+
+2. **Safety Constraints**:
+   - The command must ensure no active file operations are in progress on the target directory.
+   - It may include safeguards against accidental deletion (e.g., requiring explicit confirmation or a safety mode).
+
+3. **Logging**:
+   - Success/failure is logged via `Fw::Log` with severity levels (e.g., `Fw::LOG_DEBUG` for confirmation, `Fw::LOG_ERROR` for failures).
+
+---
+
+### **Example Usage**
+```cpp
+// Pseudocode for command dispatch
+void FileManagerComponent::cmdRemoveDirectory(const Fw::String &directoryPath) {
+    if (!std::filesystem::exists(directoryPath)) {
+        FW_LOG_ERROR("Directory does not exist: ", directoryPath);
+        return;
+    }
+    try {
+        std::filesystem::remove_all(directoryPath);
+        FW_LOG_DEBUG("Successfully removed directory: ", directoryPath);
+    } catch (const std::filesystem::filesystem_error &e) {
+        FW_LOG_ERROR("Failed to remove directory: ", e.what());
+    }
+}
+```
+
+---
+
+### **Documentation Reference**
+The detailed specification for `Svc::FileManager` would typically reside in its **SDD** (Software Design Document). If this document is not available in the provided context, you can locate it in the project's `Svc/FileManager/docs/sdd.md` (if exists) or check the component's source code in `Svc/FileManager/src/`.
+
+For precise parameter definitions or error codes, consult the component's SDD or source code. Let me know if you need help locating these files!
+
+*Sources: Svc/ComQueue/docs/sdd.md · fprime-tools/test/fprime/fbuild/test_cmake.py · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::PrmPort?
+---RESPONSE---
+The `Fw::PrmPort` (Parameter Port) in F' is used to **pass parameters from one component to another**. It is part of the F' framework's port mechanism, specifically designed for scenarios where a component needs to provide configuration data, settings, or other parameterized information to another component. 
+
+Unlike command ports (`Fw::CmdPort`), which are used for sending commands, `Fw::PrmPort` is strictly for **data transfer**. When a component has a `PrmPort`, it can send parameters to components that have corresponding `Fw::PrmSubscr` (Parameter Subscriber) ports. This enables structured, type-safe parameter propagation across the system.
+
+For example, a component might use a `PrmPort` to pass calibration data to a downstream processor. The exact usage depends on the component's role and the system's design. 
+
+If you're working with a specific implementation, check the `.fpp` files in your project for port declarations and connections.
+
+*Sources: Svc/BufferManager/docs/sdd.md · Svc/Ports/FilePorts/docs/sdd.md · Svc/ComRetry/docs/sdd.md*
+
+
+---USER---
+Describe the Os::Task::State enum.
+---RESPONSE---
+The `Os::Task::State` enum is not explicitly defined in the provided F' knowledge base. However, there is an `enum TaskStatus` defined in `Os/Models/Task.fpp` that describes the status of a task, which may be what you're referring to. Here's the definition:
+
+```cpp
+enum TaskStatus : U8 {
+    OP_OK,             // Message sent/received okay
+    INVALID_HANDLE,    // Task handle invalid
+    INVALID_PARAMS,    // Started task with invalid parameters
+    INVALID_PRIORITY,  // Started task with invalid priority
+    INVALID_STACK,     // Started with invalid stack size
+    UNKNOWN_ERROR,     // Unexpected error return value
+    INVALID_AFFINITY,  // Unable to set the task affinity
+    DELAY_ERROR,       // Error trying to delay the task
+    JOIN_ERROR,        // Error trying to join the task
+    ERROR_RESOURCES,   // Unable to allocate more tasks
+    ERROR_PERMISSION,  // Permissions error setting-up tasks
+    NOT_SUPPORTED,     // Task feature is not supported
+    INVALID_STATE      // Task is in an invalid state for the operation
+};
+```
+
+If you meant a different enum (e.g., `State`), please clarify or check other files in the project. Let me know how I can assist further!
+
+*Sources: FppTestProject/FppTest/component/active/port_index_enums.fpp · Os/Models/Task.fpp · Svc/PrmDb/PrmDb.fpp*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'TimeIn' port used for?
+---RESPONSE---
+The Svc::ActiveRateGroup component's `TimeIn` port is not explicitly documented in the provided knowledge base sources (ActivePhaser.fpp, rate-group design patterns, or topology examples). The available information focuses on ports like `CycleIn`, `PhaserMemberOut`, and `Tick` for the `ActivePhaser` component, but does not mention a `TimeIn` port for `ActiveRateGroup`.
+
+To determine the purpose of `TimeIn`, you would need to:
+1. Locate the source code for `Svc::ActiveRateGroup` (e.g., in `Svc/ActiveRateGroup/ActiveRateGroup.fpp`).
+2. Check its port declarations and associated logic in implementation files.
+
+Would you like me to help you find or analyze the `TimeIn` port's definition?
+
+*Sources: Svc/ActivePhaser/ActivePhaser.fpp · docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' frequency in FPP?
+---RESPONSE---
+In F Prime (FPP), telemetry channels themselves do not have a direct "update frequency" parameter in their definition. Instead, the update rate of telemetry data is determined by the **application logic** that generates the telemetry values and the **scheduling** of tasks or commands that update them. Here's how it works:
+
+### 1. **Telemetry Channel Definition**
+Telemetry channels are declared in `.fpp` files using the `telemetry` keyword. For example:
+```cpp
+telemetry Counter {
+    // Telemetry data type and properties
+    uint32_t value;
+};
+```
+This defines the structure of the telemetry channel but does not specify its update rate.
+
+---
+
+### 2. **Update Frequency Control**
+The update frequency is controlled by:
+- **Application Logic**: The code that updates the telemetry value (e.g., a task or command handler) determines how often the value is changed.
+  ```cpp
+  // Example: Update telemetry every 100ms
+  void updateCounterTask() {
+      Counter.value++;
+      // Schedule next update
+      schedule(updateCounterTask, 100ms);
+  }
+  ```
+- **Command Handlers**: If the telemetry is updated via commands, the rate depends on how frequently commands are sent and processed.
+
+---
+
+### 3. **Rate Constraints via Scheduling**
+FPP uses a **rate-based scheduling** system. You can enforce minimum or maximum update rates using `schedule` or `rate` constraints in the task definitions. For example:
+```cpp
+task updateCounterTask {
+    rate(100ms); // Ensures the task runs at least every 100ms
+};
+```
+
+---
+
+### 4. **Testing with GDS APIs**
+To verify telemetry update rates during testing, use the GDS test APIs:
+```python
+# Await a telemetry update on the "Counter" channel
+result = fprime_test_api.await_telemetry("Counter")
+```
+This ensures the test waits for an update, indirectly validating the rate.
+
+---
+
+### Summary
+- **No direct "update frequency" parameter** exists in FPP telemetry definitions.
+- The rate is controlled by **application logic** and **task scheduling**.
+- Use `schedule` or `rate()` in tasks to enforce update intervals.
+- Test with `await_telemetry` to validate behavior.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the purpose of the Fpp::ToCpp::readParameters phase.
+---RESPONSE---
+The **Fpp::ToCpp::readParameters** phase is a critical step in the F' code generation pipeline. Its primary purpose is to **parse and process parameter definitions** from FPP files (e.g., `.fpp` files) and generate corresponding C++ code that implements parameter storage, retrieval, and management in the target embedded system.
+
+### Key Responsibilities:
+1. **Parameter Extraction**:  
+   Reads parameter definitions specified in FPP, including:
+   - `identifier` (name)
+   - `type` (e.g., `INT`, `STRING`, `STRUCT`)
+   - `default` value (if provided)
+   - `id` (unique numeric identifier)
+   - `set opcode` and `save opcode` (for volatile/non-volatile memory operations)
+
+2. **Code Generation**:  
+   Generates C++ code to:
+   - Define parameter structures in non-volatile memory.
+   - Implement logic for setting/saving parameters via the specified opcodes.
+   - Initialize parameters with default values if provided.
+
+3. **Integration with F' Framework**:  
+   Ensures parameters are compatible with F' runtime systems (e.g., `Svc::BufferManager`) and adhere to JPL C++ coding standards.
+
+This phase bridges the high-level FPP model with low-level C++ implementation, enabling robust parameter management in embedded systems.
+
+*Sources: .github/ISSUE_TEMPLATE/feature-request.md · docs/reference/system-functional/dictionary.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'SchedIn' port used for?
+---RESPONSE---
+The `Svc::ActiveRateGroup` component does **not** have a port named `SchedIn` in the provided code snippet from `ActiveRateGroup.fpp`. The closest relevant port is:
+
+- `CycleIn`: An async input port for receiving the rate group cycle signal (used to trigger execution).
+
+If you are referring to a different port or file, please clarify, and I can assist further.
+
+*Sources: docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+In F', the "update" policy for a telemetry channel is specified using the `update` keyword in the FPP (F Prime Processing) file. Here's how it works:
+
+### Syntax in FPP:
+```fpp
+channel <channel_name> {
+    id = <id>;
+    name = "<name>";
+    data_type = <type>;
+    update = "on_change";  // or omitted for "send per update"
+}
+```
+
+### Key Details:
+1. **`update = "on_change"`**: The channel transmits data **only when the value changes**.
+2. **Omitted**: The channel transmits data **on every update** (even if the value hasn't changed).
+
+### Notes:
+- There is **no direct "offset" parameter** for the update rate. The sampling rate is typically governed by the component's scheduling or telemetry configuration (e.g., via `Telemetry` tasks in the component's C++ code).
+- The `id` field is offset by the component's base ID for global uniqueness, but this is unrelated to the update policy.
+
+If you're referring to a specific "offset" in timing (e.g., a delay), this is usually handled in the component's implementation logic rather than in the FPP definition. Let me know if you need help configuring telemetry sampling rates!
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the Svc::FileManager 'ShellCommand' command.
+---RESPONSE---
+The `ShellCommand` command in the **Svc::FileManager** service is listed in the integration test suite (`test_cmd_FileManager.py`) as a potential command, but it is explicitly annotated with the comment:  
+`# Don't use ShellCommand`.  
+
+### Key Implications:
+1. **Usage Caution**: The comment suggests that `ShellCommand` is either:
+   - **Deprecated** (replaced by other commands),
+   - **Not recommended** (due to security, reliability, or design concerns), or
+   - **A placeholder** (not fully implemented or documented).
+
+2. **Purpose Hypothesis**: If functional, `ShellCommand` might be intended to execute shell commands (e.g., system utilities) via the file manager. However, such functionality is typically avoided in F' services due to:
+   - **Security risks** (e.g., command injection),
+   - **Portability issues** (shell behavior varies across OS),
+   - **Violation of F' design principles** (e.g., separation of concerns).
+
+3. **Documentation Gap**: The provided knowledge base does not include the SDD (Software Design Document) for `Svc::FileManager`, so definitive details about `ShellCommand` are unavailable. To proceed, you would need to:
+   - Check the `Svc::FileManager` SDD for command descriptions.
+   - Inspect source code files (e.g., `fileManager.cpp`, `fileManager.fpp`) for implementation details.
+
+For precise behavior, consult the SDD or source code directly. Would you like me to locate the `Svc::FileManager` SDD or source files?
+
+*Sources: Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/ComQueue/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
