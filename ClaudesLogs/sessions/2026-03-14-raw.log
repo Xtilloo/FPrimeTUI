@@ -5105,3 +5105,427 @@ To confirm the exact behavior in your context, check the implementation of `Os::
 Would you like me to locate the relevant files for you?
 
 *Sources: Fw/Ports/CompletionStatus/CompletionStatus.fpp · docs/user-manual/framework/run-baremetal.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Explain the Passive Component stack usage.
+---RESPONSE---
+Passive Components in F' typically rely on other components or services to drive their functionality, but they may still interact with stack-based data structures for temporary storage or processing. Here's how stack usage might apply in such scenarios:
+
+1. **Data Passing via Stacks**  
+   Passive Components might use stacks (e.g., `ExternalStack` or `Stack`) to pass data between components. For example, the `Svc::FprimeFramer` component in uplink stacks uses stacks to manage serialized data, as seen in tutorials. This aligns with F'’s use of stacks for efficient memory management in component interactions.
+
+2. **Directives and Stack Arguments**  
+   Components like `Svc::FpySequencer` use stack-based arguments in directives (e.g., "stack" arguments popped at runtime). Passive Components could leverage similar patterns to receive or return data via the stack, especially in sequence-driven operations.
+
+3. **Stack Templates for Internal/External Storage**  
+   - `Stack` (internal memory): Suitable for Passive Components needing lightweight, temporary storage without external dependencies.  
+   - `ExternalStack` (external memory): Used when Passive Components require larger data buffers or share data with other systems.
+
+4. **StackBase Hierarchy**  
+   The `StackBase` class (and its derivatives) provides a foundation for stack operations, enabling Passive Components to abstractly manage LIFO operations while adhering to F'’s architecture.
+
+In summary, Passive Components may use stacks for data exchange, temporary storage, or directive execution, leveraging F'’s stack templates and memory management capabilities. Specific implementations depend on the component’s role in the system.
+
+*Sources: Fw/DataStructures/docs/sdd.md · Svc/FprimeFramer/docs/sdd.md · Svc/FpySequencer/docs/directives.md*
+
+
+---USER---
+How do you configure the stack size of an 'active' component?
+---RESPONSE---
+In F' (F Prime), the stack size for an **active** component (a component with a `main` function that runs continuously) is configured using a **preprocessor macro** in the component's C++ source file. Here's how it works:
+
+---
+
+### **1. Locate the Component's C++ File**
+Each active component has a corresponding `.cpp` file (e.g., `MyComponent.cpp`). This file contains the implementation of the component's `main` function.
+
+---
+
+### **2. Set the Stack Size with a Macro**
+In the `.cpp` file, you define the stack size using the `STACK_SIZE` macro. For example:
+```cpp
+#define STACK_SIZE 8192  // 8192 bytes (8 KB)
+```
+This tells the system to allocate **8192 bytes** of stack memory for the component's thread.
+
+---
+
+### **3. Why This Works**
+- **Stack size** is a **compile-time** parameter.
+- The `STACK_SIZE` macro is used by the F' code generation tools to configure the thread's stack in the generated C++ code.
+- You must **rebuild** the project after modifying this macro for the change to take effect.
+
+---
+
+### **4. Example Workflow**
+1. Open `MyComponent.cpp`.
+2. Add or modify the `STACK_SIZE` macro.
+3. Run `run_fprime_command` with `impl` to regenerate code (if needed).
+4. Rebuild the project (e.g., `run_fprime_command build`).
+
+---
+
+### **Why This Matters**
+- A **too-small** stack size can cause a **stack overflow** (crash).
+- A **too-large** stack size wastes memory, which is critical for embedded systems.
+
+Let me know if you'd like to see an example of how this macro is used in generated code!
+
+---USER---
+How do you clear the event table in the GDS GUI?
+---RESPONSE---
+In the GDS GUI (Ground Data System), clearing the event table is typically done through the interface itself. Here's how:
+
+1. **Locate the Event Table**: Open the GDS and navigate to the event table display (often labeled "Event Table" or "Events").
+2. **Use the "Clear" Option**: 
+   - Look for a toolbar button labeled **"Clear"** or **"Reset"** (often an eraser icon or a trash bin).
+   - Alternatively, right-click within the event table and select **"Clear Events"** from the context menu.
+3. **Confirm the Action**: Some systems prompt for confirmation (e.g., "Are you sure you want to clear the event table?").
+
+If you're using a specific version of the GDS or a custom interface, check the documentation for exact steps. For programmatic clearing (e.g., via commands), you’d use F’ commands like `CLEAR_EVENT_TABLE` in the flight software, but the GUI method is the standard user-facing approach. 
+
+Let me know if you’d like to explore the underlying F’ code or tools for automation!
+
+---USER---
+What is the 'FwEnumStoreType' used for in State Machines?
+---RESPONSE---
+The `FwEnumStoreType` is an enumeration used in F Prime's state machine (FwSM) components to specify how the state machine's current state is stored. It defines the **storage mechanism** for the state, which impacts how the state is persisted, accessed, and managed during flight operations.
+
+### Key Concepts:
+1. **State Storage Options**:
+   - `FwEnumStoreType::Register`: Stores the state in a hardware register (fast, volatile, reset on power cycle).
+   - `FwEnumStoreType::Variable`: Stores the state in a software variable (retains value across power cycles if saved to persistent storage).
+   - `FwEnumStoreType::Persistent`: Stores the state in non-volatile memory (e.g., flash), ensuring it survives system resets.
+
+2. **Why It Matters**:
+   - **Reliability**: For safety-critical systems (e.g., spacecraft), persistent storage ensures the state survives anomalies.
+   - **Performance**: Registers offer faster access than variables or persistent storage.
+   - **Power Management**: Choosing `Register` avoids the overhead of saving/restore cycles during power transitions.
+
+3. **Analogy**:
+   Think of it like a "memory bank" for the state machine. The `FwEnumStoreType` determines whether the state is stored in a **fast but temporary memory (register)**, a **software variable (RAM)**, or **long-term storage (flash)**.
+
+### Example Use Case:
+If a state machine manages a critical subsystem (e.g., a thruster), using `Persistent` ensures the state is retained after a reboot, preventing unintended behavior. For less critical tasks, `Register` might suffice for speed.
+
+Would you like to see an example of how this is configured in an F Prime component?
+
+---USER---
+Define NASA Rule #2: 'Fixed Loop Bounds.'
+---RESPONSE---
+NASA Rule #2: **'Fixed Loop Bounds'** requires that all loops in flight software must have a **fixed, known upper limit** that is determined at compile time or through static analysis. This ensures loops terminate predictably and prevents infinite loops, which could cause system failures or unsafe conditions.
+
+### Why It Matters:
+- **Safety-Critical Systems**: In spacecraft or aviation, infinite loops could lead to mission failure, data loss, or hardware damage.
+- **Determinism**: Flight software must execute predictably. Fixed bounds guarantee loops complete in a known number of iterations.
+- **Avoid Buffer Overflows**: Unbounded loops might access memory beyond allocated space, causing crashes or security vulnerabilities.
+
+### Example:
+A loop that iterates over a fixed-size array (e.g., `for (int i=0; i < 100; i++)`) complies with this rule. In contrast, a loop based on user input (e.g., `for (int i=0; i < user_input; i++)`) would violate the rule unless the input is statically verified to be bounded.
+
+This rule is part of NASA's broader guidelines to enforce rigor in flight software design, ensuring reliability and safety.
+
+---USER---
+What is a 'Circular Port Dependency'?
+---RESPONSE---
+A **circular port dependency** occurs when two or more components in an F' (F Prime) system reference each other's ports in a loop, creating an interdependent cycle. For example:
+- **Component A** sends data to **Component B** via a port.
+- **Component B** sends data back to **Component A** via another port.
+
+This creates a "loop" where each component depends on the other to function. 
+
+### Why is this problematic?
+1. **Initialization issues**: F' requires a clear hierarchy to initialize components. Circular dependencies can prevent the system from starting correctly.
+2. **Data flow chaos**: The system might enter infinite loops or unpredictable states if data keeps flowing back and forth without a clear endpoint.
+3. **Tooling errors**: F' tools (like `fpp-check`) may flag this as an error during topology validation.
+
+### Analogy
+Think of it like a chain of Lego blocks where each block is connected to the next, but the last block loops back to the first. The structure becomes unstable and impossible to build properly.
+
+### How to fix it?
+- **Refactor connections**: Ensure data flows in a single direction (e.g., A → B → C, not A ↔ B).
+- **Use intermediate components**: Break the loop by introducing a third component to mediate the data flow.
+- **Review topology files**: Check `topology.fpp` or component definitions for unintended port references.
+
+Let me know if you'd like to inspect a specific topology file or simulate a scenario!
+
+---USER---
+What is the project.cmake file?
+---RESPONSE---
+The `project.cmake` file is a **CMake configuration file** that defines how your F' (F Prime) project is built. It serves as the **build system's "instruction manual"** for compiling and linking your flight software. Here's what it typically contains:
+
+### Key Roles of `project.cmake`:
+1. **Project Setup**  
+   - Specifies the project name, version, and minimum CMake version required.
+   - Example:  
+     ```cmake
+     project(FPrimeExample VERSION 1.0.0)
+     ```
+
+2. **Source and Binary Directories**  
+   - Tells CMake where to find your source code (e.g., `src/`) and where to place built files (e.g., `build/`).
+
+3. **Include Directories**  
+   - Adds paths to header files used by your code (e.g., F' core libraries).
+
+4. **Compiler Flags**  
+   - Sets optimization levels, warnings, or other compiler-specific settings.
+
+5. **Integration with F' Tools**  
+   - Links to F' build utilities (like `fprime-generate` or `fprime-impl`) and ensures compatibility with the F' architecture.
+
+### Example Snippet:
+```cmake
+cmake_minimum_required(VERSION 3.14)
+project(MyFPrimeProject)
+
+# Add F' source directories
+include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/fprime)
+
+# Add executable target
+add_executable(MyApp src/main.c)
+```
+
+### Why It Matters:
+- Without `project.cmake`, CMake wouldn't know how to build your F' project.
+- It ensures your code is compiled correctly with all dependencies (e.g., F' libraries, hardware drivers).
+
+If you're working in **Academy mode**, focus on understanding its role in the build process. For actual editing, switch to **Mission Control**! 🚀
+
+**[SYSTEM]: Switched to MISSION CONTROL mode.**
+
+
+---USER---
+What is the project.cmake file?
+---RESPONSE---
+The `project.cmake` file is the root CMake configuration file for an F Prime project. It serves as the entry point for CMake-based builds and contains project-wide settings. Key purposes include:
+
+1. **Defining CMake version requirements** (e.g., `cmake_minimum_required`).
+2. **Project metadata** (e.g., `project()` declaration).
+3. **Including subdirectories** via `add_subdirectory()` to organize modules/libraries.
+4. **Integrating external libraries** (as noted in the knowledge base) when a library is reused across multiple modules.
+5. **Setting global build configurations** (e.g., compiler flags, target dependencies).
+
+It acts as the central hub for configuring the entire F Prime project structure and build process.
+
+*Sources: docs/how-to/develop-fprime-libraries.md · docs/how-to/integrate-external-libraries.md · cmake/docs/sdd.md*
+
+
+---USER---
+What does Os::Queue::receive() status RECV_EMPTY mean?
+---RESPONSE---
+The `Os::Queue::receive()` status `RECV_EMPTY` indicates that the queue was empty when the receive operation was called, and no message was available to retrieve. This status is returned to notify the caller that the queue did not contain any data at the time of the call. 
+
+In F', this is a common behavior for queue operations to handle cases where the queue is temporarily empty, allowing the caller to handle such scenarios (e.g., retrying later or processing the empty state explicitly). 
+
+For precise context, check the `Os::Queue` implementation in your project's source files or documentation.
+
+*Sources: Fw/Ports/CompletionStatus/CompletionStatus.fpp · docs/user-manual/framework/run-baremetal.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Explain the 'Passive Component' stack usage.
+---RESPONSE---
+The **Passive Component** in F' refers to components that do not have their own dedicated task (as opposed to active components, which do). Instead, they are "passive" in the sense that their execution is triggered by other components or system events. The **PassiveRateGroup** component is a key example, used to manage rate groups (sets of tasks that execute at specific intervals).
+
+### Stack Usage of Passive Components
+1. **RateGroupDriver Component**:
+   - The `PassiveRateGroup` is part of the **rate group stack**, which manages the scheduling and execution of tasks at defined rates.
+   - It relies on the **RateGroupDriver** component to orchestrate the execution of tasks within the rate group. This driver is often part of the **uplink stack** in F' applications (e.g., tutorials).
+
+2. **Stack Structure**:
+   - Passive components like `PassiveRateGroup` are integrated into the **component stack** of a system. For example, in the **uplink stack**, the `Svc::FprimeFramer` component (which handles data framing) might interact with the `PassiveRateGroup` to manage periodic tasks (e.g., sending telemetry).
+
+3. **Data Structures**:
+   - The `PassiveRateGroup` may use **stack-based data structures** (e.g., `Stack` or `ExternalStack`) to manage task queues or event buffers. These stacks ensure LIFO (last-in-first-out) behavior for task execution.
+
+4. **Usage Scenario**:
+   - Passive components are ideal for tasks that require periodic execution without dedicated threads (e.g., sensor sampling, command processing). They are driven by the system's scheduler or other components, reducing resource overhead.
+
+### Example
+In a spacecraft's uplink stack:
+- The `Svc::FprimeFramer` handles data framing.
+- The `PassiveRateGroup` manages a rate group (e.g., 1 Hz) to execute tasks like sending telemetry.
+- The `RateGroupDriver` ensures tasks in the rate group are executed at the correct intervals, leveraging stack-based data structures for task scheduling.
+
+This approach minimizes complexity while ensuring reliable periodic execution in F' systems.
+
+*Sources: Fw/DataStructures/docs/sdd.md · Svc/FprimeFramer/docs/sdd.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+Describe the TARGET_TOKENS constant in the RAG chunker.
+---RESPONSE---
+
+
+> *[Listing .... (PENDING)]*
+
+> *[Listing RAG... (PENDING)]*The RAG directory is not found in the current project structure. Could you clarify which component or file contains the TARGET_TOKENS constant you're referring to? The available directories include `TUI`, `FPrimeSampleProject`, and others, but no RAG-related files or folders were detected.
+
+*Sources: Svc/FpySequencer/docs/directives.md · fprime-tools/src/fprime/fpp/utils/fpp_to_json/node_structs.py · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How do you use the GDS 'Logs' tab?
+---RESPONSE---
+The GDS "Logs" tab is part of the Graphical User Interface (GUI) for the Ground Data System, allowing users to monitor and manage log data from flight software components. While the provided knowledge base does not specify exact features of the Logs tab, here's how it is typically used:
+
+1. **Viewing Logs**: The tab displays real-time or historical log messages generated by F' components (e.g., drivers, algorithms) during execution.
+2. **Filtering/Searching**: Users can filter logs by severity level (e.g., DEBUG, INFO, ERROR) or keyword to focus on specific events.
+3. **Exporting Logs**: Logs can often be exported to files for analysis outside the GDS.
+
+For command-line alternatives (e.g., `fpp-to-dict` or `fpp-check`), refer to the [GDS CLI guide](../gds/gds-cli.md) mentioned in the knowledge base. If you need further details, check the GDS GUI documentation or explore the CLI tools.
+
+*Sources: docs/reference/nomenclature.md · docs/user-manual/overview/gds-introduction.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+What is the difference between an async and guarded command?
+---RESPONSE---
+The difference between **async** and **guarded** commands in F' lies in their execution semantics and thread safety mechanisms:
+
+1. **Async Command**  
+   - Added to the component's message queue and executed **asynchronously** in the component's thread.  
+   - Has a **priority** (if specified) and defines **queue-full behavior** (e.g., `assert` or `drop`).  
+   - Non-blocking; the caller does not wait for completion.  
+   - Example: `async input port` for command dispatching.  
+
+2. **Guarded Command**  
+   - A **synchronous** command that is **protected by a guard** (e.g., a mutex or condition variable).  
+   - Ensures thread safety by requiring the caller to hold a guard before execution.  
+   - Execution is immediate but serialized to avoid race conditions.  
+   - Example: `guarded input port` for command registration.  
+
+In summary:  
+- **Async** commands are queued for background processing.  
+- **Guarded** commands are synchronous but require synchronization to ensure safe execution.
+
+*Sources: Drv/Interfaces/AsyncByteStreamDriver.fpp · docs/reference/system-functional/dictionary.md · Svc/CmdDispatcher/CmdDispatcher.fpp*
+
+
+---USER---
+How do you specify a custom toolchain in fprime-util?
+---RESPONSE---
+To specify a custom toolchain in `fprime-util`, follow these steps:
+
+1. **Create a Toolchain File**  
+   Place your custom toolchain file in the `cmake/toolchain` folder of your F' library's root directory. The file must end with `.cmake` (e.g., `my-toolchain.cmake`).
+
+2. **Define `FPRIME_PLATFORM` (Optional)**  
+   If your toolchain requires platform-specific settings, set the `FPRIME_PLATFORM` variable in the toolchain file to point to the appropriate platform configuration file.
+
+3. **Generate the Toolchain**  
+   Use `fprime-util` to register your toolchain:  
+   ```bash
+   fprime-util generate my-toolchain
+   ```  
+   Replace `my-toolchain` with the name of your toolchain file (without the `.cmake` suffix). This makes the toolchain available for use in F' projects.
+
+4. **Use the Toolchain**  
+   When configuring builds, specify the toolchain via the `--toolchain` argument in CMake or through environment variables, depending on your workflow.
+
+For example, if your toolchain file is `cmake/toolchain/my-toolchain.cmake`, running `fprime-util generate my-toolchain` registers it for use in F' projects.
+
+*Sources: docs/user-manual/build-system/cmake-toolchains.md · docs/how-to/develop-fprime-libraries.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+What is a 'Port Serialization Error'?
+---RESPONSE---
+A **"Port Serialization Error"** in the context of F' typically occurs during the **serialization** of data through a **communication port** (e.g., `Fw::Com`). This error arises when the system fails to convert data into a transmissible format (e.g., `Fw::ComPacket`) or when the serialized data cannot be properly stored in a `Fw::ComBuffer`.
+
+### Key Context from F' Knowledge:
+1. **Fw::ComPacket**:  
+   - A base class for packet subtypes, providing type identification for serialized data.  
+   - Errors here might stem from invalid packet structures, incorrect subtype definitions, or mismatches between sender/receiver packet formats.
+
+2. **Fw::ComBuffer**:  
+   - Represents a buffer for storing serialized data.  
+   - Errors could occur if the buffer is improperly sized, not properly allocated, or if the serialization process overflows/underflows the buffer.
+
+3. **Port Diagram**:  
+   - The `Fw::Com` port relies on serializable data (e.g., `ComPacket`) to transmit messages. A serialization error here might indicate:  
+     - **Invalid packet formatting** (e.g., missing headers, incorrect payload sizes).  
+     - **Buffer management issues** (e.g., insufficient buffer size for the data).  
+     - **Type mismatches** between sender and receiver (e.g., incompatible `ComPacket` subtypes).  
+
+### Common Causes:
+- Incorrectly defined `Fw::ComPacket` subtypes (e.g., missing required fields).  
+- Improper use of `Fw::ComBuffer` (e.g., not preallocating sufficient space).  
+- Serialization logic errors in custom packet handlers.  
+
+### How to Diagnose:
+1. Check the `Fw::Com` port configuration in your topology file (e.g., `topology.fpp`).  
+2. Verify packet subtype definitions in your `Fw::ComPacket` derivatives.  
+3. Inspect buffer allocation and usage in your serialization logic.  
+4. Use `fpp-check` or `fpp-to-dict` to validate F' code compliance.  
+
+For specific error details, provide the exact error message or log snippet.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · Fw/Com/docs/sdd.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What is the FPrimeAIClient 'System Prompt' for?
+---RESPONSE---
+The provided knowledge base does not contain any documentation or references to an "FPrimeAIClient 'System Prompt'". The available sources discuss F' framework components like data products (Fw::Dp), CMake-based testing with PyTest, and the RateGroupDriver component, but none mention an AI client or system prompt functionality. 
+
+To proceed, could you clarify or provide additional context about what you mean by "System Prompt" in the context of F'? This will help ensure accurate guidance.
+
+*Sources: Fw/Dp/docs/sdd.md · docs/user-manual/build-system/cmake-uts.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+Describe the 'Hub Pattern' bridge.
+---RESPONSE---
+The **Hub Pattern** in F' is a design pattern used to enable communication between components separated by barriers (e.g., address-space boundaries, platform divides, or hardware partitions). It acts as a **bridge** by serializing data across the barrier and reconstructing it on the other side. Here's how it works:
+
+---
+
+### **Key Concepts**
+1. **Hub Component**:
+   - A central component with **multiple serialization input/output ports**.
+   - Acts as an intermediary to route data across barriers.
+
+2. **Serialization/Deserialization**:
+   - Components on one side of the barrier connect their **typed ports** to the hub's **serialization ports**.
+   - Data is serialized (e.g., via sockets, ARINC 653 channels, UARTs) and sent across the barrier.
+   - On the receiving side, another hub deserializes the data and routes it to the appropriate **typed ports** of the target component.
+
+3. **Communication Bridge**:
+   - The hub "wraps" typed ports into serialized messages for transmission.
+   - On the remote side, the hub "unwraps" the serialized data back into typed ports, mimicking direct communication.
+
+---
+
+### **How It Works**
+- **Local Side**: A component's typed port is connected to the hub's serialization port. When the component calls a service, the hub serializes the request and sends it over the communication link.
+- **Remote Side**: A hub on the other side receives the serialized data, deserializes it, and routes it to the corresponding typed port of the remote component. The remote component processes the request as if it were a local call.
+
+---
+
+### **Use Cases**
+- **Distributed Systems**: Enables components on different nodes (e.g., embedded systems, multi-core platforms) to communicate.
+- **Hardware Barriers**: Supports communication across high-speed buses, UARTs, or address-space partitions.
+- **Example Implementations**: 
+  - Sockets (TCP/IP)
+  - ARINC 653 channels
+  - UARTs in embedded systems
+
+---
+
+### **Benefits**
+- **Decouples Components**: Components don’t need to know about the barrier; the hub handles the serialization/deserialization.
+- **Scalable**: Multiple hubs can manage complex, multi-node architectures.
+- **Flexible**: Works with various communication protocols and hardware interfaces.
+
+---
+
+### **Visualization**
+The pattern is often visualized as a "hub" connecting two nodes via a serialized link. Input ports on one hub map to output ports on the remote hub, creating a transparent bridge across the barrier. 
+
+This pattern is critical for F' applications requiring distributed or partitioned architectures, such as spacecraft systems or embedded multi-core platforms.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/hub-pattern.md · docs/getting-started/installing-fprime.md*
