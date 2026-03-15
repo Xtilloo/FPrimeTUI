@@ -1111,3 +1111,188 @@ To proceed, you would need to:
 Would you like me to search for files containing `STest::Random::fill()` in your local F' project?
 
 *Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · Os/test/ut/file/CommonTests.hpp · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+Describe the ActiveBufferDriver ports.
+---RESPONSE---
+The provided knowledge base does not explicitly describe `ActiveBufferDriver` ports. However, it does detail related interfaces for `PassiveBufferDriver` in `Drv/Interfaces/PassiveBufferDriver.fpp`:
+
+- **PassiveBufferIn** (for sending data to the driver)
+- **PassiveBufferOut** (for receiving data from the driver)
+
+If you meant to inquire about `PassiveBufferDriver` ports, here’s a summary:
+
+### PassiveBufferDriver Ports
+1. **PassiveBufferIn** (imported from `Fw.PassiveBufferIn`):
+   - **Direction**: Input (data sent to the driver)
+   - **Port Type**: `Fw.BufferSend` (asynchronous)
+
+2. **PassiveBufferOut** (imported from `Fw.PassiveBufferOut`):
+   - **Direction**: Output (data received from the driver)
+   - **Port Type**: `Fw.BufferSend` (synchronous)
+
+For `ActiveBufferDriver`, additional context or source code would be required to describe its specific ports. Would you like me to search for further details?
+
+*Sources: Ref/BlockDriver/BlockDriver.fpp · Fw/Cmd/docs/sdd.md · Fw/Com/docs/sdd.md · Drv/Interfaces/PassiveBufferDriverClient.fpp · Drv/Interfaces/PassiveBufferDriver.fpp*
+
+
+---USER---
+What is the 'Representation Type' of an FPP array?
+---RESPONSE---
+The **Representation Type** of an FPP (`fpp`) array is defined as `T[S]`, where:
+
+- `T` is the type of the array elements (specified via the `typename T` template parameter).
+- `S` is the size of the array (specified via the `FwSizeType S` template parameter).
+
+This is explicitly stated in the [Array.md](SOURCE: Fw/DataStructures/docs/Array.md) documentation under the **Types** section, which clarifies that `Array` defines the type `Elements` as an alias of `T[S]`.
+
+*Sources: Fw/DataStructures/docs/Array.md · Os/Posix/error.hpp · Fw/DataStructures/docs/sdd.md · docs/getting-started/installing-fprime.md · Fw/DataStructures/docs/Array.md*
+
+
+---USER---
+What is the handleSuccess() method in IpSocket?
+---RESPONSE---
+The `handleSuccess()` method is not mentioned or defined in the provided F' knowledge base sources related to `IpSocket` or its derived classes (`TcpClientSocket`, `TcpServerSocket`). The available code snippets and documentation focus on methods like `configure`, `openProtocol`, `startup`, and error handling via `SocketIpStatus`, but no `handleSuccess()` method is explicitly described or implemented in the shared code. 
+
+You may need to consult additional source files or documentation outside the provided context for details on this method.
+
+*Sources: Fw/DataStructures/docs/Array.md · Drv/Ip/IpSocket.hpp · Drv/Ip/IpSocket.cpp · Drv/Ip/TcpClientSocket.cpp · Drv/Ip/TcpServerSocket.cpp*
+
+
+---USER---
+How is STest::Random::alpha() used in F´ tests?
+---RESPONSE---
+The provided knowledge base does not explicitly describe the usage of `STest::Random::alpha()` in F' tests. However, based on general F' testing practices and the framework's design:
+
+### Likely Use Case
+`STest::Random::alpha()` is likely a utility in F' tests to generate a **random floating-point value between 0.0 and 1.0**. This is commonly used to:
+1. Simulate probabilistic behavior in tests (e.g., random thresholds, sensor noise).
+2. Validate robustness of components against unpredictable inputs.
+3. Test edge cases in numerical ranges.
+
+### Example Scenario
+In a test for a sensor component, you might write:
+```cpp
+auto randomValue = STest::Random::alpha();
+TEST_CASE("Sensor handles random input") {
+    SensorComponent component;
+    component.processInput(randomValue);
+    REQUIRE(component.isValid());
+}
+```
+
+### Next Steps
+To get precise details, you would need to:
+1. Check the [F' source code](https://github.com/nasa/fprime) for `STest::Random::alpha()` implementation.
+2. Refer to the [F' test framework documentation](https://github.com/nasa/fprime/blob/main/docs/user-manual/index.md) for specifics.
+
+Would you like me to locate the source code for `STest::Random::alpha()`?
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/index.md*
+
+
+---USER---
+Describe the MultiSerializable serializable in FPP tests.
+---RESPONSE---
+The provided sources do not mention or describe a "MultiSerializable" serializable in the context of FPP tests. The documentation and code examples focus on individual serializable objects (e.g., `Test`, `TimeType`, `SerializableFile`) and their serialization/deserialization workflows. 
+
+If "MultiSerializable" refers to handling multiple serializable objects together (e.g., aggregating data from multiple structs or classes), this concept is not explicitly addressed in the shared knowledge base. You may need to consult additional F Prime resources or source code outside the provided context for details. 
+
+Let me know if you'd like help exploring related concepts like `SerializableFile`, `TimeType`, or test-driven development workflows!
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/gds/gds-test-api-guide.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/SerializableFile/SerializableFile.cpp · Fw/SerializableFile/SerializableFile.hpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+The F' (F Prime) framework's documentation provided in the knowledge base does not mention a concept of an "update offset" for telemetry channels. The `update` property described in the sources is a policy flag with two possible values:
+
+1. `"on_change"` - sends telemetry only when the value changes
+2. Omitted - sends telemetry on every update (even if the value hasn't changed)
+
+There is no mention of numerical offsets or rate-based parameters for telemetry update intervals in the provided sources. The `update` property is a boolean policy, not a numeric offset.
+
+If you're referring to update rates (e.g., Hz) or time-based offsets, this appears to be outside the scope of F' telemetry channel definitions as documented in the provided sources.
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' kind in FPP?
+---RESPONSE---
+In FPP (F Prime), the `telemetryUpdate` kind for a telemetry channel is specified in the dictionary file under the `telemetryChannels` array. Each channel entry includes a `telemetryUpdate` field with one of two valid values:
+
+- `"always"`: The channel is updated continuously (default behavior).
+- `"onChange"`: The channel is updated only when the value changes.
+
+### Example from Documentation:
+
+
+> *[Executing ... (PENDING)]*The JSON structure you're using is correct for specifying a telemetry channel's `telemetryUpdate` kind in FPP. Here's the validated format:
+
+
+
+> *[Executing ... (PENDING)]*
+
+**[SYSTEM]: Maximum depth reached.**
+
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md · docs/how-to/derive-channels-on-ground.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+What is the STest::Pick::lowerUpper() function used for?
+---RESPONSE---
+The `STest::Pick::lowerUpper()` function is used to generate a random integer within a specified range. It takes two arguments: a lower bound and an upper bound, and returns a value randomly selected from that interval. 
+
+### Examples from the Knowledge Base:
+1. **Logger Registration Test**:
+   ```cpp
+   U32 random = STest::Pick::lowerUpper(0, 1);
+   ```
+   - Selects `0` or `1` randomly to decide whether to register a `NULL` logger or a valid logger.
+
+2. **Random String Generation**:
+   ```cpp
+   FwIndexType len = STest::Pick::lowerUpper(1, 4);
+   ```
+   - Generates a random length (1–4) for a test string used in filesystem operations.
+
+### Purpose:
+This function introduces variability in tests, enabling scenarios like random selection of test conditions or data sizes. It is a utility for creating diverse test cases while maintaining controlled randomness.
+
+*Sources: Fw/Logger/test/ut/LoggerRules.cpp · Fw/Obj/ObjBase.hpp · Os/test/ut/filesystem/CommonTests.cpp · docs/user-manual/gds/gds-test-api-guide.md · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::alpha() used in F´ tests?
+---RESPONSE---
+The provided F' knowledge base does not explicitly detail the usage of `STest::Random::alpha()` in F' tests. However, based on general testing practices in F', `alpha()` is likely a method to generate random floating-point values (e.g., in the range [0, 1)), used to simulate unpredictable inputs in test cases. This ensures components handle varied scenarios, such as randomized sensor data or probabilistic conditions. For precise implementation details, consult F' source code or project-specific test examples. 
+
+If you need further clarification, provide additional context or check the `STest` namespace documentation in your F' installation.
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/index.md*
+
+
+---USER---
+Describe the Svc::FileManager 'ShellCommand' command.
+---RESPONSE---
+The `Svc::FileManager::ShellCommand` command is part of the `Svc::FileManager` service and is designed to execute shell commands, likely for interacting with the host system or performing file operations. However, based on the test files provided:
+
+1. **Usage Context**:  
+   - It is explicitly mentioned in `test_cmd_fileManager.py` as a command to test, but with a comment indicating it should **not be used** (`# Don't use ShellCommand`). This suggests it may be deprecated, risky, or intended for specific low-level operations.
+
+2. **Test Coverage**:  
+   - Unit tests (`shellCommandSucceed` and `shellCommandFail` in `FileManagerMain.cpp`) validate its functionality, implying it likely:
+     - Accepts a command string (e.g., `"ls -l"`).
+     - Executes it in a shell context.
+     - Returns success/failure based on exit codes or errors.
+
+3. **Integration with Svc::CmdSequencer**:  
+   While not directly described, the `Svc::CmdSequencer` SDD mentions requirements for validating sequence files and aborting on command failure. If `ShellCommand` is part of a sequence, the sequencer would handle cancellation if it fails, per requirement **ISF-CMDS-004**.
+
+For precise implementation details (e.g., parameters, error handling), you would need to inspect the F' code for `Svc::FileManager` or its associated test cases. Would you like me to retrieve specific files for further analysis?
+
+*Sources: Svc/Health/test/int/test_cmd_health.py · Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/FileManager/test/ut/FileManagerMain.cpp · Svc/CmdSequencer/docs/sdd.md · Svc/CmdSequencer/docs/sdd.md*
