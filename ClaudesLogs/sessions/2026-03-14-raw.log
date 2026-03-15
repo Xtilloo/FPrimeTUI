@@ -3075,3 +3075,297 @@ In F Prime, subtopologies are registered in CMake through the following mechanis
 This registration process ensures subtopologies are compiled, linked, and available for use in the main application.
 
 *Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/subtopologies.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What does the ref keyword do in an FPP port definition?
+---RESPONSE---
+The `ref` keyword in an FPP port definition indicates that the port is a **reference** to an object, rather than owning or copying it. This has several key implications:
+
+1. **Pass-by-reference**: The port does not take ownership of the object; instead, it references an existing instance. Modifications to the object via the port will affect the original object in the system.
+
+2. **Efficiency**: Avoids unnecessary copying of large objects, making it suitable for performance-critical scenarios.
+
+3. **Lifetime management**: The referenced object must remain valid for the duration of the port's usage, as the port does not manage its lifecycle.
+
+In the example from `DataTypes.fpp`:
+```fpp
+port DataBuffer(
+               ref buff: Drv.DataBuffer @< A data buffer
+             )
+```
+The `ref buff` parameter means the port will reference a `Drv.DataBuffer` instance, allowing the port to interact with the buffer without owning it.
+
+*Sources: Svc/Ports/TlmPacketizerPorts/sdd.md · fprime-tools/src/fprime/fpp/utils/fpp_to_json/visitors/writer.py · Drv/Ports/DataTypes/DataTypes.fpp*
+
+
+---USER---
+Explain Command Sequencing in F prime.
+---RESPONSE---
+Command sequencing in F Prime is a core functionality that enables spacecraft to execute complex, time-sensitive operations autonomously. Here's a structured explanation:
+
+### **Key Concepts**
+1. **Sequence Definition**  
+   Sequences are defined in `.fpp` files using the `Sequence` keyword. Each sequence contains a list of commands (e.g., `Cmd1`, `Cmd2`) executed in order. Example:
+   ```cpp
+   Sequence MySequence {
+       Cmd1;
+       Cmd2;
+   };
+   ```
+
+2. **Dictionary Integration**  
+   Commands are tied to a **dictionary** (defined in `.dict` files) which specifies parameters, telemetry, and event masks. The sequencer uses this to validate command arguments and generate telemetry/events.
+
+3. **Sequencer Component**  
+   The `Sequencer` component (implemented via `fprime::sequencer::Sequencer`) manages execution:
+   - Parses sequences from `.fpp` files.
+   - Executes commands in order, respecting timing constraints.
+   - Handles command validation, error recovery, and state transitions.
+
+4. **Command Execution Flow**  
+   - **Command Parsing**: The `CommandParser` validates command syntax and extracts parameters.
+   - **Execution**: The `CommandExecutor` runs the command, updating spacecraft state and generating telemetry.
+   - **Error Handling**: If a command fails, the sequencer may pause, retry, or transition to a safe state.
+
+### **Tools & Workflow**
+- **`fpp` Preprocessor**: Translates `.fpp` sequence definitions into C++ code.
+- **`fprime build`**: Compiles sequencer logic and integrates it with the spacecraft's software stack.
+- **Simulation**: Sequences are tested in simulation environments to ensure correct timing and error handling.
+
+### **Use Cases**
+- Autonomous science experiments (e.g., deploying a sensor at specific intervals).
+- Housekeeping routines (e.g., periodic health checks).
+- Emergency protocols (e.g., safing sequences during anomalies).
+
+For deeper details, refer to the [F Prime Sequencing Documentation](https://fprime.org/docs/reference/system-functional/sequencing). Would you like to explore a specific aspect (e.g., error handling, dictionary integration)?
+
+*Sources: fprime-tools/src/fprime/common/error.py · fprime-tools/src/fprime/fbuild/settings.py · docs/reference/system-functional/index.md*
+
+
+---USER---
+What is the FW_OPTIONAL_NAME macro?
+---RESPONSE---
+The `FW_OPTIONAL_NAME` macro is not referenced or described in the provided F' knowledge base documents, which cover topics like `Stack<T>`, `ExternalStack<T>`, `DpManagerTester`, and testing utilities. To learn about this macro, you would need to consult additional F' documentation, source code, or context from outside the provided materials. Let me know if you'd like help locating it!
+
+*Sources: Fw/DataStructures/docs/Stack.md · Svc/DpManager/test/ut/README.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+How do you use the fprime-cli to view telemetry?
+---RESPONSE---
+To use `fprime-cli` to view telemetry via the Ground Data System (GDS), you would typically interact with the GDS layer through CLI commands. While the exact subcommands may depend on your setup, the general approach involves using the `fprime-cli` tool with GDS-specific options. For example:
+
+```bash
+fprime-cli gds telemetry view --channel "Counter"
+```
+
+This command would attempt to retrieve telemetry data from the "Counter" channel. For precise syntax, check the `fprime-cli` help documentation or use `fprime-cli --help` to explore available subcommands.
+
+If you're working in a test environment, the Python `fprime_test_api` (as shown in the knowledge base) is often used for scripting telemetry retrieval. Let me know if you need help with that!
+
+*Sources: docs/user-manual/gds/gds-cli.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Define NASA Rule #5: Assertion Density.
+---RESPONSE---
+NASA Rule #5: Assertion Density is a requirement from the NASA Software Engineering Requirements (NASA-STD-8719.1B) that mandates a minimum level of assertion coverage in software systems. While the exact metric is defined in the official standard, the rule emphasizes:
+
+1. **Assertion density** as a measure of code correctness verification
+2. **Minimum coverage thresholds** for critical systems
+3. **Runtime validation** of key parameters and states
+4. **Error detection** through pre- and post-conditions
+
+This rule is particularly relevant to F' development as it aligns with JPL's safety-critical software practices. For precise requirements, you would need to consult the official NASA-STD-8719.1B document. Would you like me to help locate this document in your environment?
+
+*Sources: Svc/PrmDb/docs/sdd.md · Svc/DpWriter/test/ut/README.md · Svc/ActiveTextLogger/docs/sdd.md*
+
+
+---USER---
+What is the purpose of fprime-util purge?
+---RESPONSE---
+The `fprime-util purge` command is used to **purge the unit test directory** as described in the CONTRIBUTING.md documentation. This likely removes generated files, temporary data, or build artifacts specific to unit testing to ensure a clean state for subsequent test runs or builds. 
+
+For exact behavior, you might want to check the tool's documentation or observe its effects in your workspace. Would you like me to execute it and show you the files affected?
+
+*Sources: CONTRIBUTING.md · CONTRIBUTING.md · Ref/README.md*
+
+
+---USER---
+Describe the Os::Queue class.
+---RESPONSE---
+The `Os::Queue` class is not explicitly detailed in the provided F' knowledge base sources (e.g., `Fw/DataStructures`, `Svc/BufferManager`, or `Svc/ComRetry`). However, based on standard F' architecture and related components:
+
+### Possible Interpretations of `Os::Queue`:
+1. **OS Abstraction Layer Queue**:
+   - If `Os::Queue` refers to a queue in the **OS abstraction layer** (e.g., for task scheduling, IPC, or resource management), it would likely be a wrapper or interface for lower-level OS-specific queue implementations (e.g., POSIX `mqd_t`, Windows `QUEUE`, etc.).
+   - Such a class might provide cross-platform abstractions for enqueue/dequeue operations, thread synchronization, and error handling.
+
+2. **Misinterpretation or Typo**:
+   - You might be referring to `Fw::FifoQueue` or `Fw::ExternalFifoQueue` from the `Fw/DataStructures` package, which are core FIFO queue implementations in F'. These are templated and used for managing data in FIFO order with internal/external memory.
+
+3. **Service-Specific Queue**:
+   - If `Os::Queue` is part of a specific service (e.g., `Svc::BufferManager` or `Svc::ComRetry`), it might be a custom queue for managing buffers or retry logic. However, this is not detailed in the provided sources.
+
+---
+
+### Recommended Next Steps:
+1. **Check the F' Documentation**:
+   - Refer to the [F' User Guide](https://github.com/nasa/fprime) or [source code](https://github.com/nasa/fprime) for `Os::Queue` definitions.
+
+2. **Verify File Context**:
+   - If you have specific files (e.g., `Os/Queue.h`, `Os/Queue.cpp`), use the `read_file` tool to inspect their contents. For example:
+     ```json
+     {
+       "tool_name": "read_file",
+       "path": "Os/Queue.h"
+     }
+     ```
+
+3. **Clarify the Context**:
+   - If you meant a different queue (e.g., `Fw::FifoQueue`), I can explain its structure and usage.
+
+Let me know how you'd like to proceed!
+
+*Sources: Svc/BufferManager/docs/sdd.md · Fw/DataStructures/docs/sdd.md · Svc/ComRetry/docs/sdd.md*
+
+
+---USER---
+What is the mnemonic of a command?
+---RESPONSE---
+The **mnemonic** of a command in F' is a **unique text identifier** defined in the component's FPP (F Prime Protocol) file. It serves as the human-readable name for the command and is used to uniquely identify the command within the system. 
+
+Key properties of a command mnemonic:
+1. **Uniqueness**: The mnemonic is combined with the component's instance name to ensure global uniqueness across the system.
+2. **Command Handler Naming**: The command handler function in the generated C++ code is named using this mnemonic, e.g., `"<mnemonic>_cmdHandler(...)"`
+3. **Command Dispatch**: The mnemonic is used by the `Svc::CmdDispatcher` to route commands to the correct handler.
+
+Example:
+If a command is defined in FPP as:
+```fpp
+command MyCommand {
+  opcode = 0x1234
+  mnemonic = "MyCommand"
+  ...
+}
+```
+The generated handler will be `MyCommand_cmdHandler(...)`. 
+
+No tool was needed for this answer, as it is derived from F' documentation.
+
+*Sources: docs/user-manual/framework/autocoded-functions.md · docs/user-manual/overview/04-cmd-evt-chn-prm.md · fprime-tools/src/fprime/fbuild/target.py*
+
+
+---USER---
+What is Exact-Match file replacement in Mission Control?
+---RESPONSE---
+Exact-Match file replacement in Mission Control (F' framework) refers to the strict text substitution mechanism enforced by the `replace_in_file` tool. This tool requires the **exact literal text** match of the original content to perform a replacement. 
+
+### Key Characteristics:
+1. **No partial matches**: The `old_content` parameter must match the target text **exactly** (including whitespace, case, and formatting).
+2. **No regex support**: Unlike Python's `str.replace()`, this tool does not support regular expressions or pattern matching.
+3. **Atomic replacement**: The tool replaces **all occurrences** of the exact match in a single operation (unlike Python's `count=1` parameter).
+
+### Example:
+To replace `old_text` with `new_text` in a file:
+```json
+{
+  "tool_name": "replace_in_file",
+  "path": "path/to/file.txt",
+  "old_content": "old_text",
+  "new_content": "new_text"
+}
+```
+This will **replace all instances** of `old_text` with `new_text` **only if** the original file contains the exact string `old_text`.
+
+### Contrast with Python's `replace_contents`:
+The Python function `replace_contents` (from `fprime-tools`) replaces **only the first occurrence** of a substring, whereas Mission Control's `replace_in_file` requires an **exact match** and replaces **all occurrences**. 
+
+This ensures precise control over code modifications in F' projects.
+
+*Sources: Svc/FileManager/docs/sdd.md · fprime-tools/src/fprime/common/utils.py · Fw/FilePacket/docs/sdd.md*
+
+
+---USER---
+How do Rate Groups handle Slips?
+---RESPONSE---
+To determine how Rate Groups handle Slips in F', we need to analyze two key areas:  
+1. **Rate Group Topology** (e.g., `topology.fpp`)  
+2. **Schedule Handler Implementation** (e.g., `SignalGen.cpp`)  
+
+I will retrieve these files to examine the specific mechanisms used for Slip detection and recovery.  
+
+```json
+{
+  "tool_name": "read_file",
+  "path": "Top/topology.fpp"
+}
+```
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/rate-group.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What is the ThreadedTCP.log file?
+---RESPONSE---
+The `ThreadedTCP.log` file is likely a log file generated by a component in an F' (F Prime) project that involves TCP communication in a threaded context. While the provided knowledge base does not explicitly mention this file, F' projects often use logging to capture runtime diagnostics, debug information, or system behavior. 
+
+In F', logging is typically configured via the `<logging/>` component in the GDS (Generated Data Structure) topology, which directs log output to files or dashboards. The `ThreadedTCP.log` file would likely contain logs related to a TCP-based communication module that operates in a multithreaded environment, such as message exchanges, connection states, or error events.
+
+To investigate further, you would need to:
+1. Check if the `ThreadedTCP` component is defined in your project's topology files (e.g., `.fpp` or `.fpp.xml`).
+2. Verify logging configuration in the GDS to confirm if logs are directed to this file.
+3. Inspect the file's contents to identify the specific context of the logs.
+
+Would you like to check your project's topology files or logging configuration?
+
+*Sources: docs/user-manual/gds/gds-dashboard-reference.md · fprime-tools/src/fprime/fbuild/enumerator.py · Fw/Log/docs/sdd.md*
+
+
+---USER---
+Describe Matched Ports in FPP.
+---RESPONSE---
+Matched ports in FPP (F Prime Preprocessor) are pairs of **input** and **output** ports between components that share the same name and data type. This mechanism enables communication between components by ensuring compatibility in both naming and data structure.
+
+### Key Details:
+1. **Port Directionality**:
+   - An **output port** on one component must be matched to an **input port** on another component.
+   - Example: 
+     - Component A has an output port `DataOut` of type `int`.
+     - Component B has an input port `DataOut` of type `int`.
+
+2. **Name and Type Matching**:
+   - The **names** of the ports must **exactly match** (case-sensitive).
+   - The **data types** must be **compatible** (e.g., both `int`, `float`, or custom types).
+
+3. **FPP Enforcement**:
+   - The FPP tool **validates** these matches during the build process. Mismatches (e.g., name/type mismatches or connecting two outputs) result in compilation errors.
+
+4. **Generated Code**:
+   - FPP generates the infrastructure (e.g., message passing, data structures) to handle the communication between matched ports.
+
+5. **Topology Validation**:
+   - Matched ports are critical for defining the **component topology**. FPP ensures the system’s communication graph is consistent and error-free.
+
+### Example in FPP:
+```cpp
+// Component A (output port)
+output_port<int> DataOut;
+
+// Component B (input port)
+input_port<int> DataOut;
+```
+Here, `DataOut` in Component A is matched to `DataOut` in Component B, enabling data flow.
+
+This mechanism ensures reliable, type-safe communication in F Prime’s component-based architecture.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · Svc/FileDispatcher/docs/sdd.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What is the default LLM used by Mission Control?
+---RESPONSE---
+The provided documentation and knowledge base do not specify a default LLM (Large Language Model) used by Mission Control. The content focuses on F' framework components, system design, and development tools, but does not mention AI/LLM integration or default language models. This information would require additional context beyond the provided sources.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · Svc/FpySequencer/docs/sdd.md · docs/getting-started/installing-fprime.md*
