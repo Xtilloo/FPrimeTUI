@@ -4498,3 +4498,325 @@ The provided knowledge base does not explicitly document the behavior of the `fp
 For precise details, you would need to consult the latest [F' tooling documentation](https://fprime.org/) or run `fprime-util check --help` in your terminal. Would you like me to check the tool's help output for you?
 
 *Sources: Svc/ActivePhaser/docs/sdd.md · fprime-tools/src/fprime/cookiecutter_templates/cookiecutter-fprime-component/hooks/pre_gen_project.py · Svc/Health/docs/sdd.md*
+
+
+---USER---
+How does Os::Task handle task priority?
+---RESPONSE---
+In F Prime's `Os::Task` implementation, task priority is validated during task creation. The `TaskStatus` enum includes `INVALID_PRIORITY` as an error code, which is returned if an invalid priority value is provided when starting a task. 
+
+This indicates that:
+1. The system enforces valid priority ranges during task initialization
+2. Invalid priorities (e.g., out-of-bounds values) result in `INVALID_PRIORITY` error
+3. The exact validation logic is implemented in the OS task management layer, which F Prime abstracts through its `Os::Task` interface
+
+For specific priority value ranges or scheduling policies, you would need to consult the underlying OS task implementation details (e.g., POSIX threads or RTOS specifics). The F Prime framework ensures priority parameters are validated before task creation.
+
+*Sources: docs/reference/fprime-translations.md · Svc/FatalHandler/docs/sdd.md · Os/Models/Task.fpp*
+
+
+---USER---
+Describe the fprime-gds --ip-port flag.
+---RESPONSE---
+The `--ip-port` flag in `fprime-gds` specifies the port number to use for the IP adapter (network interface) when launching the Ground Data System (GDS). This flag is used to override the default port setting for the IP connection. 
+
+### Key Details:
+- **Purpose**: Configures the GDS to listen on a specific port for incoming telemetry/commands via the IP adapter.
+- **Usage**: Typically used when the default port (e.g., `5500` or another standard port) is unavailable or when custom network configurations are required.
+- **Syntax**:  
+  ```bash
+  fprime-gds --ip-port <port_number>
+  ```
+  Replace `<port_number>` with the desired port (e.g., `8080`).
+
+### Example:
+```bash
+fprime-gds --ip-port 9000
+```
+This would start the GDS with the IP adapter listening on port `9000`.
+
+### Note:
+The exact default port value depends on the deployment configuration and is often defined in the project's dictionary or GDS setup. The `--ip-port` flag provides flexibility to adjust this setting.
+
+*Sources: docs/tutorials/cross-compilation.md · Svc/FpySequencer/docs/directives.md · docs/user-manual/overview/gds-introduction.md*
+
+
+---USER---
+What is the difference between a sync and a guarded port?
+---RESPONSE---
+In F', the key difference between a **sync (asynchronous)** and **guarded (synchronous)** port lies in their communication behavior and ownership semantics:
+
+### 1. **Guarded Port (Synchronous)**
+- **Blocking Behavior**: The caller blocks (waits) until the operation completes.  
+- **Status Handling**: Returns status immediately upon completion.  
+- **Buffer Ownership**: The driver takes ownership of the buffer after the operation.  
+- **Use Case**: Used in synchronous drivers (e.g., `Drv.ByteStreamDriver`), where the caller must wait for the send to finish.  
+
+Example:  
+```cpp
+// Guarded input port (synchronous)
+guarded input port dataIn: Svc.ComDataWithContext
+```
+
+### 2. **Async Port (Asynchronous)**
+- **Non-Blocking Behavior**: The caller does not block; the operation runs in the background.  
+- **Callback Mechanism**: Uses a `sendReturnOut` port to notify the caller of completion via a callback.  
+- **Buffer Ownership**: The caller retains ownership until the callback reports status.  
+- **Use Case**: Used in asynchronous drivers (e.g., `Drv.AsyncByteStreamDriver`), enabling non-blocking sends.  
+
+Example:  
+```cpp
+// Async send port (asynchronous)
+async output port send: Fw::Buffer
+```
+
+### Summary
+| Feature              | Guarded (Sync)          | Async (Async)           |
+|---------------------|-------------------------|-------------------------|
+| **Blocking**        | Yes                     | No                      |
+| **Status Return**   | Immediate               | Via callback            |
+| **Buffer Ownership**| Driver takes ownership  | Caller retains until callback |
+| **Typical Use**     | Synchronous drivers     | Asynchronous drivers    | 
+
+This distinction is critical for designing communication patterns in F' systems, as outlined in the `Drv/ByteStreamDriverModel` documentation.
+
+*Sources: docs/user-manual/overview/03-port-comp-top.md · Svc/Interfaces/FrameAccumulator.fpp · Drv/ByteStreamDriverModel/docs/sdd.md*
+
+
+---USER---
+What is the RRF_K constant in Reciprocal Rank Fusion?
+---RESPONSE---
+The **RRF_K** constant in Reciprocal Rank Fusion (RRF) refers to the **decay parameter** $ k $ used in the RRF scoring formula. The RRF score for an item is calculated as:
+
+$$
+\text{RRF\_score} = \frac{1}{k + \text{rank}_i}
+$$
+
+Where:
+- $ \text{rank}_i $ is the position of the item in the list from a particular source (e.g., 1 for the top result).
+- $ k $ (RRF_K) controls the **rate at which scores decay** with rank. A higher $ k $ reduces the impact of rank differences, while a lower $ k $ emphasizes higher-ranked items.
+
+### Key Notes:
+1. **Default Value**: In many implementations, $ k $ is set to a default value like **100** (e.g., in some information retrieval systems), but this can vary by application.
+2. **Tuning**: The value of RRF_K is often tuned empirically to optimize performance for specific tasks (e.g., document retrieval, sensor fusion).
+3. **F' Framework**: If this constant is defined in your F' codebase, check files like `Constants.fpp` or component-specific configuration files for its exact value. Use `read_file` to inspect relevant files if needed.
+
+If you're working in a specific F' project, provide the file path where RRF_K is defined, and I can help locate it.
+
+*Sources: Svc/ComQueue/docs/sdd.md · default/config/OsCfg.fpp · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How do you recover the original source path from a hashed FW_ASSERT message?
+---RESPONSE---
+To recover the original source path from a hashed `FW_ASSERT` message in F', you must reverse the source path hashing mechanism used during the F' build process. Here's how to approach this:
+
+---
+
+### **Step 1: Locate the Hashing Configuration**
+The hashing algorithm and parameters are defined in `HashConfig.hpp` (located in the `Utils/Hash/` directory of your F' project). This file specifies:
+- The hash implementation (e.g., SHA256, CRC32).
+- Salt values or parameters used during hashing.
+
+**Example:**
+```cpp
+// HashConfig.hpp
+#define HASH_IMPL Utils::Hash::openssl::SHA256
+#define HASH_SALT "project_secret"
+```
+
+---
+
+### **Step 2: Check for Generated Mapping Files**
+During the F' build, hashed paths are often mapped to original paths using a tool like `hash-to-file` or `fpp-to-dict`. If the build was done with `--hash-source-paths`, a reverse mapping file (e.g., `hashed_paths.map`) may exist in the build directory. This file maps hashed paths to their original source locations.
+
+**Example:**
+```
+hashed_path123 -> src/main.c
+hashed_path456 -> utils/helpers.c
+```
+
+---
+
+### **Step 3: Use F' Tools to Reverse Hash**
+If the mapping file is unavailable, use the `hash-to-file` tool to reverse the hash:
+```json
+{
+  "tool_name": "run_fprime_command",
+  "command": "hash-to-file",
+  "args": "--input hashed_paths.map --output original_paths.map"
+}
+```
+
+---
+
+### **Step 4: Rebuild with Debug Symbols (if needed)**
+If the hashed path includes debug symbols, rebuild the project with `--debug` flags to preserve source mappings:
+```json
+{
+  "tool_name": "run_fprime_command",
+  "command": "build",
+  "args": "--debug"
+}
+```
+
+---
+
+### **Important Notes**
+- **Security:** Hashed paths are intentionally obfuscated to protect source code. Reversing them may violate confidentiality agreements.
+- **Project-Specific:** The exact method depends on your project's `HashConfig.hpp` and build configuration.
+
+If you provide the hashed message or project details, I can guide you further!
+
+*Sources: fprime-tools/test/fprime/fbuild/test_settings.py · docs/how-to/integrate-external-libraries.md · Utils/Hash/README.md*
+
+
+---USER---
+What is the Svc::BufferManager Bin configuration?
+---RESPONSE---
+The **Svc::BufferManager Bin configuration** is defined in the `module BuffMgr` within the configuration files of the relevant subtopology (e.g., `ComFprimeConfig.fpp` or `ComCcsdsConfig.fpp`). These files specify constants for the bins used by the `commsBufferManager`. 
+
+To find the exact configuration:
+1. Navigate to the subtopology's configuration directory (e.g., `Svc/Subtopologies/ComFprime/ComFprimeConfig/` or `Svc/Subtopologies/ComCcsds/ComCcsdsConfig/`).
+2. Open the `ComFprimeConfig.fpp` or `ComCcsdsConfig.fpp` file.
+3. Look for the `module BuffMgr` section, which defines the buffer manager bin constants.
+
+Would you like me to retrieve the contents of the relevant configuration file for you?
+
+*Sources: Svc/Subtopologies/ComFprime/docs/sdd.md · Svc/Subtopologies/ComCcsds/docs/sdd.md · Fw/Buffer/docs/sdd.md*
+
+
+---USER---
+How do you define a string type with a maximum size in FPP?
+---RESPONSE---
+In F Prime (FPP), string types with maximum sizes are defined using the `ArraySet` template, which is a fixed-size array-like structure. To define a string type with a maximum size, you specify the element type (`char`) and the capacity (maximum length) as template parameters.
+
+### Example:
+```cpp
+typedef ArraySet<char, 256> String256;
+```
+
+This defines a type `String256` that can hold up to 256 `char` elements (i.e., a string of maximum length 255, since one byte is reserved for the null terminator).
+
+### Key Details:
+1. **Element Type**: `char` for character storage.
+2. **Capacity**: The second template parameter (`C`) defines the maximum number of elements (e.g., `256` for a 256-byte buffer).
+3. **Usage**: This is commonly used for fixed-size strings in F Prime, ensuring memory safety and avoiding dynamic allocations.
+
+For more details, refer to the [ArraySet documentation](https://github.com/nasa/fprime/blob/main/Fw/DataStructures/docs/ArraySet.md).
+
+*Sources: docs/reference/fpp-json-dict.md · default/config/PlatformCfg.fpp · Fw/DataStructures/docs/ArraySet.md*
+
+
+---USER---
+Describe the Data Products dictionary format.
+---RESPONSE---
+The Data Products dictionary format is defined in two key contexts within the F' framework:
+
+1. **FPP JSON Dictionary Specification**  
+   The format of FPP JSON dictionaries is described in the [FPP JSON Dictionary Specification](docs/reference/fpp-json-dict.md). This defines the structure of JSON dictionaries used for configuration and data serialization in F' components.
+
+2. **Data Product File Format**  
+   For data products, each file stores a serialized data product record with the format specified in the [data products documentation](../../../Fw/Dp/docs/sdd.md#serial-format). The filename follows a configurable format string (`DP_FILENAME_FORMAT`) containing placeholders:
+   - `%s`: DP file name prefix (typically a directory path)
+   - `%PRI_FwDpIdType`: Container ID
+   - `%PRI_u32`: Time seconds
+   - `%PRI_u32`: Time microseconds
+
+If you need further details about the JSON dictionary structure or the serialized data format, let me know!
+
+*Sources: docs/reference/fpp-json-dict.md · Svc/DpWriter/docs/sdd.md · Svc/PolyDb/docs/sdd.md*
+
+
+---USER---
+How do you add an external non-F prime library to a component?
+---RESPONSE---
+To add an external non-F Prime library to a component, follow these structured steps based on F' integration patterns:
+
+---
+
+### **1. Use `add_subdirectory` or `ExternalProject_Add` (CMake-based Integration)**
+#### **Step 1: Add the library source code to your project**
+- Place the external library's source code in a subdirectory (e.g., `ThirdParty/ETL`).
+- Use `add_subdirectory(ThirdParty/ETL)` in your project's `CMakeLists.txt` to include it.
+
+#### **Step 2: Configure the library in CMake**
+- If the library requires custom build steps (e.g., compiling `.cpp` files), use `add_custom_target` or `ExternalProject_Add`:
+  ```cmake
+  ExternalProject_Add(
+      ETL
+      GIT_REPOSITORY https://github.com/ETLCPP/etl
+      GIT_TAG        20.40.0
+      CONFIGURE_COMMAND <PATH_TO_CMAKE> <SOURCE_DIR>
+      BUILD_COMMAND <PATH_TO_MAKE>
+      INSTALL_COMMAND <PATH_TO_MAKE> install
+  )
+  ```
+
+#### **Step 3: Link the library to your component**
+- In your component's `CMakeLists.txt`, add the library as a dependency:
+  ```cmake
+  add_fprime_component(MyComponent)
+  depends(MyComponent) DEPENDS ETL
+  ```
+
+---
+
+### **2. Use `FetchContent` (For Git-hosted Libraries)**
+#### **Step 1: Declare and fetch the library**
+- Add this to your project's `CMakeLists.txt`:
+  ```cmake
+  include(FetchContent)
+  FetchContent_Declare(
+      etl
+      GIT_REPOSITORY https://github.com/ETLCPP/etl
+      GIT_TAG        20.40.0
+  )
+  FetchContent_MakeAvailable(etl)
+  ```
+
+#### **Step 2: Link the library to your component**
+- In your component's `CMakeLists.txt`, add:
+  ```cmake
+  add_fprime_component(MyComponent)
+  depends(MyComponent) DEPENDS etl
+  ```
+
+---
+
+### **3. Wrapper Component Pattern (Recommended for F' Integration)**
+1. **Create a wrapper component** to abstract the external library:
+   - Define ports for interacting with the library (e.g., `encrypt_port` for OpenSSL).
+   - Implement logic in the wrapper to handle library calls (e.g., managing cryptographic keys).
+
+2. **Link the wrapper to your system**:
+   - Ensure the wrapper's `CMakeLists.txt` includes the external library as a dependency.
+   - Other components can call the wrapper's ports to use the library's functionality.
+
+---
+
+### **Key Notes**
+- **Global vs. Module-Specific**: Place the library in a shared directory (e.g., `ThirdParty`) for global use or within a module's directory if it's only needed there.
+- **CMake Best Practices**: Always use `DEPENDS` in `add_fprime_component` to declare library dependencies explicitly.
+- **Header Inclusion**: Ensure the library's headers are visible in the build context (e.g., via `include_directories`).
+
+For specific library integration, provide the library's source code location and build requirements, and I can tailor the steps further.
+
+*Sources: docs/user-manual/build-system/cmake-customization.md · docs/how-to/integrate-external-libraries.md · docs/how-to/integrate-external-libraries.md*
+
+
+---USER---
+What is the FW_ASSERT_LEVEL macro?
+---RESPONSE---
+The `FW_ASSERT_LEVEL` macro in F Prime defines the severity level for assertions in the framework. It controls which assertion checks are enabled during compilation, typically based on the build configuration (e.g., debug vs. release). 
+
+For example:
+- `FW_ASSERT_LEVEL == 0`: Disables all assertions (release builds).
+- `FW_ASSERT_LEVEL == 1`: Enables basic assertions (e.g., `FW_ASSERT`).
+- `FW_ASSERT_LEVEL == 2`: Enables full assertions (e.g., `FW_ASSERT_DEBUG`).
+
+This macro is usually defined in a configuration header file (e.g., `Fw/Cfg/Config.h` or `Fw/Types.h`), depending on the F Prime version and project setup. To find its exact definition, you would need to inspect the relevant header files in your project. 
+
+Would you like me to locate the file where `FW_ASSERT_LEVEL` is defined?
+
+*Sources: Fw/DataStructures/docs/Stack.md · Svc/DpManager/test/ut/README.md · Fw/DataStructures/docs/ExternalStack.md*
