@@ -963,3 +963,151 @@ Key points from the documentation:
 For precise implementation details (e.g., timeout handling, retries), you would need to inspect the `Drv::TcpClientSocket` source code or consult additional F' framework documentation. Would you like me to locate the source file for further analysis?
 
 *Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Fw/Ports/SuccessCondition/SuccessCondition.fpp · Drv/Ip/docs/sdd.md*
+
+
+---USER---
+What is the FW_TASK_STK_SIZE_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not contain any information about the `FW_TASK_STK_SIZE_BUFFER_SIZE` macro or its usage. The sources referenced cover topics like asserts, data structures (Arrays, FifoQueueBase, StackBase), and object registries, but none mention task stack size-related macros.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/FifoQueueBase.md · Fw/DataStructures/docs/StackBase.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'Overrun' port.
+---RESPONSE---
+The provided knowledge base does not describe an `Overrun` port in the `Svc::ActiveRateGroup` component. The component's ports include:
+
+- `CycleIn` (async input for rate group cycle)
+- `RateGroupMemberOut` (output to members)
+- `PingIn` (async input for health checks)
+- `PingOut` (output for health checks)
+
+The `Overrun` term appears in test code (`ActiveRateGroupTester.cpp`) as a flag (`m_causeOverrun`) used to simulate overruns by triggering excessive cycle port calls, but this is not a formal port in the component's interface. Further context or source code outside the provided knowledge base would be required to confirm details about an `Overrun` port.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActiveRateGroup/test/ut/ActiveRateGroupTester.cpp · Svc/ActivePhaser/ActivePhaser.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The **Fw::TimePort** is used to pass **time stamps** throughout the system, primarily for telemetry and event logging purposes. It facilitates the transmission of time-related data (e.g., timestamps for telemetry channels or events) across components. 
+
+This port uses the `Fw::Time` class to encapsulate time values, which include the time base, context, seconds, and microseconds portions of a timestamp. The port diagram and serializable structure are defined in the `Time.fpp` file, as noted in the F' documentation. 
+
+Source: [Fw/Time/docs/sdd.md](#source-fwtime-docssddmd) | Section 1. Introduction
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::alphaNumeric() used in F´ tests?
+---RESPONSE---
+The `STest::Random::alphaNumeric()` function in F' is used to generate random alphanumeric strings for test cases, enabling robust validation of component behavior under varied input conditions. This function is integral to **Test-Driven Development (TDD)** in F', where tests are written before implementation to define expected behavior.
+
+### Key Use Cases:
+1. **Simulating Input Data**:  
+   Generates random strings (e.g., for command packets, telemetry IDs, or protocol fields) to test how components handle unexpected or edge-case inputs.  
+   Example:  
+   ```cpp
+   auto testStr = STest::Random::alphaNumeric(10); // 10-character random string
+   ```
+
+2. **Ensuring Determinism**:  
+   While the output is random, tests using this function often include assertions to verify that the component processes inputs consistently (e.g., checksum validation, data parsing).
+
+3. **Integration with FPP Models**:  
+   Tests written using `alphaNumeric()` align with F'’s model-driven approach, as they validate behavior against the component’s model rather than implementation details.
+
+### Example Test Scenario:
+```cpp
+TEST_CASE("Validate Command Parser with Random Alphanumeric") {
+    auto cmdStr = STest::Random::alphaNumeric(16); // Generate 16-character string
+    // Simulate sending cmdStr to a component
+    auto result = parseCommand(cmdStr);
+    REQUIRE(result.status == Status::OK); // Assert expected behavior
+}
+```
+
+This function is part of F'’s `STest` framework, which is tightly integrated with FPP (F' modeling language) and the build system. For detailed implementation, refer to the [TDD tutorial](docs/how-to/test-driven-development.md).
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/index.md*
+
+
+---USER---
+Describe the MultiSerializable serializable in FPP tests.
+---RESPONSE---
+The provided knowledge base does not explicitly mention a `MultiSerializable` serializable type. However, based on the context of F' framework's serializable mechanisms, here's what can be inferred:
+
+1. **SerializableFile Usage**: The `SerializableFile` class (from `Fw/SerializableFile`) is used to serialize/deserialize complex objects (e.g., the `Test` class in `Test.cpp`). It supports saving/loading serializable objects to/from files via `save()`/`load()` methods.
+
+2. **Single Serializable Focus**: The examples provided emphasize handling individual serializable objects (e.g., `Test` with `U32`, `I8`, `F64` elements). There is no direct mention of a `MultiSerializable` type for aggregating multiple serializable objects.
+
+3. **Potential Interpretation**: If `MultiSerializable` refers to combining multiple serializable objects into a single structure, it might involve:
+   - Using `Serializable`-derived classes to encapsulate multiple data members.
+   - Leveraging `SerializableFile` to handle composite objects (as shown in `Test.cpp`).
+
+For precise details on `MultiSerializable`, additional documentation or source code (e.g., `Fw/SerializableFile/` or test files) would be required. Let me know if you'd like to explore specific files!
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/gds/gds-test-api-guide.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/SerializableFile/SerializableFile.cpp · Fw/SerializableFile/SerializableFile.hpp*
+
+
+---USER---
+What are the loadParameters and readParameters phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `loadParameters` and `readParameters` phases are defined in the `Fpp::ToCpp::Phases` enum and are part of the F' framework's lifecycle management for parameter handling:
+
+1. **loadParameters**  
+   This phase corresponds to the `loadParameters()` method, which is explicitly called to request parameter values via a parameter port. It retrieves values from the parameter storage and makes them available to the component's implementation class. This is typically done during initialization (e.g., in the `startTasks` phase) but can be invoked at any time to re-read parameters if the storage updates.
+
+2. **readParameters**  
+   While the exact behavior is not explicitly detailed in the provided sources, this phase is likely part of the broader parameter-handling lifecycle. It may involve reading parameters during configuration or runtime, possibly as part of a separate step after `loadParameters` or in conjunction with other phases like `configObjects` or `startTasks`. Further context would require inspecting the full framework implementation or documentation.
+
+For precise details, refer to the `docs/user-manual/framework/building-topology.md` section on parameter loading and the `Fw::PrmGet/PrmSet` port documentation.
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · docs/user-manual/framework/building-topology.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'CycleIn' port.
+---RESPONSE---
+The `CycleIn` port in the `Svc::ActiveRateGroup` component is defined as an **async input port** with the following characteristics:
+
+- **Type**: `Svc.Cycle` (a message type representing cycle data).
+- **Keyword**: `drop` (indicates the port is not connected to any other component, acting as a placeholder or unused interface).
+- **Purpose**: Serves as the **rate group cycle input**, likely used to receive cycle-related data from an external source (e.g., a scheduler or timer).
+
+This port is part of the component's general ports section and is marked as `async`, implying it accepts asynchronous messages. The `drop` keyword suggests it may not be actively used in data flow but is retained for compatibility or documentation purposes.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Svc/RateGroupDriver/RateGroupDriver.fpp · Svc/PassiveRateGroup/PassiveRateGroup.fpp · Fw/Cmd/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::LogTextPort?
+---RESPONSE---
+The `Fw::LogTextPort` is used to pass a **printable text representation** of an ISF (Integrated Software Facility) Event. It transmits the event's **ID**, **time tag**, **severity**, and a **string description** of the event. This port is specifically designed for human-readable logging, enabling easier interpretation of event details (e.g., for console output or ground analysis). Components can hook this port to the `Svc::PassiveConsoleTextLogger` to enable console logging of event descriptions.
+
+*Sources: Fw/Log/docs/sdd.md · docs/user-manual/overview/04-cmd-evt-chn-prm.md · Fw/Log/docs/sdd.md · Svc/BufferManager/docs/sdd.md · Svc/ComRetry/docs/sdd.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+The provided knowledge base does not specify how to programmatically set or modify a telemetry channel's "update" offset (e.g., update rate) in FPP. The documentation describes the `update` property as either `"on_change"` or omitted (implying "send per update"), but it does not mention parameters for configuring the update rate or offset. You may need to consult additional F' framework resources or source code for this detail.
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+How is STest::Random::fill() used in F´ tests?
+---RESPONSE---
+The provided knowledge base does not explicitly document the usage of `STest::Random::fill()` in F' tests. The available sources mention testing practices (e.g., TDD, event-based testing via `await_event`), but no specific details about the `STest::Random::fill()` API or its integration into F' test frameworks.
+
+To proceed, you would need to:
+1. Locate the `STest::Random::fill()` implementation in F' source code (e.g., `Src/STest/Random.cpp`).
+2. Check test files (e.g., `Os/test/ut/...`) for examples of its usage.
+3. Consult the [F' User Manual](https://github.com/nasa/fprime/wiki/User-Manual) or [GitHub repository](https://github.com/nasa/fprime) for deeper context.
+
+Would you like me to search for files containing `STest::Random::fill()` in your local F' project?
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · Os/test/ut/file/CommonTests.hpp · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/custom-framing.md*
