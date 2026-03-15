@@ -2345,3 +2345,47 @@ To list all available commands for a deployment using the GDS CLI, you can use t
 If you need further assistance, let me know!
 
 *Sources: docs/user-manual/overview/gds-introduction.md · cmake/docs/sdd.md · Svc/Ccsds/TmFramer/docs/sdd.md*
+
+
+---USER---
+What does the `fprime-gds -n` flag do?
+---RESPONSE---
+The `-n` flag in `fprime-gds -n` disables the automatic execution of the flight software instance when starting the GDS GUI. By default, launching the GDS GUI also runs the native build of the flight software, but `-n` prevents this behavior, allowing manual control over execution.
+
+*Sources: Svc/FpySequencer/docs/directives.md · Svc/FpySequencer/docs/directives.md · docs/user-manual/overview/gds-introduction.md*
+
+
+---USER---
+Explain the `FW_SERIALIZABLE_TO_STRING` macro.
+---RESPONSE---
+The `FW_SERIALIZABLE_TO_STRING` macro in F' is used to generate a method for serializable classes that converts the object's state into a human-readable string representation. This is particularly useful for debugging and logging, as it allows developers to quickly inspect the contents of serialized objects.
+
+### Key Purposes:
+1. **Debugging**: Provides a textual summary of an object's data fields, aiding in diagnosing issues during runtime.
+2. **Logging**: Simplifies logging of complex data structures by automatically generating string representations.
+3. **Validation**: Helps verify that serialized data matches expected values during testing.
+
+### How It Works:
+- When applied to a class (e.g., `FW_SERIALIZABLE_TO_STRING(MyClass)`), it generates a `toString()` method.
+- The method uses the F' serializer to traverse the object's fields and produce a formatted string.
+- The output typically includes field names and values, structured for readability.
+
+### Example:
+```cpp
+FW_SERIALIZABLE_TO_STRING(MyData)
+class MyData {
+public:
+    int32_t value;
+    float   floatVal;
+};
+```
+This would generate a `toString()` method that outputs something like:
+```
+MyData: value=42, floatVal=3.14
+```
+
+### Notes:
+- Requires the class to be marked with `FW_SERIALIZABLE` for serialization support.
+- The exact formatting and fields included depend on the F' version and configuration.
+
+*Sources: Svc/BufferRepeater/docs/sdd.md · fprime-tools/src/fprime/cookiecutter_templates/cookiecutter-fprime-component/{{cookiecutter.component_name}}/docs/sdd.md · Svc/PassiveRateGroup/docs/sdd.md*
