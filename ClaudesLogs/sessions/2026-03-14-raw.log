@@ -2389,3 +2389,210 @@ MyData: value=42, floatVal=3.14
 - The exact formatting and fields included depend on the F' version and configuration.
 
 *Sources: Svc/BufferRepeater/docs/sdd.md · fprime-tools/src/fprime/cookiecutter_templates/cookiecutter-fprime-component/{{cookiecutter.component_name}}/docs/sdd.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+Describe the "Generic Hub" component.
+---RESPONSE---
+The **Generic Hub** component (documented in `Svc/GenericHub/docs/sdd.md`) is designed to mediate communication between subsystems by handling port and buffer operations. Its core responsibilities, as defined by its requirements, include:
+
+### Key Functionalities:
+1. **GENHUB-001**: Receive incoming port and buffer calls (e.g., data requests or updates).
+2. **GENHUB-002**: Serialize incoming port/buffer calls into an output port for transmission.
+3. **GENHUB-003**: Deserialize incoming serialized calls back into actionable port/buffer operations.
+4. **GENHUB-004**: Facilitate bidirectional communication with another generic hub to exchange port/buffer calls.
+
+### Validation:
+All requirements are validated via **unit tests**, ensuring robust handling of serialization/deserialization and inter-hub coordination. This component is critical for enabling modular, decoupled communication in distributed systems like spacecraft software. 
+
+Let me know if you need details about its implementation or integration with other components!
+
+*Sources: Svc/FileManager/docs/sdd.md · Svc/GenericHub/docs/sdd.md · Svc/ComLogger/README.md*
+
+
+---USER---
+How does `Svc::TlmChan` handle incoming telemetry during a downlink cycle?
+---RESPONSE---
+The `Svc::TlmChan` component handles incoming telemetry during a downlink cycle by leveraging the `Cycle` port's timestamp to timestamp telemetry data and manage periodic data transmission. Here's how it works based on available knowledge:
+
+1. **Telemetry Storage**: Telemetry values are serialized and stored in a table of channels, as described in the SDD.
+
+2. **Downlink Cycle Timing**: The `Cycle` port in `Svc::Cycle` provides a timestamp (`cycleStart`) that marks the beginning of a downlink cycle. This timestamp is likely used to synchronize telemetry transmission with the cycle's timing.
+
+3. **Data Push**: During the downlink cycle, `Svc::TlmChan` may push stored telemetry to external components (e.g., for transmission) using the `Cycle` port's timestamp to ensure data is sent at the correct interval.
+
+4. **Timestamping**: The `cycleStart` timestamp from the `Cycle` port is likely used to timestamp telemetry data when it is stored or transmitted, aligning with the downlink cycle's timing.
+
+To confirm this behavior, you would need to inspect the implementation files for `Svc::TlmChan` and its interaction with the `Cycle` port. Use the `list_directory` tool to locate relevant files (e.g., `Svc/TlmChan/impl/`), then analyze their code.
+
+*Sources: Svc/TlmChan/docs/sdd.md · Svc/FileDispatcher/docs/sdd.md · Svc/Cycle/Cycle.fpp*
+
+
+---USER---
+What is the `Svc::StaticMemory` component?
+---RESPONSE---
+The `Svc::StaticMemory` component is a specialized memory management service designed to replace the `Svc::BufferManager` in scenarios where memory allocation patterns are predictable and known in advance. It manages memory allocations from a **static, pre-allocated pool** of memory, eliminating the need for dynamic memory allocation (e.g., `malloc`/`free`) and reducing complexity in systems with constrained environments (e.g., embedded systems).
+
+### Key Features
+1. **Static Memory Pool**: 
+   - Memory is pre-allocated in fixed-size segments. The total memory size is determined by `StaticMemoryAllocations` (number of allocations) multiplied by `STATIC_MEMORY_ALLOCATION_SIZE` (size per segment).
+   - Example: If `StaticMemoryAllocations = 4` and `STATIC_MEMORY_ALLOCATION_SIZE = 2048`, total memory used is `4 * 2048 = 8192` bytes.
+
+2. **Port-Specific Allocation**:
+   - Each port index is tied to a dedicated memory segment. This ensures isolation between ports but requires careful configuration to avoid overflow.
+
+3. **Fixed-Size Allocations**:
+   - Memory sizes are fixed and cannot be dynamically resized. This trades flexibility for determinism and reduced runtime overhead.
+
+4. **Deallocation Requirements**:
+   - Memory must be explicitly deallocated before being reallocated. Failure to do so leads to memory leaks or corruption.
+
+### Configuration
+- **Allocation Count**: Defined in `AcConstants.fpp` via `StaticMemoryAllocations`.
+- **Segment Size**: Defined in `StaticMemoryConfig.hpp` via `STATIC_MEMORY_ALLOCATION_SIZE`.
+
+### Requirements
+- **STAMEM-001**: Must allocate fixed blocks per port index.
+- **STAMEM-002**: Must define allocate/deallocate ports compatible with `Svc::BufferManager`.
+
+### Use Cases
+Ideal for systems with predictable memory usage patterns, such as spacecraft subsystems or real-time embedded applications, where dynamic memory management is undesirable or impractical.
+
+*Sources: Svc/StaticMemory/docs/sdd.md · Svc/StaticMemory/docs/sdd.md · Svc/StaticMemory/docs/sdd.md*
+
+
+---USER---
+How do you filter events by severity in the `fprime-cli`?
+---RESPONSE---
+To filter events by severity using `fprime-cli`, you use the `send-command` operation to interact with the `EventManager` component's `SET_EVENT_FILTER` command. Here's how:
+
+### Steps:
+1. **Identify Severity Levels**  
+   Use values from the `FilterSeverity` enum in `EventManager.fpp`:
+   ```
+   WARNING_HI, WARNING_LO, COMMAND, ACTIVITY_HI, ACTIVITY_LO, DIAGNOSTIC
+   ```
+
+2. **Enable/Disable Filtering**  
+   Use `ENABLED` or `DISABLED` as the second parameter.
+
+3. **Send Command via `fprime-cli`**  
+   Example to enable `WARNING_HI` events:
+   ```bash
+   fprime-cli send-command "CdhCore.events.SET_EVENT_FILTER" ["WARNING_HI", "ENABLED"]
+   ```
+
+4. **View Filtered Events**  
+   Use the `view-events` command to see filtered output:
+   ```bash
+   fprime-cli view-events
+   ```
+
+This mirrors the `set_event_filter` Python helper but uses the CLI directly. Adjust severity levels and enable/disable states as needed.
+
+*Sources: Ref/test/int/ref_integration_test.py · docs/user-manual/gds/gds-cli.md · Svc/EventManager/EventManager.fpp*
+
+
+---USER---
+What does `Os::File` abstract?
+---RESPONSE---
+The `Os::File` class in the F' framework abstracts the underlying operating system's file system operations, providing a portable interface for file handling across different platforms. It encapsulates platform-specific details (e.g., Unix `open()`, Windows `CreateFile()`, etc.) and exposes a unified API for tasks like:
+
+- Opening/closing files
+- Reading/writing data
+- Seeking within files
+- Error handling (e.g., file not found, permission denied)
+
+This abstraction enables F' applications to remain OS-agnostic, as the actual implementation details are hidden behind the `Os::File` interface.
+
+*Sources: Fw/DataStructures/docs/SetOrMapImplConstIterator.md · Fw/DataStructures/docs/SetBase.md · Fw/DataStructures/docs/MapBase.md*
+
+
+---USER---
+Can a State Machine have "Guards" on its transitions?
+---RESPONSE---
+F' state machines **do not natively support "guards"** on transitions as a built-in feature. The F' framework uses a **signal-driven** approach for state transitions, where transitions are explicitly defined by signal names and state conditions. 
+
+For example, transitions are triggered by signals like `success`, `error`, or `tick`, and the state machine progresses based on these signals. While there is no explicit `guard` syntax (like in UML), you can achieve conditional behavior by:
+1. Using `if` statements in state actions to control flow.
+2. Leveraging signal conditions in the state machine definition (e.g., `on success`).
+3. Combining with `Array` or `DataStructure` types to track state-dependent conditions.
+
+If you need to enforce complex conditional transitions, you'd typically handle this logic in the state's `entry` or `exit` actions rather than through guards. Let me know if you'd like to implement a specific pattern!
+
+*Sources: docs/reference/nomenclature.md · docs/how-to/define-state-machines.md · Fw/DataStructures/docs/Array.md*
+
+
+---USER---
+Define NASA Rule #1: "Simple Control Flow."
+---RESPONSE---
+NASA Rule #1: "Simple Control Flow" is a critical coding standard enforced in F' (F Prime) development at NASA JPL. This rule mandates that all software components must implement **linear, deterministic control flow** to ensure predictability, reduce complexity, and facilitate formal verification. Key requirements include:
+
+1. **Avoiding complex branching**: Conditional logic (e.g., `if`, `switch`) must be limited to straightforward, well-documented paths. Nested conditions or excessive branching are prohibited.
+
+2. **No goto statements**: Unstructured control flow via `goto` is strictly forbidden to prevent unpredictable execution paths.
+
+3. **Single exit points**: Functions and loops must have a single exit point to ensure clarity and ease of analysis.
+
+4. **Deterministic state transitions**: All state machines and finite automata must follow predefined, unambiguous transitions.
+
+5. **Thorough testing**: Every code path must be validated through unit tests and formal methods (e.g., model checking) to ensure compliance.
+
+This rule aligns with NASA's safety-critical systems requirements, ensuring software reliability for space missions. For implementation details, refer to the F' coding standards guide or consult the `fprime/docs/standards.md` file. 
+
+Would you like me to locate the official rule definition from the F' documentation?
+
+*Sources: cmake/docs/sdd.md · Svc/DpWriter/test/ut/README.md · Svc/BufferRepeater/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the `fprime-util impl` command?
+---RESPONSE---
+The `fprime-util impl` command is part of the F Prime toolchain and serves as a command-line interface for **generating, building, and formatting** F Prime software components. Based on the implementation in `fprime-tools/src/fprime/fpp/impl.py` and the architecture guidelines:
+
+### Key Purposes:
+1. **Code Generation**: 
+   - Generates C++ source files (`*.cc`) and header files (`*.h`) from F Prime specification files (`*.fpp`).
+   - Uses the `FppUtility` to process F Prime templates and produce implementation code.
+
+2. **Build Execution**:
+   - Invokes the `Build` class to compile F Prime projects, handling dependencies and build targets.
+
+3. **Code Formatting**:
+   - Applies Clang-based formatting to source files using `ClangFormatter` to ensure adherence to JPL C++ style guides.
+
+4. **Unit Test Support**:
+   - Utilizes constants like `UT_FILES_TARGET_PATH` and `UT_TEMPLATE_FILE_SUFFIX` to manage unit test file generation and template handling.
+
+This command is critical for automating the implementation of F Prime components during development and testing.
+
+*Sources: fprime-tools/src/fprime/fpp/impl.py · docs/user-manual/gds/gds-dev-guide.md · docs/user-manual/gds/gds-cli.md*
+
+
+---USER---
+How do you detect a "Rate Group Slip"?
+---RESPONSE---
+In F', a "Rate Group Slip" is detected via the **`RateGroupCycleSlip`** event defined in the `ActiveRateGroup` component. This event is triggered when a cycle slip occurs (e.g., due to timing discrepancies or missed cycles). Here's how it works:
+
+1. **Event Definition** (from `ActiveRateGroup.fpp`):
+   ```cpp
+   event RateGroupCycleSlip(
+                     cycle: U32 @< The cycle where the cycle occurred
+                   ) \
+     severity warning high \
+     id 1 \
+     format "Rate group cycle slipped on cycle {}"
+   ```
+
+2. **Detection Mechanism**:
+   - The event is automatically generated by the `ActiveRateGroup` component when a cycle slip is detected.
+   - The `cycle` parameter identifies the specific cycle number where the slip occurred.
+   - The event is logged with **severity "warning high"**, making it visible in monitoring tools or logs.
+
+3. **Handling the Event**:
+   - Developers can subscribe to this event in their code to trigger custom logic (e.g., logging, recovery procedures).
+   - Example: Use `fpp`-generated code to handle the event in a component's implementation.
+
+To verify this, you could check the `ActiveRateGroup` component's event handling logic or use F' tools to analyze event propagation. Would you like to inspect the event's implementation details?
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · docs/getting-started/installing-fprime.md*
