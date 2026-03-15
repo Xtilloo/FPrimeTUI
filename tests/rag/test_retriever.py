@@ -1,5 +1,6 @@
 # tests/rag/test_retriever.py
 from rag.retriever import (
+    apply_diversity_filter,
     classify_query,
     composite_score,
     extract_keywords,
@@ -310,3 +311,54 @@ def test_composite_score_no_keyword_match():
     # Keyword (0.0 match): * 1.0
     expected_approx = 0.02 * 1.2 * 1.0 * 1.0
     assert abs(score - expected_approx) < 0.001
+
+
+def test_diversity_filter_general_max_2():
+    chunks = [
+        {"source_file": "A.md", "score": 0.05},
+        {"source_file": "A.md", "score": 0.04},
+        {"source_file": "A.md", "score": 0.03},  # should be filtered
+        {"source_file": "B.md", "score": 0.02},
+    ]
+    result = apply_diversity_filter(chunks, "general", "", 5)
+    sources = [c["source_file"] for c in result]
+    assert sources.count("A.md") <= 2
+    assert len(result) == 3  # 2 from A + 1 from B
+
+
+def test_diversity_filter_comparison_max_1():
+    chunks = [
+        {"source_file": "A.md", "score": 0.05},
+        {"source_file": "A.md", "score": 0.04},  # should be filtered
+        {"source_file": "B.md", "score": 0.03},
+        {"source_file": "C.md", "score": 0.02},
+    ]
+    result = apply_diversity_filter(chunks, "comparison", "", 5)
+    sources = [c["source_file"] for c in result]
+    assert sources.count("A.md") == 1
+
+
+def test_diversity_filter_file_specific_relaxed():
+    chunks = [
+        {"source_file": "Svc/FileManager/docs/sdd.md", "score": 0.05},
+        {"source_file": "Svc/FileManager/docs/sdd.md", "score": 0.04},
+        {"source_file": "Svc/FileManager/docs/sdd.md", "score": 0.03},
+        {"source_file": "Svc/FileManager/docs/sdd.md", "score": 0.02},
+        {"source_file": "B.md", "score": 0.01},
+    ]
+    result = apply_diversity_filter(chunks, "file_specific", "filemanager", 5)
+    sources = [c["source_file"] for c in result]
+    # All 4 from FileManager should pass (up to FINAL_K)
+    assert sources.count("Svc/FileManager/docs/sdd.md") == 4
+
+
+def test_diversity_filter_preserves_order():
+    chunks = [
+        {"source_file": "A.md", "score": 0.05},
+        {"source_file": "B.md", "score": 0.04},
+        {"source_file": "A.md", "score": 0.03},
+        {"source_file": "C.md", "score": 0.02},
+    ]
+    result = apply_diversity_filter(chunks, "general", "", 5)
+    scores = [c["score"] for c in result]
+    assert scores == sorted(scores, reverse=True)

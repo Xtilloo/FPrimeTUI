@@ -140,6 +140,50 @@ def composite_score(
     return score
 
 
+# Diversity limits per query type.
+_DIVERSITY_LIMITS: dict[str, int] = {
+    "file_specific": -1,      # -1 means no limit (up to FINAL_K)
+    "component_specific": -1,
+    "comparison": 1,
+    "code_seeking": 2,
+    "concept_seeking": 2,
+    "general": 2,
+}
+
+
+def apply_diversity_filter(
+    candidates: list[dict],
+    query_type: str,
+    target_entity: str,
+    final_k: int,
+) -> list[dict]:
+    """
+    Filter candidates to limit chunks per source file.
+
+    Candidates must be pre-sorted by score (descending).
+    For file_specific/component_specific, the target entity's source files
+    are exempt from the limit.
+    """
+    max_per_source = _DIVERSITY_LIMITS.get(query_type, 2)
+    source_counts: dict[str, int] = {}
+    result: list[dict] = []
+
+    for chunk in candidates:
+        src = chunk["source_file"]
+        count = source_counts.get(src, 0)
+
+        # Check if this source is the target entity (exempt from limit)
+        is_target = False
+        if target_entity and query_type in ("file_specific", "component_specific"):
+            is_target = target_entity in src.lower()
+
+        if is_target or max_per_source == -1 or count < max_per_source:
+            result.append(chunk)
+            source_counts[src] = count + 1
+
+    return result
+
+
 # Query-type classification patterns. Checked in precedence order.
 _FILE_EXTENSION_PATTERN = re.compile(r"\b[\w/]+\.\w{1,4}\b")
 _COMPARISON_PATTERNS = re.compile(
