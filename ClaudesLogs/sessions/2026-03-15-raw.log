@@ -463,3 +463,166 @@ The `Svc::ActiveRateGroup` component's ports, as defined in the provided knowled
 If you are referring to a different component or a specific file not included in the knowledge base, please provide additional context or check the file directly using the `read_file` tool.
 
 *Sources: Fw/Cmd/docs/sdd.md · Svc/ActivePhaser/ActivePhaser.fpp · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Fw/Prm/docs/sdd.md · docs/user-manual/framework/configuring-fprime.md*
+
+
+---USER---
+How is Os::Task::start() used in F´?
+---RESPONSE---
+The provided knowledge base does not contain specific information about the usage of `Os::Task::start()` in F Prime. The available sources mention `Os::QueueHandle` and general framework concepts but do not detail task management APIs. For precise usage, refer to the F' source code or documentation outside this context.
+
+*Sources: Os/Queue.hpp · docs/user-manual/index.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md · docs/user-manual/gds/gds-cli.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'LogOut' port.
+---RESPONSE---
+The provided knowledge base does not contain any documentation or code snippets describing a `LogOut` port for the `Svc::ActiveRateGroup` component. The available sources only mention the following ports for `ActiveRateGroup`:
+
+- `CycleIn` (async input)
+- `RateGroupMemberOut` (output)
+- `PingIn` (async input)
+- `PingOut` (output)
+
+If `LogOut` is a port in your specific implementation or a newer version of the component, it is not included in the sources referenced here. You may need to consult additional documentation or check the local file system for updated definitions.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+How is STest::Random::inRange() used in F´ tests?
+---RESPONSE---
+The provided knowledge base does not mention a function named `STest::Random::inRange()` in the context of F' tests. However, there is information about `isInRange()` being a method of `SetConstIterator` (used to check if an iterator is valid) and `STest::Pick::startLength` (used for random index selection in test rules). 
+
+If you meant to ask about `isInRange()` or other STest utilities, please clarify! Otherwise, based on the sources, `STest::Random::inRange()` is not referenced.
+
+*Sources: Fw/DataStructures/test/ut/STest/SetTestRules.hpp · docs/how-to/test-driven-development.md · Fw/DataStructures/test/ut/STest/MapTestRules.hpp · docs/user-manual/index.md · Fw/DataStructures/docs/SetConstIterator.md*
+
+
+---USER---
+Describe the MultiArray struct in FPP tests.
+---RESPONSE---
+The provided F' knowledge base does not include a `MultiArray` struct or any related definitions in the `Os/test/ut/file/FileRules.hpp` file. The available structs (e.g., `OpenIllegalPath`, `SeekIllegal`, etc.) are all derived from `AssertRule` and represent specific test rules for file operations, but none are related to a `MultiArray` data structure.
+
+If you are referring to a `MultiArray` in a different context (e.g., a C++ STL-like container or a custom F' framework structure), additional sources would be required to provide accurate details. Let me know if you'd like to explore other files or clarify further!
+
+*Sources: Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp*
+
+
+---USER---
+What are the stopThreads and deinitComponents phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `stopThreads` and `deinitComponents` phases in `Fpp::ToCpp::Phases` are part of the lifecycle management for components in F'. While the provided knowledge base does not explicitly describe these two phases, we can infer their roles based on the context of the phase system:
+
+1. **stopThreads**: Likely corresponds to halting or terminating background threads associated with components, ensuring proper resource cleanup before shutdown.
+
+2. **deinitComponents**: Likely involves deinitializing components, releasing resources, and performing teardown operations specific to each component instance.
+
+These phases are part of the broader "init specifiers" system that replaces traditional `configureTopology`, `startTopology`, and `teardownTopology` functions. For precise behavior, consult the F' documentation or inspect the generated C++ code for your subtopology.
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · docs/user-manual/overview/unit-testing.md*
+
+
+---USER---
+Describe the VMIN=1 and VTIME=0 configuration in LinuxUartDriver.
+---RESPONSE---
+The `LinuxUartDriver` in F' uses Linux's termios configuration for UART communication. While the knowledge base does not explicitly document `VMIN=1` and `VTIME=0` parameters for this driver, these are standard Linux termios flags for configuring non-blocking or blocking UART read behavior:
+
+1. **`VMIN=1`**:  
+   Forces the UART read operation to **block until at least one byte is received**. This ensures the driver does not return empty data, which is useful for applications requiring guaranteed data availability (e.g., serial protocols).
+
+2. **`VTIME=0`**:  
+   Sets the **time-out period for reading** to 0, meaning the read call will **wait indefinitely** for the required number of bytes (defined by `VMIN`). This combination (`VMIN=1, VTIME=0`) ensures the driver blocks until a single byte is received, with no time-out.
+
+---
+
+### Key Notes:
+- The example in the knowledge base uses `Drv::LinuxUartDriver::BAUD_115K` and `1024` (likely buffer size), but does not explicitly set `VMIN` or `VTIME`. These parameters might be configured via the underlying Linux `termios` structure, which the driver manages internally.
+- If you need to customize these settings, you would typically modify the `termios` configuration passed to the driver's `open` method (e.g., via `tcsetattr` in Linux). However, the `LinuxUartDriver` abstraction may encapsulate this logic, so direct manipulation might require diving into lower-level Linux API integration.
+
+For precise behavior, inspect the `LinuxUartDriver` implementation or consult its associated `Events.fppi`/`Telemetry.fppi` files for documented parameters.
+
+*Sources: docs/how-to/implement-radio-manager.md · Drv/LinuxUartDriver/LinuxUartDriver.fpp · docs/how-to/develop-device-driver.md · docs/how-to/implement-radio-manager.md · Fw/Types/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the m_reconnectState flag in SocketComponentHelper?
+---RESPONSE---
+The `m_reconnectState` flag in `SocketComponentHelper` is used to track the state of the reconnect process. It is an instance of the `ReconnectState` enum, which has three possible values:
+
+1. `NOT_RECONNECTING`: No reconnect is currently requested or in progress.
+2. `REQUEST_RECONNECT`: A reconnect has been requested but not yet initiated.
+3. `RECONNECT_IN_PROGRESS`: A reconnect operation is actively underway.
+
+This flag ensures proper state management for the reconnect task, preventing race conditions and ensuring the socket connection is handled correctly during reconnection events. The implementation in `SocketComponentHelper.cpp` uses this state to control when and how reconnect operations are initiated.
+
+*Sources: Fw/DataStructures/docs/Nil.md · docs/getting-started/installing-fprime.md · Drv/Ip/SocketComponentHelper.hpp · Fw/DataStructures/docs/Array.md · Drv/Ip/SocketComponentHelper.cpp*
+
+
+---USER---
+What is the FW_OBJECT_NAMES macro used for?
+---RESPONSE---
+The provided F' documentation sources do not mention the `FW_OBJECT_NAMES` macro or its purpose. The cited materials focus on data structure types (e.g., `Array`, `Stack<T>`, `FifoQueueBase<T>`) and their inheritance relationships, but no information is given about macros related to object naming conventions in F'. 
+
+To answer this question accurately, additional context or sources describing the `FW_OBJECT_NAMES` macro would be required.
+
+*Sources: Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/DataStructures/docs/ExternalStack.md · Fw/DataStructures/docs/ExternalFifoQueue.md · Fw/DataStructures/docs/FifoQueueBase.md*
+
+
+---USER---
+How is Os::Task::join() used in F´?
+---RESPONSE---
+The `Os::Task::join()` method in F' is used to **synchronize task execution** by blocking the calling task until a specified target task has completed. Here's how it fits into F' architecture:
+
+1. **Purpose**:  
+   - `join()` waits for a task (e.g., a child task spawned via `start()`) to terminate.  
+   - This ensures proper sequencing of operations, especially in manager components (e.g., waiting for a driver task to finish before proceeding).
+
+2. **Usage Context**:  
+   - In F' applications, tasks are managed via `Os::TaskInterface`, which abstracts OS-specific behavior.  
+   - A component (e.g., a manager) might spawn a task to perform a sub-operation (e.g., configuring a peripheral) and call `join()` to ensure the sub-operation completes before continuing.
+
+3. **Example Scenario**:  
+   ```cpp
+   Os::TaskHandle* childTask = ...; // Task spawned via Os::Task::start()
+   Os::TaskInterface::Status status = childTask->join();
+   if (status != Os::TaskInterface::Status::OK) {
+       // Handle error
+   }
+   ```
+   - This pattern is common in F' for ensuring task completion before proceeding (e.g., in design patterns like the manager-driver architecture).
+
+4. **Implementation Note**:  
+   - The stub implementation in `Os/Stub/Task.cpp` returns `UNKNOWN_ERROR`, but real OS implementations (e.g., POSIX, RTOS) would handle task synchronization via OS primitives (e.g., threads, semaphores).
+
+For deeper insights, refer to the [F' User Manual's Build System chapter](docs/user-manual/build-system.md) for task management details.
+
+*Sources: Os/Queue.hpp · docs/user-manual/index.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md · Os/Stub/Task.cpp*
+
+
+---USER---
+Describe the SocketComponentHelper::reconnectLoop() state transitions.
+---RESPONSE---
+The `SocketComponentHelper::reconnectLoop()` state transitions are governed by the `ReconnectState` enum and the internal logic of the reconnect task, though the full implementation details are not provided in the sources. Based on the available information:
+
+1. **Initial State**: `NOT_RECONNECTING`  
+   - The default state when the reconnect task is first initialized (via `start()`).
+
+2. **Transition to `REQUEST_RECONNECT`**  
+   - Triggered when a reconnect request is explicitly initiated (e.g., via a method call or event).
+
+3. **Transition to `RECONNECT_IN_PROGRESS`**  
+   - Activated when the reconnect process begins (e.g., attempting to re-establish a socket connection).
+
+4. **Possible Return to `NOT_RECONNECTING`**  
+   - After a successful reconnect or if the reconnect operation is aborted/failed, the state may revert to `NOT_RECONNECTING`.
+
+### Key Context from Sources:
+- The `ReconnectState` enum defines the possible states:  
+  ```cpp
+  enum ReconnectState { NOT_RECONNECTING, REQUEST_RECONNECT, RECONNECT_IN_PROGRESS };
+  ```
+- The `start()` method initializes the reconnect task, ensuring it starts in the `NOT_STARTED` state (implied by the `FW_ASSERT` check).
+
+For precise transitions, the full implementation of `reconnectLoop()` would need to be examined, as the provided sources only outline the framework and enum definitions.
+
+*Sources: docs/how-to/define-state-machines.md · Drv/Ip/SocketComponentHelper.hpp · Drv/Ip/SocketComponentHelper.cpp · Fw/Comp/ActiveComponentBase.hpp · Drv/Ip/docs/sdd.md*
