@@ -124,6 +124,75 @@ def get_content_type_boost(content_type: str, query_type: str) -> float:
     return boosts.get(content_type, 1.0)
 
 
+# Query-type classification patterns. Checked in precedence order.
+_FILE_EXTENSION_PATTERN = re.compile(r"\b[\w/]+\.\w{1,4}\b")
+_COMPARISON_PATTERNS = re.compile(
+    r"\b(?:difference|differences|differ|vs\.?|versus|compare|comparing|comparison|between\s+\w+\s+and)\b",
+    re.IGNORECASE,
+)
+_CODE_SEEKING_PATTERNS = re.compile(
+    r"\b(?:how\s+to\s+implement|how\s+to\s+write|how\s+to\s+create|how\s+to\s+add|"
+    r"example|syntax|code\s+for|write\s+a|implement|show\s+me|snippet)\b",
+    re.IGNORECASE,
+)
+_CONCEPT_SEEKING_PATTERNS = re.compile(
+    r"\b(?:what\s+is|what\s+are|explain|describe|overview|purpose\s+of|define)\b",
+    re.IGNORECASE,
+)
+
+
+def classify_query(
+    text: str, known_entities: set[str]
+) -> tuple[str, str]:
+    """
+    Classify a query into a type using keyword/regex heuristics.
+
+    Returns (query_type, target_entity). target_entity is non-empty only
+    for file_specific and component_specific types.
+
+    Precedence: file_specific > component_specific > comparison >
+                code_seeking > concept_seeking > general
+    """
+    text_lower = text.lower()
+
+    # 1. File-specific: check for file extensions or known entity names
+    if _FILE_EXTENSION_PATTERN.search(text):
+        # Extract potential entity from filename
+        for entity in known_entities:
+            if entity in text_lower:
+                return ("file_specific", entity)
+        return ("file_specific", "")
+
+    # 2. Component-specific: CamelCase identifiers that exist in the index
+    for word in re.findall(r"\b[A-Z][a-zA-Z0-9]*[a-z][A-Z][a-zA-Z0-9]*\b", text):
+        word_lower = word.lower()
+        if word_lower in known_entities:
+            return ("component_specific", word_lower)
+
+    # Also check for non-CamelCase entity matches (e.g., user writes "Health")
+    # Use word boundaries to avoid substring false positives ("os" matching "most")
+    for entity in known_entities:
+        if len(entity) < 3:
+            continue  # Skip short names like "os", "fw" — too many false positives
+        if re.search(r"\b" + re.escape(entity) + r"\b", text_lower):
+            return ("component_specific", entity)
+
+    # 3. Comparison
+    if _COMPARISON_PATTERNS.search(text):
+        return ("comparison", "")
+
+    # 4. Code-seeking
+    if _CODE_SEEKING_PATTERNS.search(text):
+        return ("code_seeking", "")
+
+    # 5. Concept-seeking
+    if _CONCEPT_SEEKING_PATTERNS.search(text):
+        return ("concept_seeking", "")
+
+    # 6. General
+    return ("general", "")
+
+
 def keyword_score(chunk_text: str, keywords: list[str]) -> float:
     """Return the fraction of keywords present in chunk_text (0.0–1.0)."""
     if not keywords:

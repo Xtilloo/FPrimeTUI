@@ -1,5 +1,6 @@
 # tests/rag/test_retriever.py
 from rag.retriever import (
+    classify_query,
     extract_keywords,
     format_context,
     get_content_type_boost,
@@ -188,3 +189,88 @@ def test_content_type_boost_file_specific_no_boost():
 
 def test_content_type_boost_component_specific_no_boost():
     assert get_content_type_boost("code", "component_specific") == 1.0
+
+
+def test_classify_query_file_specific():
+    entities = {"filemanager", "health", "cmddispatcher"}
+    qtype, entity = classify_query("Explain the FileManager/docs/sdd.md file", entities)
+    assert qtype == "file_specific"
+    assert entity == "filemanager"
+
+
+def test_classify_query_file_extension():
+    entities = set()
+    qtype, entity = classify_query("Explain the sdd.md file format", entities)
+    assert qtype == "file_specific"
+
+
+def test_classify_query_component_via_camelcase():
+    # CamelCase identifier in known_entities → component_specific (no file extension)
+    entities = {"filemanager", "health"}
+    qtype, entity = classify_query("What does FileManager do?", entities)
+    assert qtype == "component_specific"
+    assert entity == "filemanager"
+
+
+def test_classify_query_component_specific():
+    entities = {"buffermanager", "cmddispatcher"}
+    qtype, entity = classify_query("How does BufferManager allocate buffers?", entities)
+    assert qtype == "component_specific"
+    assert entity == "buffermanager"
+
+
+def test_classify_query_component_not_in_index_falls_back():
+    entities = {"health", "cmddispatcher"}  # BufferManager NOT in index
+    qtype, _ = classify_query("How does BufferManager allocate buffers?", entities)
+    # BufferManager not in known_entities, so falls through
+    assert qtype != "component_specific"
+
+
+def test_classify_query_comparison():
+    entities = set()
+    qtype, _ = classify_query("What is the difference between active and passive components?", entities)
+    assert qtype == "comparison"
+
+
+def test_classify_query_comparison_vs():
+    entities = set()
+    qtype, _ = classify_query("Active vs passive components", entities)
+    assert qtype == "comparison"
+
+
+def test_classify_query_code_seeking():
+    entities = set()
+    qtype, _ = classify_query("How to implement a command handler?", entities)
+    assert qtype == "code_seeking"
+
+
+def test_classify_query_code_seeking_example():
+    entities = set()
+    qtype, _ = classify_query("Show me an example of telemetry write", entities)
+    assert qtype == "code_seeking"
+
+
+def test_classify_query_concept_seeking():
+    entities = set()
+    qtype, _ = classify_query("What is a rate group?", entities)
+    assert qtype == "concept_seeking"
+
+
+def test_classify_query_general():
+    entities = set()
+    qtype, _ = classify_query("Tell me about fprime", entities)
+    assert qtype == "general"
+
+
+def test_classify_query_precedence_component_over_comparison():
+    # "FileManager" is a known CamelCase entity AND "difference" is present
+    # Component-specific has higher precedence than comparison
+    entities = {"filemanager"}
+    qtype, _ = classify_query("What is the difference in FileManager?", entities)
+    assert qtype == "component_specific"
+
+
+def test_classify_query_precedence_comparison_over_concept():
+    entities = set()
+    qtype, _ = classify_query("What is the difference between ports and channels?", entities)
+    assert qtype == "comparison"
