@@ -1683,3 +1683,197 @@ The provided knowledge base does not contain any description or definition of th
 If `OverrunIn` is a port from a different component or a newer/updated version of the code not included in the provided context, additional information would be required to describe it. Let me know if you'd like to investigate further!
 
 *Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+What is the FW_TASK_AFFINITY_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not contain any information about the `FW_TASK_AFFINITY_BUFFER_SIZE` macro or its purpose. This macro is not referenced in the documented concepts related to asserts, data structures, ports, or object registries in the F' framework. To answer this question accurately, additional context or documentation specific to task affinity configuration would be required.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'OverrunOut' port.
+---RESPONSE---
+The provided knowledge base does not contain any information about an `OverrunOut` port in the `Svc::ActiveRateGroup` component. The available documentation only describes the following ports for `ActiveRateGroup`:
+
+- `CycleIn` (async input)
+- `RateGroupMemberOut` (output)
+- `PingIn` (async input)
+- `PingOut` (output)
+
+If `OverrunOut` is part of your project's codebase but not included in the shared knowledge base, you may need to check local files or provide additional context. Would you like me to search for this port in your project's files?
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Fw/Ports/Ready/Ready.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::TimePort` (referred to as the `Fw::Time` port in the documentation) is used to **pass time stamps around the system** for purposes such as telemetry, event logging, or other time-related operations. It facilitates the transmission of time values (seconds and microseconds) along with context and time base information, as defined by the `Fw::Time` class. This port is critical for synchronizing and timestamping events or data across distributed systems. 
+
+The `Fw::TimePort` leverages the `Fw::Time` class, which encapsulates the time value and metadata (e.g., time base, context), while the port itself handles the communication of these time stamps between components. 
+
+This aligns with the description in [Fw/Time/docs/sdd.md](#source-1), which explicitly states the purpose of the `Fw::Time` port.
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+The `STest::Random::lowerUpper()` function in F' tests is used to generate random values within a specified range, facilitating robustness testing by simulating unpredictable input scenarios. 
+
+In the provided example from `QueueRules.cpp`, it is used as follows:
+```cpp
+message.size = STest::Random::lowerUpper(1, max_size);
+message.priority = STest
+```
+
+This pattern ensures tests validate correct behavior across varied message sizes and priorities, aligning with F' test-driven development practices where tests precede implementation.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+Describe the MultiString serializable in FPP tests.
+---RESPONSE---
+The provided knowledge base does not explicitly describe a `MultiString` serializable type or its implementation in FPP tests. However, based on the available information about F' serializable mechanisms, here's a general explanation of how such a type might be structured:
+
+### Serializable String Mechanisms in F'
+1. **Base Class**: `Fw::Types::ConstStringBase` serves as a base class for string serializable types. It provides:
+   - `toChar()`: Convert to C-style string
+   - `getCapacity()`/`length()`: Manage buffer size and actual string length
+   - Static methods for calculating serialized sizes:
+     ```cpp
+     static constexpr SizeType STATIC_SERIALIZED_SIZE(SizeType maxLength) {
+         return sizeof(FwSizeStoreType) + maxLength;
+     }
+     ```
+
+2. **Serialization Process**:
+   - Strings are serialized with their length metadata (e.g., `FwSizeStoreType`)
+   - Null-terminated buffers require additional space: `BUFFER_SIZE(maxLength) = maxLength + 1`
+
+3. **MultiString Implication**:
+   - A `MultiString` would likely be a container class holding multiple `ConstStringBase`-derived instances
+   - Serialization would involve concatenating individual string data with appropriate metadata
+   - Deserialization would parse the combined data stream into separate strings
+
+For precise implementation details of `MultiString` in FPP tests, you would need to:
+1. Check the `Fw/Types` directory for potential `MultiString` header files
+2. Look in `Test` directories (e.g., `Fw/SerializableFile/test/ut/`) for test cases using such types
+3. Verify the `Gds/test` directory for CLI-related serializable implementations
+
+Would you like me to search for files that might contain `MultiString` definitions or test cases?
+
+*Sources: docs/how-to/test-driven-development.md · Svc/CmdSequencer/docs/AMPCSSequence.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/Types/ConstStringBase.hpp · docs/user-manual/gds/gds-dev-guide.md*
+
+
+---USER---
+What are the loadParameters and readParameters phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `loadParameters` and `readParameters` phases are part of the `Fpp::ToCpp::Phases` enum, which defines the sequence of initialization and configuration steps for components in F'. Here's what they represent based on the provided knowledge base:
+
+1. **`readParameters`**  
+   This phase is part of the initialization sequence and is likely tied to reading parameters during component configuration. It may occur early in the process, possibly as part of gathering parameter values before they are loaded into the system.
+
+2. **`loadParameters`**  
+   This phase is explicitly mentioned in the documentation as the method used to request parameter values from a storage system via a parameter port. It is called to load parameters into the component, making them available for use in the implementation. This phase is critical for initializing components with their required parameter values.
+
+### Key Notes:
+- The enum lists `readParameters` before `loadParameters`, suggesting they may be sequential steps in the parameter handling process.
+- The exact distinction between these phases is not explicitly detailed in the provided sources, but `loadParameters` is directly tied to the documented `loadParameters()` method for parameter loading. 
+
+For further details, refer to the [F' User Manual](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Component-Instances_Init-Specifiers) and the [parameter loading documentation](https://nasa.github.io/fpp/fpp-users-guide.html#Loading-Parameters).
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · docs/user-manual/framework/building-topology.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'CycleIn' port.
+---RESPONSE---
+The `CycleIn` port in the `Svc::ActiveRateGroup` component is defined as an **asynchronous input port** (`async input port`) that receives `Svc::Cycle` messages. It is explicitly marked as a **drop port** (`drop`), indicating it is used for passing data without requiring a corresponding output port. 
+
+This port serves as the entry point for the rate group's cycle input, allowing the component to receive timing signals or cycle events from the system. The `Svc::Cycle` type likely represents a structured message containing cycle-related data (e.g., cycle number, timestamp, or metadata). 
+
+This port is distinct from the `CycleIn` ports in other components (e.g., `ActivePhaser`, `RateGroupDriver`) due to differences in component roles (active vs. passive) and their specific interactions with the rate group logic.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Svc/RateGroupDriver/RateGroupDriver.fpp · Svc/PassiveRateGroup/PassiveRateGroup.fpp · Fw/Cmd/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::LogPort?
+---RESPONSE---
+The `Fw::Log` port (not explicitly named "LogPort" in the sources, but implied via context) serves to transmit **serialized event data** between components in an F' (F Prime) system. Its purpose is to:
+
+1. **Serialize ISF Events**: Pass structured event data (ID, time tag, severity, and serialized arguments) as a binary buffer for efficient downlink or logging.
+2. **Support System Logging**: Enable components to log events with severity levels (e.g., `FATAL`, `WARNING_HI`, `ACTIVITY_LO`) for traceability and diagnostics.
+3. **Decouple Components**: Allow producers (e.g., components generating events) to send logs to consumers (e.g., `Svc::EventManager`) without tight coupling.
+
+In contrast, the `Fw::LogText` port provides a **human-readable text representation** of events for development/debugging, which is typically disabled in flight software. 
+
+This distinction aligns with the F' architecture's emphasis on modular, reusable components and separation of concerns between serialized data and human-readable output.
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · Fw/Log/docs/sdd.md · Fw/Log/docs/sdd.md · docs/user-manual/overview/source-tree.md · Fw/Log/Log.fpp*
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+In F Prime tests, `STest::Random::lowerUpper()` is used to generate random values within a specified range for testing edge cases and ensuring robustness. 
+
+### Example Usage from `QueueRules.cpp`:
+1. **Random Size**:  
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   Generates a random `FwSizeType` between `1` and `max_size` (inclusive) for message size.
+
+2. **Random Priority**:  
+   ```cpp
+   message.priority = STest
+   ```
+   Generates a random `FwQueuePriorityType` between `0` and `std::numeric_limits<I8>::max()` (inclusive) for priority.
+
+3. **Random Data**:  
+   ```cpp
+   message.sent[i] = STest::Random::lowerUpper(0, std::numeric_limits<U8>::max());
+   ```
+   Fills message data with random `U8` values between `0` and `255` (inclusive).
+
+### Purpose:
+This ensures tests validate behavior under varied, realistic conditions (e.g., different message sizes, priorities, and data contents). The `check_received()` function then verifies correctness by comparing expected vs. actual results. 
+
+This pattern is common in F Prime test-driven development (TDD) to validate component behavior against randomized inputs.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+Describe the Svc::FileManager 'ShellCommand' command.
+---RESPONSE---
+The `Svc::FileManager::ShellCommand` command is part of the `Svc::FileManager` component's command set, as indicated by the test files. Here's a summary based on available information:
+
+1. **Purpose**:  
+   The `ShellCommand` is designed to execute shell commands, likely for interacting with the file system or system utilities. It is part of the integration tests for the `FileManager` service.
+
+2. **Test Coverage**:  
+   - Unit tests (`shellCommandSucceed` and `shellCommandFail`) verify its ability to execute commands and handle failures.  
+   - The Python test file `test_cmd_fileManager.py` explicitly notes:  
+     ```python
+     # Don't use ShellCommand
+     ```  
+     This suggests the command may be deprecated, risky, or have unresolved issues (e.g., security, reliability, or compatibility concerns).
+
+3. **Behavior**:  
+   - The command likely accepts a string argument representing the shell command to execute.  
+   - It may return success/failure status based on the command's outcome, aligning with the `CmdSequencer`'s requirement to abort sequences on failed commands (per `ISF-CMDS-004`).
+
+4. **Rationale for Caution**:  
+   The warning in `test_cmd_fileManager.py` implies potential pitfalls, such as unintended side effects, security vulnerabilities, or reliance on external environment behavior. Use is discouraged unless explicitly required.
+
+For precise implementation details (e.g., parameters, error handling), review the `FileManager` source code or consult the full SDD documentation.
+
+*Sources: Svc/Health/test/int/test_cmd_health.py · Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/FileManager/test/ut/FileManagerMain.cpp · Svc/CmdSequencer/docs/sdd.md · Svc/CmdSequencer/docs/sdd.md*
