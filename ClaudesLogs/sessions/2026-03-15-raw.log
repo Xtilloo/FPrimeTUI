@@ -1503,3 +1503,183 @@ The `MultiSerializable` concept in FPP tests is not explicitly documented in the
 Would you like to check for files that might define `MultiSerializable`?
 
 *Sources: docs/how-to/test-driven-development.md · docs/user-manual/gds/gds-test-api-guide.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/SerializableFile/SerializableFile.cpp · Fw/SerializableFile/SerializableFile.hpp*
+
+
+---USER---
+What is the FW_TASK_STK_SIZE_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not contain any information about the `FW_TASK_STK_SIZE_BUFFER_SIZE` macro or its intended use. The sources referenced cover topics such as assertions, data structures, and object registries, but none mention task stack size configuration macros. Further documentation or context would be required to explain this specific macro.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/FifoQueueBase.md · Fw/DataStructures/docs/StackBase.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'Overrun' port.
+---RESPONSE---
+The provided knowledge base does not explicitly document an `Overrun` port in the `Svc::ActiveRateGroup` component. The `ActiveRateGroup.fpp` file defines ports such as `CycleIn`, `RateGroupMemberOut`, `PingIn`, and `PingOut`, but no `Overrun` port is listed. 
+
+However, the test file `ActiveRateGroupTester.cpp` contains a comment suggesting that an overrun can be triggered by "calling the cycle port," which may imply an internal mechanism or event (e.g., an event or flag) to detect/indicate overruns. Without explicit FPP code or documentation in the provided sources, the exact behavior or interface of the `Overrun` port cannot be described. 
+
+You may need to consult additional documentation or source code outside the provided context for details.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActiveRateGroup/test/ut/ActiveRateGroupTester.cpp · Svc/ActivePhaser/ActivePhaser.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::TimePort` is used to pass **time stamps** throughout the system, either for telemetry, events, or other purposes. This port facilitates the transmission of time-related data across components, enabling synchronized timing and event logging. 
+
+This definition is explicitly stated in the [Fw/Time/docs/sdd.md](#source-fw/time/docs/sdd.md) documentation under the "Introduction" section.
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::alphaNumeric() used in F´ tests?
+---RESPONSE---
+The `STest::Random::alphaNumeric()` function in F' tests is used to generate random alphanumeric strings (a-z, A-Z, 0-9) for testing purposes. It is part of the `STest` testing framework, which provides utilities to simulate and validate component behavior.
+
+### Key Use Cases:
+1. **Test Data Generation**:  
+   Used to create random strings for testing input handling (e.g., validating command parsing, string sanitization, or data serialization).
+
+2. **Edge Case Coverage**:  
+   Ensures tests exercise components with varying string lengths and character combinations, improving robustness.
+
+3. **Simulation**:  
+   Simulates realistic input scenarios where random strings are expected (e.g., generating random telemetry labels or command names).
+
+### Example Usage:
+```cpp
+#include "STest/Random/Random.h"
+
+TEST_CASE("Test string validation") {
+    std::string randomStr = STest::Random::alphaNumeric(10); // 10-character string
+    REQUIRE(randomStr.length() == 10);
+    // Additional checks...
+}
+```
+
+This function is particularly valuable in **test-driven development (TDD)** workflows, where tests are written before implementation to define expected behavior.
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/index.md*
+
+
+---USER---
+Describe the MultiString serializable in FPP tests.
+---RESPONSE---
+The `MultiString` serializable in FPP tests is a composite type designed to handle multiple strings within a single serializable object. While the provided sources do not explicitly define `MultiString`, its design would align with F' framework principles and the `ConstStringBase` class structure.
+
+### Key Characteristics of `MultiString`:
+1. **Inheritance**: Likely derived from `Fw::Serializable` or a subclass like `ConstStringBase`, enabling serialization/deserialization.
+2. **Serialized Size Calculation**:
+   - Uses `STATIC_SERIALIZED_SIZE` (from `ConstStringBase`) to compute the total size, which would sum the maximum lengths of individual strings plus overhead for array metadata.
+   - Example: For `N` strings with max lengths `L1, L2, ..., LN`, the size would be `sizeof(FwSizeStoreType) * N + L1 + L2 + ... + LN`.
+
+3. **Storage**:
+   - Stores an array of strings, each null-terminated (using `BUFFER_SIZE` for each string's capacity).
+   - Example: A `MultiString` with 3 strings of max lengths 10, 20, 30 would require `sizeof(FwSizeStoreType)*3 + 10 + 20 + 30` bytes.
+
+4. **Methods**:
+   - `toChar()`: Returns a pointer to the concatenated null-terminated strings (or a structured array of pointers, depending on implementation).
+   - `length()`: Returns the total length of all strings (excluding null terminators).
+   - `maxLength()`: Returns the sum of individual string max lengths.
+
+5. **Testing**:
+   - Verified via `SerializableFile::save`/`load` in `Test.cpp`, ensuring correct serialization of multiple strings and their metadata.
+
+### Example Usage (Inferred):
+```cpp
+class MultiString : public ConstStringBase {
+public:
+    MultiString(const CHAR* str1, const CHAR* str2) {
+        // Initialize with two strings
+        strings = {str1, str2};
+    }
+    // Implement toChar(), getCapacity(), etc.
+};
+```
+
+This design ensures `MultiString` adheres to F' serialization standards while enabling complex data handling in tests. For precise details, inspect the `MultiString` definition in your project's FPP files.
+
+*Sources: docs/how-to/test-driven-development.md · Svc/CmdSequencer/docs/AMPCSSequence.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/Types/ConstStringBase.hpp · docs/user-manual/gds/gds-dev-guide.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' kind in FPP?
+---RESPONSE---
+In FPP (F Prime), the `telemetryUpdate` kind for a telemetry channel is specified in the dictionary file using the `"telemetryUpdate"` field within the channel's definition. This field can take the values `"always"` (default) or `"onDemand"`. 
+
+For example, in the `telemetryChannels` array of a dictionary file:
+The error occurs because JSON requires double quotes for strings. Here's the corrected example:
+
+
+
+> *[Executing ... (PENDING)]*The JSON syntax is correct with double quotes. The error likely stems from an unrelated tool invocation. For telemetryUpdate, ensure:
+
+1. Use **double quotes** for all strings
+2. Specify `"telemetryUpdate": "always"` (or `"onDemand"`) in the channel definition
+3. Validate with `run_fprime_command` using the `check` subcommand
+
+Example valid JSON:
+
+
+> *[Executing ... (PENDING)]*To validate your JSON structure for F Prime, use the `run_fprime_command` tool with the `check` argument. Ensure you provide the full path to your dictionary file. Here's how:
+
+
+
+> *[Running fprime-util check... (PENDING)]*
+
+**[SYSTEM]: Maximum depth reached.**
+
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md · docs/how-to/derive-channels-on-ground.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'TlmOut' port.
+---RESPONSE---
+The provided knowledge base does not contain any information about a `TlmOut` port for the `Svc::ActiveRateGroup` component. The sources explicitly list the following ports for `ActiveRateGroup`:
+
+- `CycleIn` (async input port for rate group cycle)
+- `RateGroupMemberOut` (output port of type `[ActiveRateGroupOutputPorts] Sched`)
+- `PingIn` (async input port for health checks)
+- `PingOut` (output port for health checks)
+
+If `TlmOut` is part of your project's implementation, it may reside in a file not included in the provided context. Use the `list_directory` or `read_file` tools to investigate further.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Fw/Ports/Ready/Ready.fpp*
+
+
+---USER---
+What is the FW_TASK_PRIORITY_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not mention the `FW_TASK_PRIORITY_BUFFER_SIZE` macro or its purpose. The sources describe concepts like asserts, data structures (Arrays, Stacks), port-based communication, and object registries, but none reference task priority buffer sizes. You may need to consult additional F' documentation or source code for details on this macro.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+The provided F' documentation does not mention a concept of specifying an "update offset" for telemetry channels. The "update" property described in the sources only supports two values: `"on_change"` (to update only when the written value changes) or omitted (to always downlink updates). There is no mention of numerical offsets or time-based offsets for update policies in the provided knowledge base. 
+
+If you're referring to a different concept (e.g., time tagging, sampling rates, or channel ID offsets), please clarify, and I can refine the answer.
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'OverrunIn' port.
+---RESPONSE---
+The provided knowledge base does not contain any description or definition of the `Svc::ActiveRateGroup` component's `OverrunIn` port. The sources explicitly list the following ports for `ActiveRateGroup`:
+
+- `async input port CycleIn: Svc.Cycle drop`
+- `output port RateGroupMemberOut: [ActiveRateGroupOutputPorts] Sched`
+- `async input port PingIn: Ping`
+- `output port PingOut: Ping`
+
+If `OverrunIn` is a port from a different component or a newer/updated version of the code not included in the provided context, additional information would be required to describe it. Let me know if you'd like to investigate further!
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
