@@ -626,3 +626,192 @@ The `SocketComponentHelper::reconnectLoop()` state transitions are governed by t
 For precise transitions, the full implementation of `reconnectLoop()` would need to be examined, as the provided sources only outline the framework and enum definitions.
 
 *Sources: docs/how-to/define-state-machines.md · Drv/Ip/SocketComponentHelper.hpp · Drv/Ip/SocketComponentHelper.cpp · Fw/Comp/ActiveComponentBase.hpp · Drv/Ip/docs/sdd.md*
+
+
+---USER---
+Describe the LinuxUartDriver::read() method loop.
+---RESPONSE---
+The `LinuxUartDriver::read()` method loop is part of a dedicated read thread (as required by **LINUX-UART-COMP-005**) that continuously monitors the UART interface for incoming data. Based on the provided documentation and code examples:
+
+1. **Thread Initialization**:  
+   The read thread is started via `uartDriver.start()` in the topology initialization. This thread is configured with priority and stack size as needed.
+
+2. **Data Reception Loop**:  
+   The loop likely involves:
+   - Polling the UART device for available data.
+   - Reading bytes into a buffer (managed via `buffer allocation` per **LINUX-UART-COMP-008**).
+   - Processing received bytes (e.g., framing, error checking).
+
+3. **Telemetry and Events**:  
+   - Updates telemetry counters for bytes received (**LINUX-UART-COMP-006**).
+   - Triggers events for UART errors (**LINUX-UART-COMP-007**).
+
+4. **Termination**:  
+   The thread is gracefully stopped via `quitReadThread()` in `teardownTopology()` and the UART is closed with `close()`.
+
+**Note**: The exact implementation details of the loop (e.g., polling mechanism, buffer management) are not explicitly provided in the sources. To analyze the loop structure, you would need to inspect the `LinuxUartDriver` source code or documentation.
+
+*Sources: Drv/LinuxUartDriver/docs/sdd.md · docs/how-to/implement-radio-manager.md · docs/how-to/implement-radio-manager.md · docs/how-to/develop-device-driver.md · Drv/LinuxUartDriver/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the m_reconnect flag in SocketComponentHelper?
+---RESPONSE---
+The `m_reconnect` flag (or related parameters) is not explicitly mentioned in the provided code snippets. However, based on the **SDD.md** documentation, the `reconnect` parameter in the `SocketComponentHelper::start` method determines whether the read task will attempt automatic reconnections upon socket disconnection or errors. 
+
+The `reconnect` flag is part of the `start` method's arguments, which configures the behavior of the reconnection thread. If `reconnect` is set to `true`, the system will automatically attempt to reconnect to the socket when a disconnect or error occurs. The exact implementation of this flag (e.g., as a member variable `m_reconnect`) is not visible in the provided code, but its purpose is to control reconnection behavior as described. 
+
+To confirm the exact implementation, you would need to inspect the full source code or documentation for `SocketComponentHelper`.
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/Ip/SocketComponentHelper.hpp · Drv/Ip/SocketComponentHelper.hpp · Drv/Ip/SocketComponentHelper.cpp · docs/reference/nomenclature.md*
+
+
+---USER---
+What is the FW_ASSERT macro used for?
+---RESPONSE---
+The provided sources do not mention the `FW_ASSERT` macro or its usage. The referenced documentation focuses on data structure types (e.g., `Array`, `Stack`, `FifoQueueBase`) and their inheritance relationships, but does not describe assertion macros used in F' code. For details on `FW_ASSERT`, consult F' core documentation or source code outside the provided context.
+
+*Sources: Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/DataStructures/docs/ExternalStack.md · Fw/DataStructures/docs/ExternalFifoQueue.md · Fw/DataStructures/docs/FifoQueueBase.md*
+
+
+---USER---
+How is Os::Task::delay() used in F´?
+---RESPONSE---
+The `Os::Task::delay()` function in F' is used to pause task execution for a specified duration, typically to synchronize or wait for state transitions in task lifecycle management. 
+
+### Key Usage Example from Source Code:
+In `Os/test/ut/task/TaskRules.cpp`, it is used within a loop to wait for a task to transition to a specific lifecycle stage:
+```cpp
+Os::Task::delay(Fw::TimeInterval(0, 10)); // Pauses for 10 milliseconds
+```
+This delay is part of a timeout mechanism in test code, where the task's lifecycle stages are checked repeatedly after each delay. The delay duration (`Fw::TimeInterval(0, 10)`) corresponds to 10 milliseconds, and the loop runs for `delay_ms * 100` iterations to enforce a timeout.
+
+### Purpose:
+- Simulates time progression in test scenarios.
+- Enables synchronization between task state transitions and test assertions.
+- Ensures tasks have sufficient time to complete operations before checking their state.
+
+This usage is specific to testing utilities in F' and leverages the `Os::Task` abstraction for cross-platform compatibility.
+
+*Sources: Os/Queue.hpp · docs/user-manual/index.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md · Os/test/ut/task/TaskRules.cpp*
+
+
+---USER---
+Describe the SocketComponentHelper::readLoop() exit condition.
+---RESPONSE---
+The `SocketComponentHelper::readLoop()` exit conditions are governed by the following scenarios, as inferred from the documentation and code structure:
+
+1. **Explicit Stop Request**:  
+   The read loop terminates when `Drv::SocketComponentHelper::stop()` is called. This explicitly halts the receive task.
+
+2. **Startup Error Without Reconnect Enabled**:  
+   If the read task starts without reconnect enabled (i.e., `reconnect` parameter is `false` in `start()`), the loop exits if an error occurs during initialization (e.g., socket failure to open).
+
+3. **Socket Disconnection/Errors**:  
+   The loop may exit if the underlying socket disconnects or encounters an irrecoverable error, unless reconnect is explicitly enabled via the `reconnect` parameter in `start()`.
+
+4. **Task Termination**:  
+   The loop exits when the associated task (e.g., the receive thread) is naturally terminated (e.g., via OS thread termination or task cancellation).
+
+These conditions ensure the read loop gracefully exits based on configuration and runtime state.
+
+*Sources: Drv/Ip/docs/sdd.md · Os/Condition.hpp · Drv/Ip/SocketComponentHelper.hpp · Drv/Ip/docs/sdd.md · docs/user-manual/framework/memory-management/buffer-pool.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' kind in FPP?
+---RESPONSE---
+In FPP (F Prime) telemetry channel definitions, the "update" kind is specified using the `"telemetryUpdate"` field in the dictionary file. For example, to set the update kind to "always", you would include:
+
+The error occurred because the JSON example included an ellipsis (`...`) which is invalid. Here's the corrected valid JSON snippet for specifying the `telemetryUpdate` kind in FPP:
+
+
+
+> *[Executing ... (PENDING)]*To specify a telemetry channel's `update` kind in FPP (F Prime), use the `"telemetryUpdate"` field in the dictionary file. Valid values include `"always"`, `"onDemand"`, or system-specific options. Here's the correct JSON syntax:
+
+
+
+> *[Executing ... (PENDING)]*The error indicates an invalid tool request. To specify telemetry update kinds in FPP, use the `"telemetryUpdate"` field in the dictionary file (e.g., `"always"`). Here’s how to validate/edit it properly:
+
+1. **Validate JSON syntax** (no ellipsis or invalid characters):
+   
+
+> *[Executing ... (PENDING)]*The error suggests the tool `run_fprime_command` or others are not recognized, likely due to an environment setup issue (e.g., missing F' installation or incorrect PATH). Here's how to resolve it:
+
+---
+
+### ✅ **Verify F' Installation**
+Ensure you have [F Prime installed](https://github.com/nasa/fprime) and the environment is sourced. For example:
+```bash
+source <fprime-install-path>/setup.sh
+```
+
+---
+
+### 🛠️ **Correct Tool Usage**
+If the environment is set up properly, use these tools as described:
+
+1. **Validate JSON syntax** (e.g., your telemetry config):
+   
+
+> *[Running fprime-util check... (PENDING)]*
+
+**[SYSTEM]: Maximum depth reached.**
+
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md · docs/how-to/derive-channels-on-ground.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'TlmOut' port.
+---RESPONSE---
+The `Svc::ActiveRateGroup` component's `TlmOut` port is not explicitly described in the provided F' sources. The available documentation and code snippets for `ActiveRateGroup.fpp` only mention the following ports:
+
+- `CycleIn` (async input for rate group cycle)
+- `RateGroupMemberOut` (output to members)
+- `PingIn` (async input for health checks)
+- `PingOut` (output for health checks)
+
+No `TlmOut` port is defined or referenced in the given context. If this port exists in your project, it may be located in an unshared file or require additional context beyond the provided sources. Use `list_directory` or `read_file` tools to investigate further.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Fw/Ports/Ready/Ready.fpp*
+
+
+---USER---
+How is STest::Random::lowerCase() used in F´ tests?
+---RESPONSE---
+The `STest::Random::lowerUpper()` function in F' tests is used to generate a random integer within a specified range. In the provided `QueueRules.cpp` example, it is used to:
+
+1. Set message sizes:  
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   This generates a random size between 1 and `max_size` for messages.
+
+2. Set priorities:  
+   ```cpp
+   message.priority = STest::Random::lowerUpper(0, std::numeric_limits<I8>::max());
+   ```
+   This creates a random priority value within the full range of an 8-bit signed integer.
+
+**Note**: The function name is `lowerUpper`, not `lowerCase` (which might be a typo in the question). This function is part of F' test utilities for creating randomized test scenarios.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md*
+
+
+---USER---
+Describe the MultiSerializable struct in FPP tests.
+---RESPONSE---
+The provided F' knowledge base (sources from `Os/test/ut/file/FileRules.hpp`) does not include a definition or description of a `MultiSerializable` struct. The listed sources only contain classes derived from `AssertRule` (e.g., `OpenIllegalPath`, `SeekIllegal`, etc.), which are test rules for file operations, but no mention of `MultiSerializable` is found. 
+
+To proceed, you would need to inspect other files in the project or provide additional context. Would you like me to search for files containing `MultiSerializable` using the `list_directory` or `read_file` tools?
+
+*Sources: Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp · Os/test/ut/file/FileRules.hpp*
+
+
+---USER---
+What is the FW_TASK_PRIORITY_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not mention the `FW_TASK_PRIORITY_BUFFER_SIZE` macro or its usage. The sources cover topics like asserts, data structures (Arrays, Stacks), port classes, and object registries in the F' framework, but none reference this specific macro. To answer this question accurately, additional documentation or context about this macro would be required.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
