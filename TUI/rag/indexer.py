@@ -18,6 +18,7 @@ import requests  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
 from git import Repo
 from rag.chunker import chunk_fpp, chunk_markdown, chunk_python, deduplicate
+from rag.retriever import tokenize
 from rank_bm25 import BM25Okapi
 
 DB_PATH = Path(__file__).parent / "db"
@@ -144,7 +145,7 @@ def build_index(chunks: list[dict[str, Any]], db_path: Path) -> None:
     print()
 
     # BM25
-    tokenized = [c["text"].lower().split() for c in chunks]
+    tokenized = [tokenize(c["text"]) for c in chunks]
     bm25 = BM25Okapi(tokenized)
     all_ids = [hashlib.sha256(c["text"].encode()).hexdigest()[:16] for c in chunks]
     bm25_data = {"bm25": bm25, "ids": all_ids, "chunks": chunk_map}
