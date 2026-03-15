@@ -2,6 +2,8 @@
 from rag.retriever import (
     extract_keywords,
     format_context,
+    get_source_category,
+    get_source_category_boost,
     keyword_score,
     reciprocal_rank_fusion,
     tokenize,
@@ -104,8 +106,6 @@ def test_keyword_score_partial_match():
     score = keyword_score("ActiveComponent and PassiveComponent differ.", ["activecomponent", "queuedcomponent"])
     assert 0.0 < score < 1.0
 
-
-from rag.retriever import get_source_category, get_source_category_boost
 
 
 def test_get_source_category_framework_core():
