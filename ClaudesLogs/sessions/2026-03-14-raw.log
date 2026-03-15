@@ -7042,3 +7042,1508 @@ If you are referring to a `TimeOut` port, it may be part of a different componen
 For now, based on the given knowledge base, there is no `TimeOut` port in `Svc::ActiveRateGroup`.
 
 *Sources: docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-215/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*Tool call finished.
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-216/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-217/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-218/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-219/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-220/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-221/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-222/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-223/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-224/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*Tool call finished.
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-225/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+> *(Cancelled)*
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*Tool call finished.
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hey
+---RESPONSE---
+Hello! How can I assist you today? Whether you have questions about F' (F Prime) architecture, need help understanding flight software concepts, or want to explore how to build and deploy systems, I'm here to guide you! 😊
+
+---USER---
+What is the difference between and active and a passive component?
+---RESPONSE---
+In F' (F Prime), **active** and **passive** components describe how components interact with the system and other components:
+
+---
+
+### **Active Component**
+- **Role**: Initiates actions (e.g., sends commands, processes data).
+- **Ports**: 
+  - **Command ports** (to send commands to other components).
+  - **Telemetry ports** (to send data to the ground or other systems).
+- **Behavior**: Proactively drives system behavior. For example, a **Commander** component might send a command to a sensor to start a measurement.
+
+**Analogy**: Think of an active component as a **robot** that can move on its own. It takes initiative to act (e.g., "I will now collect data!").
+
+---
+
+### **Passive Component**
+- **Role**: Responds to commands or events (e.g., processes data when told to).
+- **Ports**: 
+  - **Telemetry ports** (to receive data from other components).
+  - **No command ports** (unless it also acts, which would make it active).
+- **Behavior**: Reacts to inputs. For example, a **Sensor** might wait for a command to start measuring and then report the result.
+
+**Analogy**: A passive component is like a **sensor** that waits for instructions (e.g., "Take a reading!"). It doesn’t act on its own.
+
+---
+
+### **Key Difference**
+- **Active**: *Initiates* actions (sends commands, generates data).
+- **Passive**: *Responds* to actions (receives commands, processes data).
+
+**Example**:  
+- An **active** component might send a command to a passive component (e.g., "Start recording!").  
+- The **passive** component then processes the data and sends telemetry back.
+
+Let me know if you'd like to explore how this applies to specific F' components or architectures! 😊
+
+**[SYSTEM]: Switched to MISSION CONTROL mode.**
+
+
+---USER---
+What is the difference between and active and a passive component?
+---RESPONSE---
+In F' (F Prime), **active** and **passive** components are distinguished by their roles in system behavior and interaction:
+
+---
+
+### **Active Component**
+- **Role**: **Initiates actions** (e.g., sends commands, generates events).
+- **Ports**:
+  - **Command ports** (to send commands to other components).
+  - **Telemetry ports** (to send data to the ground or other systems).
+- **Behavior**: 
+  - Proactively drives system behavior.
+  - Example: A **Commander** component might send a command to a sensor to start a measurement.
+- **Key Trait**: **Autonomous action** without explicit external triggers.
+
+---
+
+### **Passive Component**
+- **Role**: **Responds to commands or events** (e.g., processes data when told to).
+- **Ports**:
+  - **Telemetry ports** (to receive data from other components).
+  - **No command ports** (unless it also acts, which would make it active).
+- **Behavior**:
+  - Reacts to inputs from active components.
+  - Example: A **Sensor** might wait for a command to start measuring and then report the result.
+- **Key Trait**: **Reactive behavior** based on external stimuli.
+
+---
+
+### **Key Difference**
+- **Active**: *Initiates* actions (e.g., "I will now send a command!").
+- **Passive**: *Responds* to actions (e.g., "I will process data when told to!").
+
+---
+
+### **Example from Knowledge Base**
+- **Passive components** in the provided sources include:
+  - `Empty` (no functionality, minimal structure).
+  - `C` (defines an enum but no active behavior).
+  - `ComRetry` (imports `Svc.Framer` but does not initiate actions).
+  - `ChronoTime` (imports `Time` but relies on external triggers).
+
+Active components are not explicitly shown here, but their contrast is implied (e.g., `Framer` in `ComRetry` might be active).
+
+Let me know if you'd like to explore how this applies to specific F' components or architectures! 😊
+
+*Sources: Drv/ByteStreamBufferAdapter/docs/sdd.md · FppTestProject/FppTest/component/empty/empty.fpp · FppTestProject/FppTest/enum/component.fpp · Svc/ComRetry/ComRetry.fpp · Svc/ChronoTime/ChronoTime.fpp*
+
+
+---USER---
+What is the difference between and active and a passive component?
+---RESPONSE---
+In F' (F Prime), **active** and **passive** components differ in their role, behavior, and interaction with the system:
+
+---
+
+### **Active Component**
+- **Role**: **Initiates actions** (e.g., sends commands, generates events, drives system behavior).
+- **Ports**:
+  - **Command ports** (to send commands to other components).
+  - **Telemetry ports** (to send data to the ground or other systems).
+- **Behavior**:
+  - Proactively triggers actions without explicit external input.
+  - Example: A **Commander** component might send a command to a sensor to start a measurement.
+- **Key Trait**: **Autonomous action** (e.g., "I will now send a command!").
+
+---
+
+### **Passive Component**
+- **Role**: **Responds to commands or events** (e.g., processes data when told to, receives inputs).
+- **Ports**:
+  - **Telemetry ports** (to receive data from other components).
+  - **No command ports** (unless it also acts, which would make it active).
+- **Behavior**:
+  - Reacts to inputs from active components or external triggers.
+  - Example: A **Sensor** might wait for a command to start measuring and then report the result.
+- **Key Trait**: **Reactive behavior** (e.g., "I will process data when told to!").
+
+---
+
+### **Key Difference**
+- **Active**: *Starts the action* (e.g., "I will send a command!").
+- **Passive**: *Waits for the action* (e.g., "I will process data when told to!").
+
+---
+
+### **Examples from Knowledge Base**
+- **Passive components** in the provided sources include:
+  - `Empty`: A minimal component with no functionality.
+  - `C`: Defines an enum but has no active behavior.
+  - `ComRetry`: Imports `Svc.Framer` but does not initiate actions.
+  - `ChronoTime`: Imports `Time` but relies on external triggers.
+- **Active components** are not explicitly shown here, but their contrast is implied (e.g., `Framer` in `ComRetry` might be active).
+
+Let me know if you'd like to explore how this applies to specific F' components or architectures! 😊
+
+*Sources: Drv/ByteStreamBufferAdapter/docs/sdd.md · FppTestProject/FppTest/component/empty/empty.fpp · FppTestProject/FppTest/enum/component.fpp · Svc/ComRetry/ComRetry.fpp · Svc/ChronoTime/ChronoTime.fpp*
+
+
+---USER---
+What are data products and how can I use them in my mission?
+---RESPONSE---
+Data products in **F Prime (F'**) are structured, mission-critical data generated on-board a spacecraft and stored for later downlink to ground systems. They are designed for **asynchronous, batched, or bursty data** that cannot be efficiently transmitted via real-time telemetry. Here's how they work and how to use them in your mission:
+
+---
+
+### **What Are Data Products?**
+- **Definition**: Data products are **structured file data** (e.g., `.fdp` files) defined via the **FPP (F Prime Preprocessor)** modeling language. They are organized into **containers** and **data product records**:
+  - **Containers**: Define the existence of a data product with metadata (e.g., `identifier`, `id`, `priority`).
+  - **Records**: Define the content of the data product (e.g., `identifier`, `id` for specific data types).
+- **Purpose**: Store mission data for **post-processing, scientific analysis, or long-term archival**. They complement telemetry (for real-time monitoring) and events (for discrete state changes).
+
+---
+
+### **When to Use Data Products**
+Use data products when your mission requires:
+1. **Large or bursty data** (e.g., science samples, image tiles, sensor batches).
+2. **Asynchronous generation** (e.g., periodic analysis outputs, health data).
+3. **Prioritized storage** (e.g., critical data gets higher downlink priority).
+4. **Ground-side analysis** (e.g., decoding `.fdp` files with `fprime-dp`).
+
+**Examples**:
+- Science instruments capturing high-resolution images.
+- Batched sensor data from multiple channels.
+- System health logs for post-mission analysis.
+
+---
+
+### **How to Use Data Products in Your Mission**
+#### 1. **Define Data Products with FPP**
+   - Use FPP to create **containers** and **records** in your `.fpp` files:
+     ```cpp
+     // Example: Define a container for science data
+     container ScienceData {
+         identifier = "ScienceData";
+         id = 1;
+         default priority = 10;
+     };
+
+     // Define a record for image tiles
+     record ImageTile {
+         identifier = "ImageTile";
+         id = 1;
+         data: uint32[1024]; // Example data field
+     };
+     ```
+   - This defines the structure of your data products.
+
+#### 2. **Implement Producers**
+   - Create **data product producers** (e.g., using `Svc::DpManager`) to generate and store data:
+     ```cpp
+     // Example: Producer logic to generate data
+     void Producer::produce() {
+         // Generate data (e.g., from sensors)
+         ImageTile tile;
+         tile.data = ...; // Fill with sensor data
+         dpManager.sendData(tile); // Send to storage
+     }
+     ```
+   - Use `Svc::DpWriter` to write data to **non-volatile storage** (e.g., flash memory).
+
+#### 3. **Catalog and Prioritize Data**
+   - Use `Svc::DpCatalog` to **manage priorities** and **catalog data** for downlink:
+     ```cpp
+     // Example: Catalog data with priority
+     dpCatalog.addEntry("ScienceData", 10); // Higher priority
+     ```
+   - This ensures critical data is prioritized during downlink.
+
+#### 4. **Process Data on the Ground**
+   - Use the `fprime-dp` CLI tool to decode `.fdp` files:
+     ```bash
+     fprime-dp decode science_data.fdp --output science_data.csv
+     ```
+   - This enables **post-processing** and **scientific analysis**.
+
+---
+
+### **Key Benefits**
+- **Scalability**: Handles large or bursty data efficiently.
+- **Structured Data**: Enables robust ground-side analysis.
+- **Prioritization**: Ensures critical data is downlinked first.
+- **Flight-Worthiness**: Complements telemetry and events for comprehensive mission data.
+
+---
+
+### **Next Steps**
+1. **Define containers/records** in your `.fpp` files.
+2. **Implement producers** to generate and store data.
+3. **Catalog data** with priorities using `Svc::DpCatalog`.
+4. **Decode and analyze** data on the ground with `fprime-dp`.
+
+Would you like help generating FPP code for a specific data product or implementing a producer? 😊
+
+*Sources: docs/how-to/data-products.md · docs/how-to/data-products.md · docs/user-manual/framework/data-products.md · docs/reference/system-functional/dictionary.md · docs/user-manual/framework/data-products.md*
+
+
+**[SYSTEM]: Switched to MISSION CONTROL mode.**
+
+
+---USER---
+What is the Fw::SmSignalBuffer used for?
+---RESPONSE---
+The term **Fw::SmSignalBuffer** is not explicitly defined or referenced in the provided F' knowledge base sources. However, based on the terminology and patterns in the sources, we can infer potential roles for similar constructs:
+
+1. **Signal Ports**: The `Fw::Signal` port (from `Fw/Ports/Signal/Signal.fpp`) is used to signal conditions without arguments, such as initiating a worker task in the manager-worker pattern.
+
+2. **Buffer Ports**: The `Fw::Buffer` type and associated ports like `BufferSend`/`BufferGet` (from `Fw/Buffer/Buffer.fpp`) handle buffer transmission and reception between components.
+
+3. **Combined Patterns**: While not directly mentioned, `SmSignalBuffer` might hypothetically represent a port or interface that combines signaling (e.g., `Fw::Signal`) with buffer handling (e.g., `Fw::Buffer`), enabling components to signal events while transferring data. This could be used in scenarios like asynchronous data transmission with status notifications.
+
+Since the exact definition of `Fw::SmSignalBuffer` is not present in the provided sources, further context or documentation would be required to confirm its specific use case.
+
+*Sources: Fw/Ports/Signal/Signal.fpp · Fw/Dp/Dp.fpp · Fw/Prm/docs/sdd.md · Fw/Buffer/Buffer.fpp · docs/user-manual/design-patterns/manager-worker.md*
+
+
+---USER---
+What is the Fw::SmSignalBuffer used for?
+---RESPONSE---
+The `Fw::SmSignalBuffer` is a class designed to **manage data storage and serialization for state machine signals** in F Prime (F'). It serves as a buffer that attaches data to signals within a state machine, enabling the transmission of binary data alongside signal metadata. Key aspects include:
+
+1. **Serialized Buffer Management**:  
+   It inherits from `SerializeBufferBase`, allowing it to handle binary data storage and serialization. The buffer capacity is fixed (`FW_SM_SIGNAL_BUFFER_MAX_SIZE`), and it ensures data fits within this limit.
+
+2. **Data Attachment**:  
+   The buffer is used to attach payload data to state machine signals, facilitating communication between components (e.g., sending data via `Svc::ComQueue`, `Svc::DpWriter`, or `Svc::DpManager`).
+
+3. **Access Methods**:  
+   Provides methods like `getBuffAddr()` to access the buffer's memory and `getCapacity()` to retrieve its size, ensuring safe usage.
+
+4. **Safety Checks**:  
+   Constructors and assignment operators include assertions to validate data size and null pointers, adhering to F Prime's rigorous safety standards.
+
+This class is critical for enabling **binary data transport** in F Prime's state machine architecture, ensuring compatibility with serialization frameworks and safety-critical systems.
+
+*Sources: Fw/Sm/SmSignalBuffer.hpp · Fw/Sm/SmSignalBuffer.cpp · Svc/ComQueue/docs/sdd.md · Svc/DpWriter/docs/sdd.md · Svc/DpManager/docs/sdd.md*
+
+
+---USER---
+What is the role of SocketComponentHelper::readLoop()?
+---RESPONSE---
+The `SocketComponentHelper::readLoop()` method is the core mechanism driving the **automatically reconnecting receive thread** in the F' framework. Its role is to:
+
+1. **Poll for incoming data** from the underlying IPv4 socket (e.g., via `Drv::IpSocket::receive` or protocol-specific methods).
+2. **Handle reconnection logic** if a disconnect or error occurs, as described in the `SocketComponentHelper` documentation. This includes restarting the receive thread automatically when failures are detected.
+3. **Interface between the F' component and the socket library**, translating high-level component requests into low-level socket operations (e.g., binding, connecting, receiving).
+
+This method is executed in a dedicated task thread started via `SocketComponentHelper::start()`, ensuring asynchronous data reception while maintaining robustness against network disruptions. It is a virtual method, allowing derived classes (e.g., `TcpClientComponent`) to customize behavior while inheriting this foundational functionality. 
+
+The exact implementation details of `readLoop()` are not explicitly provided in the sources, but its purpose is tightly coupled to the "receive thread" and "reconnect" capabilities described in the `SocketComponentHelper` SDD.
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Svc/ComQueue/docs/sdd.md · Svc/DpWriter/docs/sdd.md · Svc/DpManager/docs/sdd.md*
+
+
+---USER---
+How do you specify an 'Explicit' enum in FPP?
+---RESPONSE---
+To specify an "Explicit" enum in FPP, you use the `enum` keyword within a module, assigning explicit integer values to each enumerator. Here's the syntax pattern from the provided example:
+
+```cpp
+module FppTest {
+
+  module Enum {
+
+    @ An enum with explicit constant values
+    enum Explicit {
+      A = -1952875139,
+      B = 2,
+      C = 2000999333,
+    }
+
+  }
+
+}
+```
+
+### Key Details:
+1. **Module Structure**: Enums must be defined within a nested `module` declaration (e.g., `module Enum`).
+2. **Explicit Values**: Assign integer values to enumerators using `=`, e.g., `A = -1952875139`.
+3. **Comments**: Use `@` for inline comments (e.g., `@ An enum with explicit constant values`).
+
+This matches the `explicit.fpp` example in the FppTest project.
+
+*Sources: FppTestProject/FppTest/enum/README.md · FppTestProject/FppTest/component/active/port_index_enums.fpp · FppTestProject/FppTest/enum/explicit.fpp · FppTestProject/FppTest/array/enum.fpp · Svc/FpySequencer/FpySequencer.fpp*
+
+
+---USER---
+How do you define an 'Explicit' enum in FPP?
+---RESPONSE---
+To define an **'Explicit' enum** in FPP, you use the `enum` keyword within a module structure and assign explicit integer values to each enumerator. Here's the syntax pattern based on the provided example:
+
+```cpp
+module FppTest {
+
+  module Enum {
+
+    @ An enum with explicit constant values
+    enum Explicit {
+      A = -1952875139,
+      B = 2,
+      C = 2000999333,
+    }
+
+  }
+
+}
+```
+
+### Key Details:
+1. **Module Nesting**: Enums are defined within `module` blocks to organize code.
+2. **Explicit Values**: Each enumerator is assigned a specific integer value using `=`.
+3. **Comments**: Use `@` for inline comments describing the enum's purpose.
+
+This matches the `explicit.fpp` example in the knowledge base. Let me know if you need to generate or modify such an enum!
+
+*Sources: FppTestProject/FppTest/component/active/port_index_enums.fpp · FppTestProject/FppTest/enum/explicit.fpp · Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/array/enum.fpp · Svc/PrmDb/PrmDb.fpp*
