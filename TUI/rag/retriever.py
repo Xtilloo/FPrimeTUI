@@ -1,19 +1,18 @@
 import os
 import pickle
 import re
+from typing import Optional
 
 import chromadb
 import requests
 from rank_bm25 import BM25Okapi
 
-from rag.config import KEYWORD_WEIGHT
+from rag.config import DEFAULT_TIER, KEYWORD_WEIGHT, RERANK_K, TIERS
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db")
 BM25_PATH = os.path.join(DB_PATH, "bm25.pkl")
 DENSE_K = 10    # dense retrieval candidates
 SPARSE_K = 20   # BM25 gets more candidates — it's better at exact fprime terms
-FINAL_K = 3     # chunks injected into prompt
-RERANK_K = FINAL_K * 5  # RRF pool to re-rank before taking FINAL_K
 RRF_K = 60      # standard RRF constant
 
 
@@ -310,12 +309,42 @@ def _load_index() -> tuple:
     return collection, bm25_data
 
 
-def query(text: str) -> dict:
+# Module-level cache for known entities (built once on first query)
+_known_entities: Optional[set[str]] = None
+
+
+def _build_known_entities(chunks: dict[str, dict]) -> set[str]:
+    """Extract entity names from chunk metadata for query classification."""
+    entities: set[str] = set()
+    for chunk in chunks.values():
+        # From component_name
+        name = chunk.get("component_name", "")
+        if name:
+            entities.add(name.lower())
+        # From source_file: extract last dir before /docs/ or filename stem
+        src = chunk.get("source_file", "")
+        parts = src.replace("\\", "/").split("/")
+        for i, part in enumerate(parts):
+            if part == "docs" and i > 0:
+                entities.add(parts[i - 1].lower())
+                break
+        else:
+            # No /docs/ — use filename stem
+            if parts:
+                stem = parts[-1].rsplit(".", 1)[0]
+                if stem:
+                    entities.add(stem.lower())
+    return entities
+
+
+def query(text: str, tier: int = DEFAULT_TIER) -> dict:
     """
     Public interface for the TUI.
-    Returns {"answer_context": str, "sources": list[str]}
+    Returns {"answer_context": str, "sources": list[str], "query_type": str}
     Raises FileNotFoundError if index has not been built yet.
     """
+    global _known_entities
+
     if not os.path.exists(BM25_PATH):
         raise FileNotFoundError(
             "RAG index not found. Run: python -m rag.indexer"
@@ -326,7 +355,14 @@ def query(text: str) -> dict:
     bm25: BM25Okapi = bm25_data["bm25"]
     chunk_ids: list[str] = bm25_data["ids"]
 
-    # Dense retrieval — embed query with ollama to match index embeddings
+    # Build known_entities cache on first call
+    if _known_entities is None:
+        _known_entities = _build_known_entities(all_chunks)
+
+    # 1. Classify query
+    query_type, target_entity = classify_query(text, _known_entities)
+
+    # 2. Dense retrieval
     query_embedding = _embed(text)
     dense_results = collection.query(
         query_embeddings=[query_embedding],
@@ -334,29 +370,47 @@ def query(text: str) -> dict:
     )
     dense_ids = dense_results["ids"][0]
 
-    # Sparse retrieval — CamelCase-aware tokenization improves recall for
-    # fprime identifiers (e.g. 'ActiveComponent' → also matches 'active component').
-    # SPARSE_K > DENSE_K because BM25 is more precise for fprime technical terms.
+    # 3. Sparse retrieval
     tokenized = tokenize(text)
-    scores = bm25.get_scores(tokenized)
-    top_sparse_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:SPARSE_K]
+    bm25_scores = bm25.get_scores(tokenized)
+    top_sparse_indices = sorted(
+        range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True
+    )[:SPARSE_K]
     sparse_ids = [chunk_ids[i] for i in top_sparse_indices]
 
-    # Merge via RRF — keep RERANK_K candidates for keyword re-ranking pass
-    merged_ids = reciprocal_rank_fusion(dense_ids, sparse_ids)[:RERANK_K]
-    candidates = [all_chunks[cid] for cid in merged_ids if cid in all_chunks]
+    # 4. RRF merge → dict[str, float]
+    rrf_scores = reciprocal_rank_fusion(dense_ids, sparse_ids)
 
-    # Re-rank: sort candidates by presence of CamelCase identifiers from the
-    # query. A chunk about 'ActiveComponent' that literally contains
-    # 'activecomponent' or 'active component' scores higher than a chunk about
-    # subtopologies that happens to mention 'active' in passing.
+    # Take top RERANK_K candidates
+    sorted_by_rrf = sorted(rrf_scores, key=lambda x: rrf_scores[x], reverse=True)[:RERANK_K]
+    candidates = []
+    for cid in sorted_by_rrf:
+        if cid in all_chunks:
+            chunk = dict(all_chunks[cid])  # copy to avoid mutating index
+            chunk["_rrf_score"] = rrf_scores[cid]
+            candidates.append(chunk)
+
+    # 5. Composite scoring
     kws = extract_keywords(text)
-    if kws:
-        candidates.sort(key=lambda c: keyword_score(c["text"], kws), reverse=True)
+    for c in candidates:
+        c["_score"] = composite_score(c["_rrf_score"], c, kws, query_type)
 
-    top_chunks = candidates[:FINAL_K]
+    # 6. Sort by composite score
+    candidates.sort(key=lambda c: c["_score"], reverse=True)
 
+    # 7. Adaptive diversity filter
+    tier_config = TIERS.get(tier, TIERS[DEFAULT_TIER])
+    base_k = tier_config["final_k"]
+    # Comparison queries get +2
+    final_k = base_k + 2 if query_type == "comparison" else base_k
+    candidates = apply_diversity_filter(candidates, query_type, target_entity, final_k)
+
+    # 8. Take top FINAL_K
+    top_chunks = candidates[:final_k]
+
+    # 9. Format with query-type instruction
     return {
-        "answer_context": format_context(top_chunks),
+        "answer_context": format_context(top_chunks, query_type),
         "sources": [c["source_file"] for c in top_chunks],
+        "query_type": query_type,
     }
