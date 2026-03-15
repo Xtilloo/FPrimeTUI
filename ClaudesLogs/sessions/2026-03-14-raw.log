@@ -2596,3 +2596,72 @@ In F', a "Rate Group Slip" is detected via the **`RateGroupCycleSlip`** event de
 To verify this, you could check the `ActiveRateGroup` component's event handling logic or use F' tools to analyze event propagation. Would you like to inspect the event's implementation details?
 
 *Sources: Svc/PassiveRateGroup/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+Explain the `FW_COM_BUFFER_MAX_SIZE` setting.
+---RESPONSE---
+The `FW_COM_BUFFER_MAX_SIZE` setting defines the maximum size (in bytes) of the buffer used to contain **communications packets** in the F Prime framework. It is explicitly set to **512 bytes** in the `FpConstants.fpp` file.
+
+### Key Points:
+1. **Purpose**: This buffer size is critical for allocating memory to store data transmitted via communication channels (e.g., telemetry, commands, or inter-component messages).
+2. **Derived Usage**: 
+   - Another constant, `FW_CMD_ARG_BUFFER_MAX_SIZE`, is calculated as `FW_COM_BUFFER_MAX_SIZE - SIZE_OF_FwOpcodeType` (typically 4 bytes), resulting in **508 bytes** for command argument buffers.
+3. **Location**: Defined in `FpConstants.fpp` as part of the framework's configuration constants.
+
+This value ensures sufficient capacity for communication payloads while allowing room for metadata like opcode types in command arguments.
+
+*Sources: fprime-tools/src/fprime/fbuild/settings.py · default/config/FpConstants.fpp · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+What are GDS "Functional Components"?
+---RESPONSE---
+The term "Functional Components" in the context of the GDS (Generic Data System) is not explicitly defined in the provided knowledge base. However, based on the documentation, the GDS provides **customizable dashboard components** for building user interfaces, such as:
+
+- `dashboard-box`  
+- `dashboard-row`  
+- `command-input`  
+- `command-history`  
+- `event-list`  
+- `channel-table`  
+- `logging`  
+
+These are GUI components for organizing data displays and interactions, not strictly "functional" components in the system architecture sense. For a precise definition of "Functional Components" in F' or GDS, you may need to refer to additional documentation or clarify the context. 
+
+For now, the GDS Dashboard Reference ([here](gds-dashboard-reference.md)) provides detailed guidance on its components.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/gds/gds-custom-dashboards.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+Describe the "CdhCore" base ID strategy.
+---RESPONSE---
+The **CdhCore base ID strategy** is designed to provide a structured, configurable foundation for assigning unique identifiers to components within the CdhCore subtopology. Here's how it works:
+
+1. **Base ID Definition**:
+   - The base ID is defined in `CdhCoreConfig.BASE_ID` (likely a constant or configurable parameter in the CdhCore configuration files). This serves as the root identifier for all CdhCore components.
+
+2. **Component ID Derivation**:
+   - Each component (e.g., `fatalHandler`, `cmdDisp`, `events`, `tlmSend`, etc.) is assigned a unique ID by adding a **fixed offset** to the base ID. For example:
+     ```cpp
+     fatalHandler: Svc.FatalHandler base id CdhCoreConfig.BASE_ID + 0x07000
+     ```
+     Here, `0x07000` is the offset for the fatal handler. Other components use different offsets (e.g., `0x08000` for telemetry, `0x09000` for command dispatch, etc.).
+
+3. **Purpose**:
+   - **Avoids ID Conflicts**: Ensures unique IDs across the system by using a hierarchical structure.
+   - **Modularity**: Allows CdhCore to be reused in different deployments while maintaining consistent internal component addressing.
+   - **Extensibility**: Enables integration engineers to customize the base ID or add new components with new offsets without modifying existing code.
+
+4. **Configuration Flexibility**:
+   - The base ID itself is likely configurable via mission-specific parameters, enabling tailoring to specific hardware or software constraints.
+
+This strategy aligns with F' architecture principles, ensuring predictable, reusable, and scalable component identification.
+
+*Sources: Svc/Subtopologies/CdhCore/docs/sdd.md · Svc/Subtopologies/CdhCore/CdhCoreConfig/CdhCoreFatalHandlerConfig.fpp · Svc/Subtopologies/CdhCore/docs/sdd.md*
+
+
+---USER---
+How do you handle "Optional" port connections?
+---RESPONSE---
