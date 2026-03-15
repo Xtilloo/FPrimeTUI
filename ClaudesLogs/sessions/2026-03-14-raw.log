@@ -4194,3 +4194,75 @@ What does the fprime-gds --tts-port flag configure?
 The `--tts-port` flag in `fprime-gds` configures the **port number** used by the GDS (Ground Data System) to communicate with the **Text-to-Speech (TTS)** service. This port is used to send telemetry data to the TTS service for audio output. The value specified with `--tts-port` determines the network port address where the TTS service listens for incoming telemetry data.
 
 *Sources: docs/user-manual/overview/gds-introduction.md · Svc/FpySequencer/docs/directives.md · docs/user-manual/gds/gds-cli.md*
+
+
+---USER---
+Describe the Fw.CompletionStatus port type.
+---RESPONSE---
+The `Fw::CompletionStatus` port type is a communication port designed to convey the completion status of an operation or command. It contains a single parameter:
+
+- `completed`: A value of type `Fw::Completed` (an enumerated type) that indicates whether the operation completed successfully or failed. 
+
+This port is typically used by components to report the outcome of command executions (via `Fw::CmdResponse`) or to signal fatal events (via `Svc::Fatal`). The status provides critical feedback for system monitoring and error handling. 
+
+The exact values of the `Fw::Completed` enumeration (e.g., `SUCCESS`, `FAILURE`) are defined in the `Fw/Ports/CompletionStatus/CompletionStatus.fpp` file.
+
+*Sources: Fw/Ports/CompletionStatus/CompletionStatus.fpp · Fw/Cmd/docs/sdd.md · Svc/Fatal/docs/sdd.md*
+
+
+---USER---
+How does the RAG retriever handle Top K candidates?
+---RESPONSE---
+The RAG (Retrieval-Augmented Generation) retriever handles Top K candidates by first processing the input query through a retrieval model (e.g., BM25, dense vector similarity, or neural networks) to compute relevance scores for all documents in the corpus. It then sorts the documents by these scores and selects the top K documents with the highest scores as candidates. The value of K is typically a hyperparameter determined by the application's needs, balancing precision and recall. The exact method depends on the retriever's implementation (e.g., sparse vs. dense retrieval) and the scoring function used.
+
+*Sources: Utils/Types/README.md · docs/user-manual/design-patterns/app-man-drv.md · fprime-tools/test/fprime/fbuild/test_cmake.py*
+
+
+---USER---
+What is the purpose of fprime-util generate --ut?
+---RESPONSE---
+The `fprime-util generate --ut` command is used to **generate unit test (UT) template files and directories** for an F' project. Here's its purpose:
+
+1. **Creates UT template files**:  
+   It generates files with the `.template` suffix (e.g., `command.template`) in the `test/ut` directory. These templates serve as skeletons for implementing unit tests.
+
+2. **Sets up UT infrastructure**:  
+   It ensures the `test/ut` directory structure exists, which is required for F' to recognize and process unit test files.
+
+3. **Automates test setup**:  
+   This command streamlines project initialization by pre-creating the boilerplate files needed for writing and running unit tests in F'.
+
+This is part of F'’s tooling to enforce consistent testing practices across projects.
+
+*Sources: CONTRIBUTING.md · fprime-tools/src/fprime/constants.py · fprime-tools/src/fprime/util/__main__.py*
+
+
+---USER---
+What are the possible return statuses of Os::File::read()?
+---RESPONSE---
+```json
+{
+  "tool_name": "list_directory",
+  "path": "Svc/Os"
+}
+```
+
+*Sources: Svc/DpManager/test/ut/README.md · docs/user-manual/overview/development-practice.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How do you Stage a file for uplink in the GDS?
+---RESPONSE---
+To stage a file for uplink in the GDS using F', you would typically use the `Svc::FileUplink` component, which is designed to manage file uplink operations. Here's a high-level overview of the process:
+
+1. **Command Dispatch**: Use the `Svc::CmdDispatcher` to send a command to initiate the file uplink process. This command would typically be directed at the `Svc::FileUplink` component.
+
+2. **File Staging**: The `Svc::FileUpl't` component will handle the actual staging of the file, which involves preparing the file for transmission according to the defined framing protocol (e.g., custom framing with a deframer).
+
+3. **Framing/Deframing**: Ensure that the file is properly framed according to your custom protocol (if applicable). The `Svc::FprimeRouter` component will interface with the `Svc::FileUplink` to manage the transmission of the staged file over the communication link.
+
+4. **GDS Integration**: If using a GDS (Ground Data System), the file will be transmitted via the defined protocol, and the GDS will receive and process it using its corresponding plugins or handlers.
+
+For exact implementation details, refer to the `Svc::FileUplink` SDD documentation and the custom framing examples in the `fprime-examples` repository.
+
+*Sources: Svc/FprimeRouter/docs/sdd.md · Svc/FileUplink/docs/sdd.md · docs/how-to/custom-framing.md*
