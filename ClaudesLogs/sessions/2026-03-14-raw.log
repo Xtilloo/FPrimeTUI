@@ -6596,3 +6596,209 @@ The `ShellCommand` command in the **Svc::FileManager** service is listed in the 
 For precise behavior, consult the SDD or source code directly. Would you like me to locate the `Svc::FileManager` SDD or source files?
 
 *Sources: Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/ComQueue/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What is the Os::File::Descriptor class used for?
+---RESPONSE---
+The `Os::File::Descriptor` class is used to represent and manage file descriptors in the F' framework. It abstracts the underlying operating system's file I/O operations, providing a consistent interface for opening, reading, writing, and closing files across different OS implementations. This class encapsulates the native file descriptor (typically an integer) and handles platform-specific details, allowing components to interact with files without being tied to a specific operating system.
+
+*Sources: Fw/DataStructures/docs/SizedContainer.md · docs/user-manual/overview/source-tree.md · Svc/CmdSequencer/docs/AMPCSSequence.md*
+
+
+---USER---
+Describe the Svc::FileManager 'AppendFile' command.
+---RESPONSE---
+The `Svc::FileManager.AppendFile` command is used to append data to a specified file. Based on the test code provided in `test_cmd_fileManager.py`, this command is invoked with a file path argument (e.g., `"/tmp/1MiB.txt"`). 
+
+### Key Details:
+- **Purpose**: Append data to an existing file.
+- **Parameter**: 
+  - `fileName`: A string specifying the path to the file (e.g., `"/tmp/1MiB.txt"`).
+- **Behavior**: 
+  - The command likely appends data to the file, though the exact data source (e.g., a buffer, data product, or stream) is defined in the `FileManager` component's implementation.
+  - It may interact with the `DpWritten` port (from `DpPorts.fpp`) to notify about the appended data, though this depends on the service's design.
+
+For precise parameter definitions or internal logic, inspect the `FileManager` FPP file (e.g., `Svc/FileManager/FileManager.fpp`) using the `read_file` tool. Let me know if you'd like to proceed!
+
+*Sources: Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/ComQueue/docs/sdd.md · Svc/DpPorts/DpPorts.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::TimePort` (likely referring to the `Fw::Time` port in the context of F') is designed to facilitate the transmission and management of time-related data between components in a system. Its primary purposes include:
+
+1. **Time Value Transfer**: It enables the passing of `Fw::Time` objects, which encapsulate:
+   - The time base (project-specific).
+   - Time context.
+   - Seconds and microseconds portions of a timestamp.
+
+2. **Time Interval Handling**: It supports `Fw::TimeInterval` objects to represent time intervals (seconds and microseconds), useful for timing measurements or deadlines.
+
+3. **Synchronization**: By providing a standardized interface for time data, it ensures consistency across components, critical for real-time or time-sensitive operations.
+
+4. **Integration with FPP**: The port leverages the `TimeValue` data structure (defined in `Time.fpp`) to serialize/deserialize time values, aligning with F' framework standards.
+
+If the name `Fw::TimePort` refers to a specific port in your project, further details about its topology or implementation would clarify its exact behavior.
+
+*Sources: Fw/Time/docs/sdd.md · Svc/BufferManager/docs/sdd.md · Svc/ComRetry/docs/sdd.md*
+
+
+---USER---
+Describe the Os::Task::Suspension state.
+---RESPONSE---
+The `Os::Task::Suspension` state is not explicitly documented in the provided F' knowledge base or code snippets. The relevant `TaskStatus` enum in `Os/Models/Task.fpp` defines states like `OP_OK`, `INVALID_HANDLE`, `INVALID_PARAMS`, etc., but does not include a `Suspension` state. 
+
+To proceed, you would need to:
+1. Check the full `TaskStatus` enum definition in the source code (e.g., `Os/Models/Task.fpp`).
+2. Refer to the system's state machine logic or documentation for context on task suspension behavior.
+
+Would you like me to locate the full `TaskStatus` enum definition for you?
+
+*Sources: Svc/FileDispatcher/docs/sdd.md · Os/Models/Task.fpp · FppTestProject/FppTest/state_machine/README.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'LogOut' port used for?
+---RESPONSE---
+The Svc::ActiveRateGroup component's `LogOut` port is **not explicitly documented** in the provided FPP code or knowledge base sources. The component's defined ports in the snippet include:
+
+- `CycleIn` (async input for rate group cycles)
+- `RateGroupMemberOut` (output for scheduling members)
+- `PingIn` (async input for health checks)
+- `PingOut` (output for health status)
+
+If `LogOut` is a port in your specific implementation or a newer version, it may serve a purpose like logging diagnostics or status messages. To confirm, you would need to inspect the full `ActiveRateGroup.fpp` file or related documentation in your codebase. 
+
+For now, based on the provided sources, no explicit role for `LogOut` is defined.
+
+*Sources: docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' period in FPP?
+---RESPONSE---
+In F Prime's FPP (F Prime Preprocessor), telemetry channels' update periods are specified using the `rate` attribute within their definition in the telemetry section of an `.fpp` file. The rate is defined as a frequency (e.g., `1 Hz`), which determines how often the telemetry is updated. 
+
+### Example Syntax:
+```fpp
+telemetry {
+    Counter {
+        type = uint32
+        rate = 1 Hz
+    }
+}
+```
+
+### Key Notes:
+1. **Rate Specification**: The `rate` attribute directly controls the update period. For example, `rate = 1000 Hz` sets the telemetry to update every 1 millisecond.
+2. **Units**: The rate is typically expressed in **Hz** (Hertz), which corresponds to updates per second.
+3. **Location**: This is defined in the `telemetry` block of the FPP file (e.g., `Top/topology.fpp`).
+
+If you need to verify or modify this for a specific channel, use the `read_file` tool to inspect the relevant `.fpp` file.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+Describe the purpose of the Fpp::ToCpp::loadParameters phase.
+---RESPONSE---
+The **Fpp::ToCpp::loadParameters** phase in the F' framework is responsible for generating C++ code that initializes **parameters** (defined in FPP files) during system startup. Its key purposes are:
+
+1. **Parameter Initialization**: Loads parameter values from **non-volatile memory** (e.g., persistent storage) into volatile memory, ensuring the system starts with correct configuration values.
+
+2. **Default Handling**: If a parameter lacks a non-volatile source, it applies the **default value** specified in the FPP definition.
+
+3. **Opcode Execution**: Executes the **`set opcode`** for parameters to initialize their runtime values, ensuring compatibility with the spacecraft's hardware and software constraints.
+
+4. **Runtime Readiness**: Ensures all parameters are properly initialized before critical subsystems (e.g., sensors, actuators) become operational.
+
+This phase is critical for ensuring the flight software starts in a known, safe state while respecting both default values and persistent configuration data.
+
+*Sources: .github/ISSUE_TEMPLATE/feature-request.md · docs/reference/system-functional/dictionary.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'TlmOut' port used for?
+---RESPONSE---
+The `Svc::ActiveRateGroup` component's `TlmOut` port is **not explicitly defined** in the provided `ActiveRateGroup.fpp` source code snippet. Based on the code shown, the component defines the following ports:
+
+```cpp
+async input port CycleIn: Svc.Cycle drop
+output port RateGroupMemberOut: [ActiveRateGroupOutputPorts] Sched
+async input port PingIn: Ping
+output port PingOut: Ping
+```
+
+These ports handle:
+- `CycleIn`: Asynchronous input for rate group cycles.
+- `RateGroupMemberOut`: Output for scheduling members.
+- `PingIn/PingOut`: Health-check communication.
+
+If `TlmOut` is a port in your specific context, it may be defined in a derived component, a separate file, or a different version of the code. To resolve this, you would need to:
+1. Check if `TlmOut` is defined in a subclass or extension of `ActiveRateGroup`.
+2. Verify if it exists in a different file (e.g., `ActiveRateGroup.cpp` or a related module).
+3. Confirm the exact codebase version, as the snippet provided may be outdated.
+
+Use the `read_file` tool to inspect the full definition of `ActiveRateGroup` or related files if needed.
+
+*Sources: docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+In F Prime's FPP (F Prime Preprocessor), the "update" policy for a telemetry channel is specified using the `update` keyword in the channel definition. The allowed values are:
+
+- `"on_change"`: The channel sends updates **only when the value changes**.
+- **Omitted**: The channel sends updates **on every update** (even if the value hasn't changed).
+
+### Example Syntax
+```fpp
+channel MyTelemetryChannel {
+  update = "on_change"  // Specify "on_change" policy
+  // Other channel properties...
+}
+```
+
+or
+
+```fpp
+channel MyTelemetryChannel {
+  // Default behavior: send on every update
+  // (omit the `update` keyword)
+  // Other channel properties...
+}
+```
+
+### Key Notes
+1. **No "offset" parameter**: The term "offset" is not part of F Prime's telemetry channel definition. You may be referring to the `update` policy or the numeric ID offset (handled automatically by the system).
+2. **Channel ID Uniqueness**: The channel's ID is globally unique by combining the component's base ID with the channel's local ID (no manual offsetting required).
+
+Let me know if you need clarification on channel IDs or data types!
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the Svc::FileManager 'GetFileCount' command.
+---RESPONSE---
+The Svc::FileManager's `GetFileCount` command is likely defined in the `Svc/FileManager` component's `.fpp` file. However, based on the provided knowledge base, there is no direct documentation or code snippet for this specific command. To proceed, I'll first check the files in the `Svc` directory to locate the `FileManager` component definition.
+
+
+
+> *[Listing Svc... (PENDING)]*
+
+> *[Listing Top... (PENDING)]*
+
+> *[Listing .... (PENDING)]*
+
+> *[Listing FPrimeSampleProject... (PENDING)]*
+
+> *[Listing FPrimeSampleProject/Components... (PENDING)]*
+
+**[SYSTEM]: Maximum depth reached.**
+
+
+*Sources: Svc/ComQueue/docs/sdd.md · Svc/DpPorts/DpPorts.fpp · Svc/DpWriter/docs/sdd.md*
