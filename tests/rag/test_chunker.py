@@ -69,3 +69,22 @@ def test_detect_content_type_tutorial():
 def test_detect_content_type_tutorial_by_path():
     text = "Some general text about setup."
     assert detect_content_type(text, "docs/getting-started/install.md") == "tutorial"
+
+
+def test_chunk_markdown_includes_content_type():
+    text = "## Overview\nF Prime is a framework for flight software."
+    chunks = chunk_markdown(text, source="overview.md")
+    assert "content_type" in chunks[0]
+    assert chunks[0]["content_type"] == "concept"
+
+
+def test_chunk_fpp_content_type_is_code():
+    text = "component A {\n  port p: Fw.Com\n}"
+    chunks = chunk_fpp(text, source="Comp.fpp")
+    assert chunks[0]["content_type"] == "code"
+
+
+def test_chunk_python_content_type_is_code():
+    text = "class Foo:\n    def bar(self):\n        pass\n"
+    chunks = chunk_python(text, source="example.py")
+    assert chunks[0]["content_type"] == "code"

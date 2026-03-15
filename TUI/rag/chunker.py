@@ -63,11 +63,13 @@ def chunk_markdown(text: str, source: str) -> list[dict]:
         section = section.strip()
         if not section:
             continue
+        truncated = _truncate(section)
         chunks.append({
-            "text": _truncate(section),
+            "text": truncated,
             "source_file": source,
             "chunk_type": "markdown",
             "component_name": "",
+            "content_type": detect_content_type(truncated, source),
         })
     return chunks
 
@@ -87,6 +89,7 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
             "source_file": source,
             "chunk_type": "fpp_block",
             "component_name": name,
+            "content_type": "code",
         })
     if not chunks:
         # Fallback: treat whole file as one chunk
@@ -95,6 +98,7 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
             "source_file": source,
             "chunk_type": "fpp_block",
             "component_name": "",
+            "content_type": "code",
         })
     return chunks
 
@@ -113,6 +117,7 @@ def chunk_python(text: str, source: str) -> list[dict]:
             "source_file": source,
             "chunk_type": "python",
             "component_name": "",
+            "content_type": "code",
         })
     return chunks
 
