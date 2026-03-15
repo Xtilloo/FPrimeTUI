@@ -5529,3 +5529,298 @@ The pattern is often visualized as a "hub" connecting two nodes via a serialized
 This pattern is critical for F' applications requiring distributed or partitioned architectures, such as spacecraft systems or embedded multi-core platforms.
 
 *Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/hub-pattern.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What are the Fpp::ToCpp::Phases?
+---RESPONSE---
+The `Fpp::ToCpp::Phases` enum defines a sequence of lifecycle stages for configuring and managing components in F' (F Prime) subtopologies. These phases replace traditional `configureTopology`, `startTopology`, and `teardownTopology` functions with a unified, component-instance-based approach. Here are the phases:
+
+```cpp
+enum Phases : U8 {
+  configConstants,       // Configure constants
+  configObjects,         // Configure objects
+  instances,             // Instantiate components
+  initComponents,           // Initialize components
+  configComponents,      // Configure components
+  regCommands,           // Register commands
+  readParameters,        // Read parameters
+  loadParameters,        // Load parameters
+  startTasks,            // Start tasks
+  stopTasks,             // Stop tasks
+  freeThreads,           // Free threads
+  tearDownComponents,    // Tear down components
+  deinitComponents       // Deinitialize components
+};
+```
+
+### Key Purpose
+These phases enable **component-specific initialization logic** in a single `fpp` file, replacing the older `topology.cpp/hpp` pattern. Each phase corresponds to a stage in the component lifecycle, allowing developers to define behavior for configuration, execution, and teardown directly within the `fpp` file. For deeper details, see the [F' Users Guide](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Component-Instances_Init-Specifiers).
+
+*Sources: Fpp/ToCpp.fpp · Svc/BufferManager/docs/sdd.md · docs/how-to/develop-subtopologies.md*
+
+
+---USER---
+Describe the purpose of the Drv::AsyncByteStreamBufferAdapter.
+---RESPONSE---
+The **Drv::AsyncByteStreamBufferAdapter** serves as a passive F' component that bridges the **AsyncByteStreamDriver** interface with the **PassiveBufferDriver** interface. Its primary purpose is to enable asynchronous byte stream drivers to be seamlessly integrated into systems that expect a passive buffer driver interface, without requiring changes to those systems. 
+
+### Key Responsibilities:
+1. **Interface Adaptation**: 
+   - Translates the asynchronous byte stream driver's interface into a passive buffer driver interface, allowing components to interact with async drivers as if they were traditional passive buffers.
+
+2. **Buffer Ownership Management**:
+   - Enforces the **Return-To-Sender** pattern: buffers are owned by the receiver until explicitly returned to the sender (driver). This ensures proper resource management and prevents buffer leaks.
+
+3. **Driver Readiness Signaling**:
+   - Monitors the async driver's readiness state (`m_driverIsReady`) to ensure data is only sent when the driver is prepared to accept it, preventing errors from unready drivers.
+
+### Design Impact:
+This adapter provides **flexibility in topology design** by abstracting the async driver's complexity, allowing developers to use asynchronous drivers in passive buffer contexts without modifying dependent components. It relies on assumptions about correct driver behavior (e.g., proper readiness signaling and buffer return) to ensure reliable operation.
+
+*Sources: Drv/AsyncByteStreamBufferAdapter/docs/sdd.md · Drv/AsyncByteStreamBufferAdapter/docs/sdd.md · Drv/AsyncByteStreamBufferAdapter/docs/sdd.md*
+
+
+---USER---
+What is the buffer ownership rule for Drv::ByteStreamStatus::SEND_RETRY?
+---RESPONSE---
+The F' knowledge base provided does not explicitly state the buffer ownership rule for `Drv::ByteStreamStatus::SEND_RETRY`. However, it does specify that for `Drv::ByteStreamStatus::OP_OK`, ownership of the `Fw::Buffer` passes to the byte stream driver.
+
+For `SEND_RETRY`, the documentation implies that the caller (e.g., the manager component) retains buffer ownership to retry the send operation. This is consistent with typical retry semantics, where the caller reuses the buffer after receiving a retry indication. 
+
+If you need definitive rules for `SEND_RETRY`, you would need to consult additional implementation details or comments in the source code.
+
+*Sources: Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp · Drv/ByteStreamDriverModel/docs/sdd.md · Svc/FrameAccumulator/docs/sdd.md*
+
+
+---USER---
+How do you configure an Drv::IpSocket?
+---RESPONSE---
+To configure a `Drv::IpSocket`, you typically set parameters such as local addresses, ports, buffer sizes, and timeouts through its derived classes (e.g., `Drv::TcpClientSocket`, `Drv::UdpSocket`). Here's how to approach it:
+
+---
+
+### **1. Use Derived Class-Specific Methods**
+The `Drv::IpSocket` base class delegates protocol-specific configuration to its children. For example:
+- **TCP Client**: Use `Drv::TcpClientSocket` methods like `setLocalAddress()`, `setPort()`, or `setBufferSize()`.
+- **UDP**: Use `Drv::UdpSocket` methods to configure the local port or buffer sizes.
+
+Example:
+```cpp
+Drv::TcpClientSocket socket;
+socket.setLocalAddress("127.0.0.1");
+socket.setPort(8080);
+socket.setBufferSize(1024);
+```
+
+---
+
+### **2. Call `open()` or `connect()`**
+After configuring parameters, call `open()` to initialize the socket or `connect()` to establish a connection:
+```cpp
+socket.open();  // For servers
+socket.connect("192.168.1.1", 5545);  // For clients
+```
+
+---
+
+### **3. Configure Reconnection/Thread Settings (via `Drv::SocketComponentHelper`)**  
+If using a component like `Drv::TcpClientComponent`, configure reconnection behavior via the `Drv::SocketComponentHelper`:
+```cpp
+socket.setReconnectEnabled(true);  // Enable auto-reconnect
+socket.start("TcpClientTask", 1000);  // Start receive thread
+```
+
+---
+
+### **4. Check Derived Class Documentation**
+Always refer to the specific derived class (e.g., `Drv::TcpClientSocket`, `Drv::UdpSocket`) for protocol-specific configuration options. The `Drv::IpSocket` base class provides generic utilities but relies on children for concrete implementation.
+
+---
+
+For precise steps, inspect the implementation of the derived class you're using (e.g., `Drv::TcpClientSocket.cpp`). Let me know if you need help locating specific methods!
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::SerializeBufferBase class?
+---RESPONSE---
+The `Fw::SerializeBufferBase` class serves as a foundational class for managing serialized data buffers in the F Prime framework. Its primary purposes include:
+
+1. **Buffer Management**: It provides a standardized interface for allocating, initializing, and managing memory buffers used in serializing data (e.g., for telemetry or command packets).
+2. **Serialization Support**: It abstracts the mechanics of writing data to a buffer, ensuring alignment, size tracking, and error checking during serialization.
+3. **Size Tracking**: Like `SizedContainer`, it maintains metadata about the buffer's capacity and current usage, enabling efficient memory utilization.
+4. **Framework Integration**: It enables seamless integration with F Prime's communication protocols (e.g., for AMPCS sequences) by providing a consistent buffer interface across different serialization implementations.
+
+This class is critical for ensuring reliable data transmission in spacecraft systems, where precise buffer management is essential for mission-critical operations.
+
+*Sources: Fw/DataStructures/docs/SizedContainer.md · docs/user-manual/overview/source-tree.md · Svc/CmdSequencer/docs/AMPCSSequence.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'ID' in FPP?
+---RESPONSE---
+In FPP, a telemetry channel's **ID** is specified using the `id` keyword followed by a numeric value in **hexadecimal** (prefixed with `0x`) or **decimal** format. The ID is part of the telemetry channel's attributes, defined after the type declaration.
+
+### Syntax Example:
+```fpp
+@ Telemetry channel 0
+telemetry Channel0: U32 id 0x00
+```
+
+### Key Details:
+- **`id`**: Specifies the numeric identifier for the telemetry channel.
+- **Hex/Decimal**: Values can be in hexadecimal (e.g., `0x01`) or decimal (e.g., `1`).
+- **Placement**: The `id` attribute is written inline after the type declaration (`U32`, `F64`, etc.).
+
+This defines the telemetry channel's unique identifier for telemetry packet formatting and ground system processing.
+
+*Sources: docs/how-to/derive-channels-on-ground.md · docs/reference/fpp-json-dict.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+Describe the purpose of the Fpp::ToCpp::initComponents phase.
+---RESPONSE---
+The **Fpp::ToCpp::initComponents** phase in the F' framework is responsible for generating **initialization code** for components defined in the FPP (F Prime Preprocessor) files. This phase ensures that all components are properly configured and registered with the system before runtime. 
+
+### Key Purposes:
+1. **Component Registration**: Registers components with the F' runtime system so they can be managed (e.g., started, stopped, or monitored).
+2. **Port Initialization**: Initializes input/output ports for components, ensuring they are correctly connected to their interfaces (e.g., `fppi` files).
+3. **Configuration Setup**: Applies configuration parameters (e.g., from `config.fpp`) to components, setting up their operational modes or data structures.
+4. **Dependency Resolution**: Ensures components are initialized in the correct order, respecting dependencies (e.g., a component may depend on a service being initialized first).
+
+This phase is critical for ensuring components are ready to execute when the system starts, adhering to F'’s component-based architecture.
+
+*Sources: .github/ISSUE_TEMPLATE/feature-request.md · Svc/Interfaces/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'CycleOut' port used for?
+---RESPONSE---
+The `Svc::ActiveRateGroup` component does **not** have a `CycleOut` port. Based on the provided F' code, the `ActiveRateGroup` component has an `async input port CycleIn: Svc.Cycle drop` for receiving cycles, and an `output port RateGroupMemberOut` for distributing scheduling data to members. 
+
+If you're referring to a `CycleOut` port, it is likely part of the `RateGroupDriver` component (in the `Svc` package) or the `Drv::Tick` interface, which outputs cycles to drivers. Could you clarify which component or context you're referring to?
+
+*Sources: Svc/RateGroupDriver/RateGroupDriver.fpp · Drv/Interfaces/Tick.fpp · Svc/ActiveRateGroup/ActiveRateGroup.fpp*
+
+
+---USER---
+How do you define an 'internal port' in FPP?
+---RESPONSE---
+In FPP, "internal ports" are not explicitly defined as a separate concept. Instead, they refer to **ports used internally within a component's implementation** (e.g., for communication between state machines or internal modules) and **not exposed as part of the component's public interface**. Here's how to achieve this:
+
+---
+
+### **1. Define Internal Ports in FPP**
+Internal ports are typically **not declared in the component's public port list** (i.e., they do not appear in the `ports` section of the `.fpp` file). Instead, they are:
+- **Part of the component's internal state machine logic** (e.g., for event passing between states).
+- **Defined in the state machine's `.fsm` file** (if using FPP's state machine framework).
+
+Example of an internal port in a state machine:
+```fpp
+// In a state machine's .fsm file
+event MyInternalEvent {
+    parameter myData: Int32;
+};
+```
+This event acts as an "internal port" for communication within the state machine.
+
+---
+
+### **2. Use Internal Ports in Component Logic**
+Internal ports are **not part of the component's public API**. To use them:
+- Define them in the component's internal logic (e.g., state machines or custom code).
+- Use FPP's generated code to route events or data between internal components.
+
+Example of an internal port in a component's implementation:
+```cpp
+// In the component's C++ implementation (generated by FPP)
+void MyComponent::handleMyInternalEvent(const MyInternalEvent& event) {
+    // Process internal event
+}
+```
+
+---
+
+### **3. Avoid Exposing Internal Ports**
+Ensure internal ports are **not listed in the component's public port declarations**. For example:
+```fpp
+// Public ports (exposed to other components)
+ports {
+    command_port: CommandDispatchPort;
+    telemetry_port: TelemetryDispatchPort;
+}
+```
+Internal ports are **omitted** from this list.
+
+---
+
+### **Key Takeaways**
+- **Internal ports** are not a separate FPP construct but are **implicitly defined** via state machines or internal logic.
+- They are **not part of the component's public interface** and are used **only within the component**.
+- Use FPP's state machine framework or custom C++ code to implement internal communication.
+
+For further details, refer to the [FPP User's Guide](https://nasa.github.io/fpp/fpp-users-guide.html) (linked in the knowledge base).
+
+*Sources: FppTestProject/FppTest/state_machine/internal/README.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/state-machines.md*
+
+
+---USER---
+Describe the Svc::FileDownlink packet protocol.
+---RESPONSE---
+The **Svc::FileDownlink** packet protocol is defined through its **ports** and **message structures**, enabling file enqueuing, downlinking, and status reporting. Here's a structured breakdown:
+
+---
+
+### **1. Command Port: `SendFileRequest`**
+- **Purpose**: Enqueue a file for downlink.
+- **Parameters**:
+  - `sourceFileName` (string, 100 bytes): Path to the file on the spacecraft.
+  - `destFileName` (string, 100 bytes): Destination path for the downlinked file.
+  - `offset` (U32): Starting byte offset for the downlink (0 = from beginning).
+  - `length` (U32): Number of bytes to downlink (0 = read until EOF).
+- **Usage**: 
+  - Operators use `SendFile`/`SendPartial` commands.
+  - Components use the `SendFileRequest` port.
+
+---
+
+### **2. Response Port: `SendFileComplete`**
+- **Purpose**: Notify when a file downlink completes.
+- **Message Structure**:
+  - `resp`: `SendFileResponse` struct containing:
+    - `status`: `SendFileStatus` enum (e.g., `STATUS_OK`, `STATUS_ERROR`, etc.).
+    - `context`: U32 (correlation ID to track the request).
+
+---
+
+### **3. Key Status Codes (`SendFileStatus`)**  
+- `STATUS_OK`: File downlinked successfully.
+- `STATUS_ERROR`: General error (e.g., I/O failure).
+- `STATUS_INVALID`: Invalid request (e.g., zero-size file, FD-004).
+- `STATUS_BUSY`: FileDownlink is processing another file (cooldown in effect).
+
+---
+
+### **4. Protocol Behavior**  
+- **Cooldown Mechanism (FD-003)**:  
+  After completing a file downlink, a configurable cooldown delay is enforced before starting the next file. This prevents link saturation.
+- **Zero-Size File Warning (FD-004)**:  
+  A warning is issued if a file with zero size is encountered.
+- **File Size Limit**:  
+  Files >4GiB are rejected with a "bad size" error.
+
+---
+
+### **5. Compliance with Requirements**  
+- **FD-001**: Multi-file queuing via `SendFileRequest` port.
+- **FD-002**: File partitioning into packets and transmission via the `SendFileComplete` response.
+- **FD-003**: Cooldown enforcement between downlinks.
+- **FD-004**: Zero-size file detection and warning.
+
+---
+
+This protocol ensures robust, controlled file downlinking while adhering to spacecraft communication constraints.
+
+*Sources: Svc/FileDownlink/docs/sdd.md · Svc/FileDownlink/docs/sdd.md · Svc/FileDownlinkPorts/FileDownlinkPorts.fpp*
