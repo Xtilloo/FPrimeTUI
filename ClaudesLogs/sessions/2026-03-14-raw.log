@@ -2665,3 +2665,144 @@ This strategy aligns with F' architecture principles, ensuring predictable, reus
 ---USER---
 How do you handle "Optional" port connections?
 ---RESPONSE---
+In F', "Optional" port connections are handled through **port declarations** in the `.fpp` files, where ports are explicitly marked as optional using the `optional` keyword. Here's how it works:
+
+1. **Port Declaration**:  
+   In the `.fpp` file, a port is declared with `optional` to indicate it may or may not be connected. For example:  
+   ```cpp
+   optional CommandPort my_optional_port;
+   ```
+
+2. **Connection Logic**:  
+   During system integration, optional ports are not required to have a corresponding connection. The framework silently ignores unconnected optional ports unless explicitly referenced in logic.
+
+3. **SDD Documentation**:  
+   The Software Design Description (SDD) for the component must explicitly note whether a port is optional. For example, the `Svc::EnableSection` port in `Svc/Ports/TlmPacketizerPorts/sdd.md` might describe optional behavior.
+
+4. **Validation**:  
+   Use `run_fprime_command` with the `check` subcommand to validate that optional ports are correctly defined and not enforced as mandatory connections.  
+   
+
+> *[Running fprime-util check... (PENDING)]*The error "venv not found" indicates the Python virtual environment (venv) is not properly initialized in your project directory. Here's how to resolve it:
+
+1. **Verify venv Existence**:  
+   Check if the `venv` directory exists in your project root. If not, create it using:  
+   ```bash
+   python -m venv venv
+   ```  
+   (Ensure Python is installed and accessible in your terminal.)
+
+2. **Activate the venv**:  
+   Run:  
+   ```bash
+   source venv/bin/activate  # Linux/macOS
+   venv\Scripts\activate     # Windows
+   ```  
+   This ensures dependencies are isolated within the venv.
+
+3. **Re-run the Command**:  
+   After setting up the venv, retry the `run_fprime_command` or other F' tools.  
+
+If the issue persists, confirm the path to your F' installation and ensure the venv is correctly linked. Let me know your specific setup details!
+
+*Sources: docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/overview/gds-introduction.md · Svc/Ports/TlmPacketizerPorts/sdd.md*
+
+
+---USER---
+What is the purpose of `Fw::PolyType` `isXXX()` methods?
+---RESPONSE---
+The `Fw::PolyType` `isXXX()` methods are used to **check the type of the value currently stored in a polymorphic `PolyType` object**. These methods provide a way to determine the exact type (e.g., `isU32()`, `isDouble()`, etc.) of the data held by the `PolyType` instance at runtime. 
+
+This is critical because:
+1. **Type safety**: If you attempt to retrieve a value of the wrong type (e.g., casting a `PolyType` containing a `Double` to a `U32`), the code will assert. The `isXXX()` methods allow you to verify the stored type before accessing it.
+2. **Branching logic**: They enable conditional handling based on the actual type stored, ensuring correct downstream processing.
+
+Example:
+```cpp
+PolyType pt(3.14);
+if (pt.isDouble()) {
+    Double val = pt.get<Double>();
+    // Process as double
+} else {
+    // Handle other types
+}
+``` 
+
+These methods are essential for safely working with polymorphic data in F'.
+
+*Sources: docs/user-manual/overview/05-enum-arr-ser.md · Fw/DataStructures/docs/Array.md · .github/ISSUE_TEMPLATE/feature-request.md*
+
+
+---USER---
+How do you send a command with arguments using the `fprime_test_api`?
+---RESPONSE---
+To send a command with arguments using the `fprime_test_api`, you use the `send_command` method with the command mnemonic and a list of string arguments. For example:
+
+```python
+fprime_test_api.send_command("TEST_CMD_2", ["235", "43"])
+```
+
+For full command verification (ensuring the command was received and events are checked), use `send_and_assert_command` with a `max_delay` parameter:
+
+```python
+fprime_test_api.send_and_assert_command("TEST_CMD_2", ["235", "43"], max_delay=0.1)
+```
+
+Always use Python strings (`str`) for arguments, not numeric literals. The `max_delay` parameter specifies how long to wait for command confirmation events.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · Ref/test/int/ref_integration_test.py · docs/user-manual/gds/gds-cli.md*
+
+
+---USER---
+Define NASA Rule #9: "Restricted Pointers."
+---RESPONSE---
+NASA Rule #9: "Restricted Pointers" is a safety-critical coding guideline designed to prevent undefined behavior and memory-related bugs in systems software. While not explicitly detailed in the provided knowledge base, this rule likely enforces the following principles in C++ code:
+
+1. **Const-Correctness**: 
+   - Use `const` pointers and references to prevent unintended modification of data.
+   - Example: `const int* ptr;` (points to a const value) vs. `int* const ptr;` (const pointer to a mutable value).
+
+2. **Pointer Safety**:
+   - Prohibit raw pointers in favor of smart pointers (`std::unique_ptr`, `std::shared_ptr`) for automatic memory management.
+   - Require explicit null checks before dereferencing pointers.
+
+3. **No Dangling Pointers**:
+   - Ensure pointers are always initialized and invalidated (e.g., set to `nullptr`) when objects are destroyed to avoid use-after-free errors.
+
+4. **Restricted Pointer Arithmetic**:
+   - Limit or prohibit pointer arithmetic that could lead to out-of-bounds access or aliasing issues.
+
+5. **Ownership Clarity**:
+   - Enforce clear ownership semantics to prevent multiple pointers from referencing the same resource without proper synchronization.
+
+This rule aligns with JPL's C++ coding standards, which prioritize safety and reliability in aerospace systems. For implementation details, consult NASA's formal coding guidelines or the F' framework's documentation.
+
+*Sources: Svc/BufferRepeater/docs/sdd.md · Svc/DpWriter/test/ut/README.md · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+What is the `library_locations` field in `settings.ini`?
+---RESPONSE---
+The `library_locations` field in the `settings.ini` file is used to specify additional paths to F' libraries and components that should be included in the build. These paths are separated by colons (`:`) to denote multiple locations. For example:  
+```ini
+library_locations = ../library1:../library2
+```  
+This setting allows the F' build system to locate and incorporate external code into the project. Changes to `settings.ini` require regenerating the build using `fprime-util generate` for the updates to take effect.
+
+*Sources: docs/user-manual/build-system/settings.md · Fw/Buffer/docs/sdd.md · docs/user-manual/build-system/settings.md*
+
+
+---USER---
+What is a "Circular Port Dependency"?
+---RESPONSE---
+A "Circular Port Dependency" in the context of F' (F Prime) refers to a situation where two or more components depend on each other's ports in a cyclical manner. For example, **Component A** might have an output port that **Component B** uses as an input, while **Component B** has an output port that **Component A** uses as an input. This creates a loop in the dependency graph, which can lead to issues such as:
+
+1. **Compilation errors** (e.g., unresolved references during dependency resolution).
+2. **Runtime deadlocks** (e.g., components waiting for each other to produce data).
+3. **Violation of F' architecture principles**, which typically enforce acyclic dependency graphs to ensure predictable and modular system behavior.
+
+In F', such dependencies are generally avoided by restructuring components or using intermediate components to break the cycle. If you encounter this in your code, consult the **F' documentation** or **JPL coding standards** for guidance on resolving cyclical dependencies. 
+
+For specific examples in your project, check the `.fpp` files for port declarations and inter-component connections.
+
+*Sources: Svc/BufferRepeater/docs/sdd.md · Svc/FrameAccumulator/docs/sdd.md · Svc/PassiveRateGroup/docs/sdd.md*
