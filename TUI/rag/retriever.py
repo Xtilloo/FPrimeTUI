@@ -65,6 +65,51 @@ def extract_keywords(query: str) -> list[str]:
     return result
 
 
+# Source-category boost weights — applied at retrieval time, not stored in index.
+# Categories are matched by prefix against the chunk's source_file path.
+_SOURCE_CATEGORY_RULES: list[tuple[str, str]] = [
+    # Order matters: first match wins. More specific patterns first.
+    ("FppTestProject/", "test_projects"),
+    ("fprime-tools/", "tools"),
+    ("Fw/", "framework_core"),
+    ("Os/", "framework_core"),
+    ("Svc/Cmd", "framework_core"),
+    ("Svc/Health", "framework_core"),
+    ("docs/getting-started/", "docs_tutorial"),
+    ("docs/how-to/", "docs_tutorial"),
+    ("docs/reference/", "docs_reference"),
+    ("docs/user-manual/", "docs_reference"),
+]
+
+_SOURCE_CATEGORY_BOOSTS: dict[str, float] = {
+    "framework_core": 1.3,
+    "docs_tutorial": 1.2,
+    "docs_reference": 1.15,
+    "fpp_spec": 1.25,
+    "service_docs": 1.0,
+    "test_projects": 0.85,
+    "tools": 0.9,
+}
+
+
+def get_source_category(source_file: str) -> str:
+    """Map a source_file path to its category. Computed at retrieval time."""
+    if source_file.endswith(".fpp"):
+        return "fpp_spec"
+    for prefix, category in _SOURCE_CATEGORY_RULES:
+        if source_file.startswith(prefix):
+            return category
+    if source_file.startswith("Svc/") and "/docs/" in source_file:
+        return "service_docs"
+    return "service_docs"  # Unknown paths get neutral boost
+
+
+def get_source_category_boost(source_file: str) -> float:
+    """Return the boost multiplier for a source file's category."""
+    category = get_source_category(source_file)
+    return _SOURCE_CATEGORY_BOOSTS.get(category, 1.0)
+
+
 def keyword_score(chunk_text: str, keywords: list[str]) -> float:
     """Return the fraction of keywords present in chunk_text (0.0–1.0)."""
     if not keywords:

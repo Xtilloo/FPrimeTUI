@@ -103,3 +103,53 @@ def test_keyword_score_no_match():
 def test_keyword_score_partial_match():
     score = keyword_score("ActiveComponent and PassiveComponent differ.", ["activecomponent", "queuedcomponent"])
     assert 0.0 < score < 1.0
+
+
+from rag.retriever import get_source_category, get_source_category_boost
+
+
+def test_get_source_category_framework_core():
+    assert get_source_category("Fw/Comp/docs/sdd.md") == "framework_core"
+    assert get_source_category("Os/Task/Task.hpp") == "framework_core"
+
+
+def test_get_source_category_docs_tutorial():
+    assert get_source_category("docs/getting-started/install.md") == "docs_tutorial"
+    assert get_source_category("docs/how-to/add-component.md") == "docs_tutorial"
+
+
+def test_get_source_category_docs_reference():
+    assert get_source_category("docs/reference/fpp-grammar.md") == "docs_reference"
+    assert get_source_category("docs/user-manual/overview.md") == "docs_reference"
+
+
+def test_get_source_category_fpp_spec():
+    assert get_source_category("Fw/Comp/Comp.fpp") == "fpp_spec"
+
+
+def test_get_source_category_service_docs():
+    assert get_source_category("Svc/FileManager/docs/sdd.md") == "service_docs"
+
+
+def test_get_source_category_test_projects():
+    assert get_source_category("FppTestProject/FppTest/component/README.md") == "test_projects"
+
+
+def test_get_source_category_tools():
+    assert get_source_category("fprime-tools/src/fprime/fpp/utils.py") == "tools"
+
+
+def test_get_source_category_unknown_defaults_to_service_docs():
+    # Unknown paths get neutral boost (1.0)
+    assert get_source_category("some/random/path.txt") == "service_docs"
+
+
+def test_source_category_boost_framework_core_highest():
+    fw_boost = get_source_category_boost("Fw/Comp/docs/sdd.md")
+    svc_boost = get_source_category_boost("Svc/FileManager/docs/sdd.md")
+    assert fw_boost > svc_boost
+
+
+def test_source_category_boost_test_projects_below_neutral():
+    test_boost = get_source_category_boost("FppTestProject/README.md")
+    assert test_boost < 1.0
