@@ -3596,3 +3596,229 @@ The `library.cmake` file is a **required configuration file** for defining an F'
 This file is critical for integrating the library into larger F' projects and ensuring proper compilation and linking.
 
 *Sources: docs/how-to/develop-fprime-libraries.md · docs/how-to/integrate-external-libraries.md · fprime-tools/src/fprime/fbuild/enumerator.py*
+
+
+---USER---
+Explain the difference between SELECTION and FEATURE plugins in the GDS.
+---RESPONSE---
+SELECTION and FEATURE plugins in the GDS serve distinct purposes in extending functionality:
+
+1. **SELECTION Plugins**  
+   - **Purpose**: Provide alternative implementations for existing GDS functionality.  
+   - **Example**: A `framing` plugin that implements a specific framer/deframer pair (e.g., CRC-based vs. packet-based).  
+   - **Behavior**: Replaces or augments predefined "slots" in the GDS architecture (e.g., communication adapters).  
+   - **Use Case**: When you want to customize how a core system component operates (e.g., data framing, communication protocols).
+
+2. **FEATURE Plugins**  
+   - **Purpose**: Add entirely new functionality to the GDS.  
+   - **Example**: A start-up application plugin that initializes custom hardware or services.  
+   - **Behavior**: Introduces new capabilities not natively supported by the GDS. May accept arguments for configuration.  
+   - **Use Case**: When you need to extend the GDS with novel features (e.g., custom diagnostics, third-party service integration).
+
+**Key Difference**:  
+SELECTION plugins modify existing functionality slots, while FEATURE plugins introduce new, independent capabilities. The GDS uses [pluggy](https://pluggy.readthedocs.io/en/stable/) to manage these plugin types.
+
+*Sources: docs/how-to/develop-gds-plugins.md · docs/how-to/develop-gds-plugins.md · docs/how-to/develop-gds-plugins.md*
+
+
+---USER---
+How does Mission Control truncate large files for the AI?
+---RESPONSE---
+The process of truncating large files for AI operations in Mission Control is not explicitly detailed in the provided knowledge base sources. However, based on standard file management practices and the role of `Svc::FileManager` (as described in its SDD), truncation would likely involve:
+
+1. **Using system-specific APIs** (e.g., `ftruncate()` on Unix-like systems or `SetFilePointerEx()` with `FILE_TRUNCATE` on Windows) to resize the file to a desired length.
+2. **Ensuring data integrity** by coordinating with the AI subsystem to avoid data corruption during truncation.
+3. **Resource management** to free up storage space while maintaining critical metadata for AI workflows.
+
+For precise implementation details, you would need to inspect the `Svc::FileManager` source code or consult its SDD documentation, which is not fully provided here. Would you like me to locate the `Svc::FileManager` source files for further analysis?
+
+*Sources: Svc/CmdSequencer/formats/README.md · docs/user-manual/design-patterns/app-man-drv.md · Svc/FileManager/docs/sdd.md*
+
+
+---USER---
+What is a Frame Detector in the communication stack?
+---RESPONSE---
+A **Frame Detector** in the communication stack is a critical component responsible for identifying the **start of a frame** in a stream of incoming data. It plays a key role in protocols like CCSDS (Consultative Committee for Space Data Systems) telemetry (TM) and command (TC) protocols, where data is transmitted in structured frames.
+
+### Key Responsibilities:
+1. **Header Detection**:  
+   - Detects the **frame header** (e.g., synchronization words, specific bit patterns) to determine where a frame begins.  
+   - For CCSDS TM/TC protocols, this involves identifying the **frame start delimiter** (e.g., "111111111111" for CCSDS Type-B frames).
+
+2. **Frame Boundary Identification**:  
+   - Ensures the system correctly separates consecutive frames in a data stream, avoiding data corruption or misalignment.
+
+3. **Integration with Deframers**:  
+   - Works alongside components like `Svc::Ccsds::TcDeframer` to pass detected frames for further processing (e.g., payload extraction, error checking).
+
+### Example in F' Architecture:
+- The **FrameAccumulator** (part of the `Svc::Interfaces` module) is often used to implement frame detection. It accumulates incoming bits and checks for header patterns, then triggers the deframer (e.g., `Svc::Ccsds::TcDeframer`) once a valid frame is detected.
+
+### Why It Matters:
+- Without accurate frame detection, the communication stack cannot reliably parse incoming data, leading to errors in telemetry reception or command execution.  
+- In CCSDS protocols, frame detection ensures compliance with the **Type-A/Type-B frame formats** (e.g., Type-B uses expedited service with no FARM checks, as noted in the `TcDeframer` documentation).
+
+For deeper details, review the `Svc::Interfaces` and `Svc::Ccsds::TcDeframer` documentation in the F' knowledge base.
+
+*Sources: Svc/Ccsds/TmFramer/docs/sdd.md · Svc/Ccsds/TcDeframer/docs/sdd.md · Svc/Interfaces/docs/sdd.md*
+
+
+---USER---
+What does the fprime-util new --port command do?
+---RESPONSE---
+The `fprime-util new --port` command automates the creation of a new port in an F' project. It performs the following actions:
+
+1. **Creates a port directory** (if necessary)
+2. **Generates a `.fpp` file** for the port, which defines its interface and behavior
+3. **Updates the `CMakeLists.txt`** file to include the new port in the build system
+4. **Adds the port directory** to the deployment's CMake configuration (if needed)
+
+This command simplifies port development by handling the boilerplate file creation and build system integration, allowing developers to focus on implementing port logic.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/development-practice.md · fprime-tools/src/fprime/util/commands.py*
+
+
+---USER---
+How does Os::Task handle task deletion?
+---RESPONSE---
+The `Os::Task` module in F' handles task deletion through its implementation, which is typically managed by the underlying operating system's task management primitives. While the `TaskStatus` enum provided in `Os/Models/Task.fpp` does not explicitly include a status for task deletion, the deletion process would generally involve:
+
+1. **Calling OS-specific APIs**: The task deletion is likely handled via OS primitives (e.g., `pthread_cancel`, `Task_Delete`, etc.), which may return status codes from the `TaskStatus` enum (e.g., `OP_OK` for success or `INVALID_HANDLE` if the task handle is invalid).
+
+2. **Error Handling**: If an error occurs during deletion (e.g., invalid handle, permissions), the system would return an appropriate `TaskStatus` value to indicate the failure.
+
+3. **Resource Cleanup**: The OS ensures resources (stack, memory, etc.) are released upon task termination, though this is abstracted by the F' framework.
+
+For precise details, inspect the `Os/Task.cpp` or equivalent implementation file, which would contain the concrete logic for task deletion. Use the `list_directory` tool to locate such files.
+
+*Sources: Svc/FatalHandler/docs/sdd.md · Os/Models/Task.fpp · Svc/AssertFatalAdapter/docs/sdd.md*
+
+
+---USER---
+How do you configure the Ping timeout for a component?
+---RESPONSE---
+To configure the Ping timeout for a component in F', you need to adjust the timeout parameters in the `Svc.Health` component (provided by `CdhCore`). The exact configuration depends on how the health check is implemented for your specific component. Here's how to proceed:
+
+1. **Locate the `Svc.Health` configuration**:  
+   Check the topology file (e.g., `Top/topology.fpp`) where `Svc.Health` is instantiated. Look for parameters related to timeout thresholds (e.g., `WARNING_HI_TIMEOUT` and `FATAL_TIMEOUT`). These are typically defined in the `CdhCore` subtopology.
+
+2. **Set timeout values**:  
+   Modify the timeout values in the component's configuration. For example:
+   ```cpp
+   Svc::Health health(
+       WARNING_HI_TIMEOUT = 1000000,  // 1 second
+       FATAL_TIMEOUT = 2000000       // 2 seconds
+   );
+   ```
+   These values are in nanoseconds (ns) by default. Adjust them based on your system's requirements.
+
+3. **Verify with `fpp-check`**:  
+   After modifying the configuration, validate the topology using:
+   ```json
+   {
+     "tool_name": "run_fprime_command",
+     "command": "check",
+     "args": "Top"
+   }
+   ```
+
+If the timeout is managed via a `Svc.Sched` port (as in `ComAggregator`), ensure the rate group or timeout parameter is explicitly set in the component's configuration. Always refer to the specific component's SDD (Software Design Document) for precise parameters.
+
+*Sources: docs/user-manual/design-patterns/health-checking.md · Drv/Ip/docs/sdd.md · Svc/ComAggregator/docs/sdd.md*
+
+
+---USER---
+What is the Fw::MallocAllocator used for?
+---RESPONSE---
+The `Fw::MallocAllocator` is the implementation of the **SYSTEM** memory allocator type defined in the `MemoryAllocatorType` enum within the `Fw::MemoryAllocation` module. It is used for standard memory allocation in the Fw::MemAllocatorRegistry when the `SYSTEM` allocator is selected. This allocator provides basic memory management functionality for the system, handling general-purpose memory requests not tied to specific subsystems like queues. 
+
+The `SYSTEM` allocator is required for standard memory allocations and is distinct from specialized allocators like `OS_GENERIC_PRIORITY_QUEUE`, which is used for OS-level queue memory management.
+
+*Sources: Svc/ComQueue/docs/sdd.md · default/config/MemoryAllocation.fpp · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+Describe the fprime-gds --ip-address flag.
+---RESPONSE---
+The `--ip-address` flag in `fprime-gds` specifies the IP address of the target device (e.g., a flight software deployment) that the GDS (Ground Data System) will communicate with over the network. This is required when using the `--ip-client` option, which enables IP-based communication (as opposed to serial/USB). 
+
+### Key Details:
+- **Purpose**: Tells the GDS which IP address to use for network communication with the deployed flight software.
+- **Usage**: Must be paired with `--ip-client` to enable IP client mode.
+- **Example**:  
+  ```bash
+  fprime-gds --ip-client --ip-address 192.168.1.100
+  ```
+  This configures the GDS to connect to the flight software running at `193.168.1.100` via IP.
+
+This is critical for cross-compilation or remote testing scenarios where the GDS and flight software run on separate machines.
+
+*Sources: docs/tutorials/cross-compilation.md · Svc/FpySequencer/docs/directives.md · docs/user-manual/overview/gds-introduction.md*
+
+
+---USER---
+What is the Svc::ComStub component?
+---RESPONSE---
+The `Svc::ComStub` component is a **passive component** in the F' framework designed to act as a **communication stub** for simulating or mocking inter-component communication. It typically implements an FPP interface (e.g., `ComStub.fppi`) and provides placeholder logic for input ports while exposing output ports for downstream components. 
+
+### Key Characteristics:
+1. **Passive Nature**: It does not perform active computations but serves as a bridge for data flow.
+2. **Interface Compliance**: It adheres to an FPP interface (e.g., `ComStub.fppi`), which defines its ports and behaviors.
+3. **Simulation Use**: Often used in test environments to simulate communication without actual hardware interaction.
+
+### Example Structure:
+```cpp
+// ComStub.fpp
+passive component ComStub {
+  // Input port (e.g., for receiving data)
+  input port InPort;
+  
+  // Output port (e.g., for forwarding data)
+  output port OutPort;
+  
+  // Stub logic (no-op in passive components)
+  void handler_InPort(...) {
+    // Forward data to OutPort
+    OutPort.send(...);
+  }
+};
+```
+
+To explore its implementation, check files like `ComStub.fpp` or interface definitions in `ComStub.fppi` in your project's `Svc` directory. Use the `list_directory` tool to locate these files.
+
+*Sources: Svc/FileManager/docs/sdd.md · Svc/Interfaces/docs/sdd.md · FppTestProject/FppTest/component/empty/empty.fpp*
+
+
+---USER---
+How do you carry data with a State Machine signal?
+---RESPONSE---
+To carry data with a State Machine signal in F Prime, you use **events with parameters** defined in your FPP model. Here's how it works:
+
+1. **Define an event with data parameters** in your FPP model (e.g., `CommandEvent`):
+```fpp
+event CommandEvent {
+    param data uint32;
+};
+```
+
+2. **Trigger the event** from another component with data:
+```cpp
+// In a component's C++ code
+CommandEvent event;
+event.data = 42;
+send(event);
+```
+
+3. **Access the data in state machine actions/conditions**:
+```cpp
+// In state machine action block
+if (event.data > threshold) {
+    // Use the data value
+}
+```
+
+4. **Generated code** handles the data serialization/deserialization automatically. The `fpp-to-cpp` tool creates appropriate structures in `StateMachineAc.hpp`.
+
+Would you like me to check your FPP model for event definitions or show how to modify it to carry data?
+
+*Sources: Svc/TlmChan/docs/sdd.md · docs/user-manual/framework/state-machines.md · Svc/FileDispatcher/docs/sdd.md*
