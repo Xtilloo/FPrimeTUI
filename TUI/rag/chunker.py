@@ -190,7 +190,7 @@ def chunk_cpp(text: str, source: str) -> list[dict]:
 
 
 _AC_METHOD_PATTERN = re.compile(
-    r"^\s+(?:virtual\s+)?(?:[\w:]+\s+)+(\w+)\s*\([^)]*\)(?:\s*(?:const|override|=\s*0))?\s*;",
+    r"^\s+(?:virtual\s+)?(?:[\w:*&]+\s+)+(\w+)\s*\([^)]*\)(?:\s*(?:const|override|=\s*0))?\s*;",
     re.MULTILINE,
 )
 # Skip patterns: constructors, destructors, serialization, dispatch, private helpers

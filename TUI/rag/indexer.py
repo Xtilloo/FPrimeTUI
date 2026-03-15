@@ -171,6 +171,9 @@ def build_index(chunks: list[dict[str, Any]], db_path: Path) -> None:
             "chunk_type": str(chunk["chunk_type"]),
             "component_name": str(chunk.get("component_name", "")),
             "content_type": str(chunk.get("content_type", "")),
+            # NOTE: design spec mentions priority: "high" for FPP spec files, but
+            # the retriever handles this via source-category boost (fpp_spec → 1.25x)
+            # at query time rather than stored metadata. Deferred to iteration 4.
         })
 
         if len(ids) == BATCH or i == len(chunks) - 1:
