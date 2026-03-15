@@ -287,3 +287,179 @@ This method is critical for maintaining continuous communication in fault-tolera
 **Note:** The exact implementation details of `reconnectLoop()` are not explicitly shown in the provided sources, but its behavior is inferred from the class's documented purpose and relationship to the `ActiveComponentBase` lifecycle.
 
 *Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Drv/Ip/SocketComponentHelper.hpp · Fw/Comp/ActiveComponentBase.hpp · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+What is an 'Implicit' enum in FPP?
+---RESPONSE---
+An 'Implicit' enum in FPP (F Prime Preprocessor) refers to an enumerated type where the constant values are **automatically assigned by the compiler** rather than explicitly specified by the developer. 
+
+In the provided `implicit.fpp` example:
+```fpp
+enum Implicit {
+  A, @< Member A
+  B,
+  C,
+  D,
+  E,
+}
+```
+The compiler assigns sequential integer values starting from 0 to each enumerator. For instance:
+- `A` → 0
+- `B` → 1
+- `C` → 2
+- `D` → 3
+- `E` → 4
+
+This contrasts with **explicit** enums (like `Explicit` in `explicit.fpp`), where values are manually defined (e.g., `A = -1952875139`). 
+
+For further details, inspect the generated C++ code using `run_fprime_command` with the `generate` action.
+
+*Sources: Os/Task.hpp · FppTestProject/FppTest/component/active/port_index_enums.fpp · FppTestProject/FppTest/enum/implicit.fpp · Svc/CmdSequencer/CmdSequencerImpl.hpp · FppTestProject/FppTest/enum/explicit.fpp*
+
+
+---USER---
+Describe the 'Multi-Element' constructor for FPP arrays.
+---RESPONSE---
+The **Multi-Element constructor** for FPP arrays is referred to as the **Primitive Array Constructor** in the Fw/DataStructures documentation. It is defined as:
+
+```cpp
+Array(const Elements& elements)
+```
+
+### Key Features:
+1. **Constructor Purpose**: Initializes the array with a provided array of elements.
+2. **Static Assertion**: Ensures the size of the input array (`S1`) matches the array's fixed size (`S`). If not, the code will fail to compile.
+3. **Assignment**: Copies the elements from the input array into the target array (`*this = elements`).
+
+### Example Usage:
+```cpp
+U32 elements[3] = {1, 2, 3};
+Array<U32, 3> a(elements); // Initializes the array with {1, 2, 3}
+```
+
+This constructor is distinct from the initializer list constructor (which uses `{}` syntax) and the single-element constructor (which fills all elements with a single value). It is explicitly designed for cases where a pre-defined array of elements is provided.
+
+*Sources: FppTestProject/FppTest/typed_tests/ArrayTest.hpp · Fw/DataStructures/docs/Array.md · docs/reference/nomenclature.md · docs/user-manual/overview/05-enum-arr-ser.md · Fw/DataStructures/docs/SetEntry.md*
+
+
+---USER---
+What is a 'Choice Sequence' in a State Machine?
+---RESPONSE---
+A **Choice Sequence** in an F' state machine refers to a structured sequence of states where transitions between states are determined by specific conditions or choices. This concept is exemplified in the `Sequence.fpp` and `SequenceU32.fpp` files, which define active components with state machine instances (`smChoiceSequence` and `smChoiceSequenceU32`). 
+
+In these examples:
+- The state machine likely processes a sequence of states (e.g., `Start`, `Process`, `Complete`) with branching logic based on input conditions or events.
+- The "Choice" aspect implies that transitions between states are not strictly linear but depend on runtime decisions (e.g., selecting between multiple valid paths based on data or external triggers).
+
+This pattern is common in F' for implementing protocols, workflows, or systems requiring conditional state transitions. For precise details, inspect the `SmChoice.Sequence` and `SmChoice.SequenceU32` definitions in your project's state machine files.
+
+*Sources: Fw/Types/docs/sdd.md · Fw/DataStructures/docs/Array.md · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/SequenceU32.fpp · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'OverrunOut' port.
+---RESPONSE---
+The provided knowledge base does not contain any information about an `OverrunOut` port in the `Svc::ActiveRateGroup` component. The sources describe ports such as `CycleIn`, `RateGroupMemberOut`, `PingIn`, and `PingOut`, but none match the `OverrunOut` name or describe its purpose. 
+
+If this port exists in your project, please provide the relevant file or context for further details.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Fw/Ports/Ready/Ready.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::TimePort` is used to pass time stamps around the system, either for telemetry and events or other uses, as described in the Fw/Time documentation. It facilitates the transmission of time-related data between components, enabling synchronized timing and event logging. The port utilizes the `Fw::Time` class to encapsulate time values, which include the time base, context, seconds, and microseconds portions of a timestamp. This allows for precise time tracking and coordination across the system.
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+Describe the Os::Task::State enum.
+---RESPONSE---
+The `Os::Task::State` enum is referenced in the codebase but **not fully defined** in the provided sources. From the context in `Os/test/ut/task/RulesHeaders.hpp`, we know it includes at least one value:
+
+```cpp
+Os::Task::State::NOT_STARTED
+```
+
+This indicates the task has not yet been initialized or started. The full set of enum values is not visible in the provided knowledge base. To get a complete description, you would need to inspect the full definition of the enum in the original source files (e.g., `Os/Task.hpp` or related headers). 
+
+Let me know if you'd like me to locate the file containing the full enum definition!
+
+*Sources: Os/test/ut/task/RulesHeaders.hpp · Os/Task.hpp · Os/test/ut/task/TaskRules.hpp · FppTestProject/FppTest/component/active/port_index_enums.fpp · Os/Task.hpp*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'PingIn' port used for?
+---RESPONSE---
+The `PingIn` port in the `Svc::ActiveRateGroup` component is used as part of the **health checking pattern** to monitor the component's responsiveness. 
+
+- It serves as an `async input` port that receives `Svc::Ping` messages from external systems (e.g., the mission's health monitoring system).  
+- When a `PingIn` message is received, the component is expected to generate a corresponding `PingOut` response (via its `output port PingOut: Svc::Ping`) to confirm it is operational.  
+
+This mechanism ensures the rate group component remains "alive" and responsive during execution. The implementation requires the component to handle `PingIn` by triggering a `PingOut` event, as detailed in the [health-checking documentation](#).
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · Fw/Cmd/docs/sdd.md · Ref/BlockDriver/BlockDriver.fpp · docs/user-manual/design-patterns/health-checking.md · default/config/AcConstants.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+In FPP (F Prime Protocol Processor), the "update" attribute for a telemetry channel is specified using the keyword `"on_change"` to indicate that the channel should only send updates when the value changes. If omitted, the channel defaults to sending updates on every cycle (i.e., "send per update"). 
+
+There is no concept of a numeric "offset" for the `update` attribute in FPP. The behavior is controlled by the presence or absence of the `on_change` keyword, not by a numerical offset value.
+
+Example:
+```fpp
+channel MyChannel {
+  id = 1;
+  name = "MyChannel";
+  data_type = uint32;
+  update = "on_change";  // Sends only on value change
+};
+```
+
+If you meant something else by "update offset," please clarify!
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' kind in FPP?
+---RESPONSE---
+In FPP (F Prime), the `telemetryUpdate` kind for a telemetry channel is specified using the `"telemetryUpdate"` field in the channel's definition. This field can take two values:
+
+- `"always"`: The channel is updated at every telemetry packet.
+- `"onChange"`: The channel is updated only when the value changes.
+
+**Example from the knowledge base:**
+The invalid JSON error is likely due to a trailing comma in the example. Here's the corrected version:
+
+
+
+> *[Executing ... (PENDING)]*The error suggests the tool was not properly invoked. To resolve this, first verify the file structure and contents using the available tools. Let's inspect the directory and a sample dictionary file to ensure correct JSON formatting.
+
+
+
+> *[Listing .... (PENDING)]*
+
+**[SYSTEM]: Maximum depth reached.**
+
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md · docs/how-to/derive-channels-on-ground.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'TimeIn' port used for?
+---RESPONSE---
+The `Svc::ActiveRateGroup` component's ports, as defined in the provided knowledge base, do **not** include a `TimeIn` port. The available ports are:
+
+- `CycleIn`: An async input port for the rate group cycle.
+- `RateGroupMemberOut`: Output port to rate group members.
+- `PingIn` and `PingOut`: Ports for health monitoring.
+
+If you are referring to a different component or a specific file not included in the knowledge base, please provide additional context or check the file directly using the `read_file` tool.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActivePhaser/ActivePhaser.fpp · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Fw/Prm/docs/sdd.md · docs/user-manual/framework/configuring-fprime.md*
