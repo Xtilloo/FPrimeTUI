@@ -4266,3 +4266,235 @@ To stage a file for uplink in the GDS using F', you would typically use the `Svc
 For exact implementation details, refer to the `Svc::FileUplink` SDD documentation and the custom framing examples in the `fprime-examples` repository.
 
 *Sources: Svc/FprimeRouter/docs/sdd.md · Svc/FileUplink/docs/sdd.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+What is a State Machine Signal without data?
+---RESPONSE---
+In F', a **State Machine Signal without data** refers to a signal that is used to trigger state transitions or communicate events between components, but does not carry any payload data. Such signals are typically implemented using a **simple type** (e.g., `boolean` or an `enum`) to represent the event occurrence itself, rather than conveying additional information.
+
+### Key Characteristics:
+1. **Signal Type**: 
+   - Defined as a simple type (e.g., `boolean` or an `enum` with no data fields).
+   - Example: `signal type TriggerSignal: boolean` (a boolean value indicates the event).
+
+2. **Usage**:
+   - Used as a **control signal** (e.g., to start/stop a process) or as a **trigger** for state transitions.
+   - No payload data is transmitted; the signal's presence (e.g., a `true` value) signifies the event.
+
+3. **Example in F' Code**:
+   ```cpp
+   signal type StartEvent: boolean
+
+   active component MyComponent {
+       async input port startPort: StartEvent
+       // ...
+   }
+   ```
+   - When `startPort` receives a `true` value, it triggers a state transition or action.
+
+### Notes:
+- F' does not support a `void` type for signals. Instead, minimal data types like `boolean` or single-value enums are used.
+- Such signals are common in control logic, where the focus is on triggering behavior rather than transferring data.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · FppTestProject/FppTest/state_machine/external_instance/SmTest.fpp · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+Describe the SHA-256 deduplication in the RAG indexer.
+---RESPONSE---
+The SHA-256 deduplication mechanism in the RAG (Retrieval-Augmented Generation) indexer leverages the `Utils/Hash` framework to ensure uniqueness of processed data. Here's how it works:
+
+1. **Hash Generation**:  
+   Each document or data chunk is hashed using SHA-256 (via the OpenSSL implementation in `Utils/Hash/openssl/`). This produces a 256-bit unique fingerprint for the content.
+
+2. **Collision Resistance**:  
+   SHA-256's cryptographic strength ensures minimal collision risk, making it ideal for deduplication. Even minor content changes result in entirely different hashes.
+
+3. **Indexer Workflow**:  
+   - The indexer computes the SHA-256 hash of the input data.  
+   - It checks a persistent hash database (e.g., a Bloom filter or direct storage) for existing hashes.  
+   - If the hash exists, the content is marked as a duplicate and excluded from indexing (or stored with a reference to the original).  
+   - If the hash is new, it is added to the database and indexed for retrieval.
+
+4. **Configuration Flexibility**:  
+   The system allows switching hash algorithms via `HashConfig.hpp`, but SHA-256 is typically prioritized for deduplication due to its robustness.  
+
+This approach reduces storage overhead and ensures efficient retrieval while avoiding redundant processing of identical content. For implementation details, inspect `Utils/Hash/Hash.hpp` and the RAG indexer's integration with the hash utility.
+
+*Sources: Svc/FpySequencer/docs/directives.md · Utils/Hash/README.md · Fw/DataStructures/docs/CircularIndex.md*
+
+
+---USER---
+What is the Byte Stream Driver Model interface?
+---RESPONSE---
+The **Byte Stream Driver Model interface** (defined in `Drv/ByteStreamDriverModel/docs/sdd.md`) is a generic model for drivers that handle a "stream of bytes" interface in F'. It provides two primary ports:
+
+1. **`send` port (input):**  
+   Used by other components to send data through the driver (outgoing stream).
+
+2. **`recv` port (output):**  
+   Called by the driver to pass received data to the component that is consuming the incoming stream.
+
+This interface abstracts the bidirectional byte-stream functionality, enabling drivers (e.g., for serial communication or network protocols) to integrate with F' components while adhering to standardized data flow patterns. The model is foundational for implementing communication protocols in F' systems. 
+
+For detailed implementation specifics, refer to the [Drv::ByteStreamDriverModel SDD](Drv/ByteStreamDriverModel/docs/sdd.md).
+
+*Sources: Svc/Interfaces/docs/sdd.md · Drv/ByteStreamDriverModel/docs/sdd.md · Svc/Interfaces/docs/sdd.md*
+
+
+---USER---
+Explain Double-Buffering in Svc::TlmChan.
+---RESPONSE---
+Double buffering in **Svc::TlmChan** (Telemetry Channel Service) is a critical mechanism for ensuring reliable, real-time telemetry data transmission. Here's how it works:
+
+---
+
+### **Key Concepts of Double Buffering in Svc::TlmChan**
+1. **Two Circular Buffers**:
+   - The service maintains **two circular buffers** (e.g., `bufferA` and `bufferB`) to hold telemetry data.
+   - One buffer is actively being filled by the producer (e.g., a sensor or data source), while the other is being transmitted by the consumer (e.g., a downlink interface).
+
+2. **Non-Blocking Data Flow**:
+   - While one buffer is being transmitted, the other is being filled. This prevents data loss and ensures continuous telemetry streaming without interruption.
+
+3. **Buffer Swapping**:
+   - Once a buffer is fully transmitted, it is **cleared and swapped** with the other buffer. This allows the process to continue seamlessly.
+
+4. **Real-Time Prioritization**:
+   - The double-buffering mechanism prioritizes real-time data transmission, ensuring minimal latency and high reliability for critical telemetry streams.
+
+---
+
+### **Implementation in F'**
+- The `Svc::TlmChan` service leverages F'’s **component architecture** to manage the buffers and their synchronization.
+- The `TlmChan` component likely uses **F'’s message-passing framework** (e.g., `Fw::Buffer` or `Fw::Queue`) to handle buffer management and data flow.
+
+---
+
+### **Why Double Buffering Matters**
+- **Avoids Data Loss**: Ensures no telemetry data is dropped during transmission.
+- **Supports High Throughput**: Efficiently handles high-volume data streams.
+- **Scales for Real-Time Systems**: Critical for space and embedded systems where reliability is paramount.
+
+---
+
+### **Documentation Reference**
+For implementation details, check the **SDD (Software Design Document)** for `Svc::TlmChan`, which would typically reside in a path like `Svc/TlmChan/docs/sdd.md`. Use the `read_file` tool to access it if available. 
+
+Would you like me to locate or retrieve the SDD for `Svc::TlmChan`?
+
+*Sources: docs/tutorials/cross-compilation.md · fprime-tools/src/fprime/cookiecutter_templates/cookiecutter-fprime-component/{{cookiecutter.component_name}}/docs/sdd.md · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+How does Mission Control discover the project root?
+---RESPONSE---
+```json
+{
+  "tool_name": "run_fprime_command",
+  "command": "info"
+}
+```
+
+*Sources: docs/user-manual/overview/gds-introduction.md · docs/how-to/integrate-external-libraries.md · docs/user-manual/design-patterns/app-man-drv.md*
+
+
+---USER---
+What is a GDS SELECTION plugin?
+---RESPONSE---
+A **GDS SELECTION plugin** is a type of plugin in the Flight Software (F') Ground Data System (GDS) framework that provides an alternative implementation for a specific core functionality. These plugins allow users to "select" between multiple implementations of the same functionality, such as different framing/deframing strategies or communication protocols.
+
+### Key Characteristics:
+1. **Functionality Replacement**: SELECTION plugins replace or extend existing GDS functionality (e.g., data framing/deframing).
+2. **Category-Based**: They are registered under specific categories (e.g., `framing`, `communication`) and must implement the required interface for that category.
+3. **Decorator-Based**: Implemented using `@implementation` decorators (via `pluggy`), defining how the plugin behaves.
+4. **Example**: The `framing` plugin category allows developers to implement custom framer/deframer pairs for serialized data.
+
+For deeper details, see the [Framing Plugin Reference](../reference/gds-plugins/framing.md) and the [Plugin System Design](../how-to/develop-gds-plugins.md#plugin-system-design) section in the F' documentation.
+
+*Sources: docs/how-to/develop-gds-plugins.md · docs/how-to/develop-gds-plugins.md · docs/how-to/develop-gds-plugins.md*
+
+
+---USER---
+How do you specify an Absolute command opcode?
+---RESPONSE---
+To specify an **Absolute command opcode** in F', you use the `CONST_CMD` directive with a hardcoded `cmd_opcode` value. Here's how:
+
+1. **Define the opcode as a constant** (e.g., in a header file):
+   ```cpp
+   constexpr uint32_t MY_ABSOLUTE_OPCODE = 0x1234; // Example absolute opcode
+   ```
+
+2. **Use `CONST_CMD` in your sequence** (e.g., in a `.fpp` file):
+   ```cpp
+   CONST_CMD(
+       cmd_opcode = MY_ABSOLUTE_OPCODE,
+       args = {0x00, 0x01, 0x02} // Example arguments as bytes
+   );
+   ```
+
+   - `cmd_opcode` is hardcoded to the absolute value (e.g., `0x1234`).
+   - `args` is a byte array representing the command's arguments.
+
+3. **Ensure the sequence format is set** (if using non-default formats):
+   ```cpp
+   sequencer.setSequenceFormat(std::make_unique<MyCustomFormat>());
+   ```
+
+This approach adheres to **FPY-SEQ-007/008** requirements and directly maps to the `CONST_CMD` directive's functionality.
+
+*Sources: Svc/FpySequencer/docs/directives.md · Svc/CmdSequencer/formats/README.md · docs/user-manual/overview/gds-introduction.md*
+
+
+---USER---
+What is a Rate Group Overrun?
+---RESPONSE---
+A **Rate Group Overrun** occurs when a rate group (either passive or active) fails to complete its scheduled tasks within its allocated time slice, causing it to "overrun" its deadline. This typically happens in **passive rate groups** (which execute in the context of the caller) when the processing time exceeds the available time between ticks. 
+
+### Key Details:
+1. **Passive Rate Groups**: 
+   - Run in the context of the rate group driver's caller (e.g., the main loop).
+   - If a passive rate group takes too long to execute, it delays subsequent rate groups, potentially causing overruns.
+
+2. **Active Rate Groups**:
+   - Run on separate threads, so overruns are less common but possible due to thread scheduling delays or contention.
+
+3. **Impact**:
+   - Overruns can lead to missed deadlines, incorrect data processing, or system instability.
+   - In passive groups, overruns are often detected via `Fw::Overrun` exceptions or logs.
+
+### How to Diagnose:
+- Check logs for `Fw::Overrun` errors.
+- Profile the execution time of rate group tasks.
+- Ensure tasks are optimized to fit within the allocated time slice.
+
+Would you like to check for overrun-related logs or analyze a specific rate group configuration?
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/rate-group.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What is the Fw::Buffer context for in Mission Control?
+---RESPONSE---
+The `Fw::ComBuffer` context (a `U32` value) in the `Fw::Com` port is used to track the **call context** of a communication operation. This context value is user-defined and serves to associate the communication packet with specific application logic, such as:
+
+- Identifying the source of the data (e.g., which task or module sent the packet)
+- Debugging or logging purposes
+- Correlating responses with requests in bidirectional communication
+
+In Mission Control (or any F' application), this context is critical for managing communication channels and ensuring packets are routed correctly. Note that `Fw::Buffer` might be a confusion with `Fw::ComBuffer` (the actual type in the provided sources). Let me know if you need further clarification!
+
+*Sources: Svc/ComQueue/docs/sdd.md · Fw/Com/Com.fpp · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What does the fprime-util check --all flag do?
+---RESPONSE---
+The provided knowledge base does not explicitly document the behavior of the `fprime-util check --all` flag. However, based on common patterns in similar tools:
+
+- The `--all` flag typically instructs `fprime-util check` to run **all available validation checks** (e.g., code style, dependency resolution, unit test coverage, etc.) rather than just specific subsets like `--coverage`.
+
+For precise details, you would need to consult the latest [F' tooling documentation](https://fprime.org/) or run `fprime-util check --help` in your terminal. Would you like me to check the tool's help output for you?
+
+*Sources: Svc/ActivePhaser/docs/sdd.md · fprime-tools/src/fprime/cookiecutter_templates/cookiecutter-fprime-component/hooks/pre_gen_project.py · Svc/Health/docs/sdd.md*
