@@ -5,9 +5,8 @@ from typing import Optional
 
 import chromadb
 import requests
-from rank_bm25 import BM25Okapi
-
 from rag.config import DEFAULT_TIER, KEYWORD_WEIGHT, RERANK_K, TIERS
+from rank_bm25 import BM25Okapi
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db")
 BM25_PATH = os.path.join(DB_PATH, "bm25.pkl")

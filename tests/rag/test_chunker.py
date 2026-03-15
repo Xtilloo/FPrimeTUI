@@ -1,5 +1,13 @@
 # tests/rag/test_chunker.py
-from rag.chunker import chunk_autocoded_cpp, chunk_cpp, chunk_fpp, chunk_markdown, chunk_python, deduplicate, detect_content_type
+from rag.chunker import (
+    chunk_autocoded_cpp,
+    chunk_cpp,
+    chunk_fpp,
+    chunk_markdown,
+    chunk_python,
+    deduplicate,
+    detect_content_type,
+)
 
 
 def test_chunk_markdown_splits_on_headers():

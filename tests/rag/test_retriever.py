@@ -207,7 +207,7 @@ def test_classify_query_file_specific():
 
 
 def test_classify_query_file_extension():
-    entities = set()
+    entities: set[str] = set()
     qtype, entity = classify_query("Explain the sdd.md file format", entities)
     assert qtype == "file_specific"
 
@@ -235,37 +235,37 @@ def test_classify_query_component_not_in_index_falls_back():
 
 
 def test_classify_query_comparison():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("What is the difference between active and passive components?", entities)
     assert qtype == "comparison"
 
 
 def test_classify_query_comparison_vs():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("Active vs passive components", entities)
     assert qtype == "comparison"
 
 
 def test_classify_query_code_seeking():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("How to implement a command handler?", entities)
     assert qtype == "code_seeking"
 
 
 def test_classify_query_code_seeking_example():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("Show me an example of telemetry write", entities)
     assert qtype == "code_seeking"
 
 
 def test_classify_query_concept_seeking():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("What is a rate group?", entities)
     assert qtype == "concept_seeking"
 
 
 def test_classify_query_general():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("Tell me about fprime", entities)
     assert qtype == "general"
 
@@ -279,7 +279,7 @@ def test_classify_query_precedence_component_over_comparison():
 
 
 def test_classify_query_precedence_comparison_over_concept():
-    entities = set()
+    entities: set[str] = set()
     qtype, _ = classify_query("What is the difference between ports and channels?", entities)
     assert qtype == "comparison"
 
