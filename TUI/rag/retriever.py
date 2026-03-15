@@ -1,5 +1,6 @@
 import os
 import pickle
+import re
 
 import chromadb
 import requests
@@ -7,9 +8,69 @@ from rank_bm25 import BM25Okapi
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db")
 BM25_PATH = os.path.join(DB_PATH, "bm25.pkl")
-TOP_K = 8
-FINAL_K = 3
-RRF_K = 60  # standard constant
+DENSE_K = 10    # dense retrieval candidates
+SPARSE_K = 20   # BM25 gets more candidates — it's better at exact fprime terms
+FINAL_K = 3     # chunks injected into prompt
+RERANK_K = FINAL_K * 5  # RRF pool to re-rank before taking FINAL_K
+RRF_K = 60      # standard RRF constant
+
+
+def tokenize(text: str) -> list[str]:
+    """
+    Tokenize text for BM25: strip punctuation, lowercase, and expand CamelCase.
+
+    'ActiveComponent' → ['activecomponent', 'active', 'component']
+    'active component Foo' → ['active', 'component', 'foo']
+
+    Expanding CamelCase improves recall for fprime identifiers: a query for
+    'ActiveComponent' also matches chunks where 'active' and 'component' appear
+    separately (e.g. in .fpp syntax: 'active component Foo { ... }').
+    """
+    tokens: list[str] = []
+    for word in text.split():
+        clean = re.sub(r"[^\w]", "", word)
+        if not clean:
+            continue
+        tokens.append(clean.lower())
+        # Split CamelCase boundaries using original casing
+        parts = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", clean).split()
+        if len(parts) > 1:
+            tokens.extend([p.lower() for p in parts])
+    return tokens
+
+
+def extract_keywords(query: str) -> list[str]:
+    """
+    Extract high-signal technical terms from a query for re-ranking.
+
+    Only matches true CamelCase identifiers — words with at least one
+    lowercase→uppercase transition (e.g. ActiveComponent, FwCom, RateGroup).
+    This excludes sentence-start capitals ('What', 'How') that would
+    inflate scores for chunks that happen to contain common English words.
+
+    For each match, both the joined form ('activecomponent') AND the
+    space-separated form ('active component') are returned so .fpp chunks
+    — which use the two-word keyword syntax 'active component Foo { }' —
+    also score as keyword matches.
+    """
+    result: list[str] = []
+    # Require at least one lowercase→uppercase transition: matches ActiveComponent,
+    # FwCom, RateGroup — does NOT match What, Fprime, The.
+    for word in re.findall(r"\b[A-Z][a-zA-Z0-9]*[a-z][A-Z][a-zA-Z0-9]*\b", query):
+        result.append(word.lower())
+        parts = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", word).lower().split()
+        if len(parts) > 1:
+            result.append(" ".join(parts))  # e.g. "active component"
+    result.extend(re.findall(r'"([^"]+)"', query))
+    return result
+
+
+def keyword_score(chunk_text: str, keywords: list[str]) -> float:
+    """Return the fraction of keywords present in chunk_text (0.0–1.0)."""
+    if not keywords:
+        return 0.0
+    lower = chunk_text.lower()
+    return sum(1 for kw in keywords if kw in lower) / len(keywords)
 
 
 def reciprocal_rank_fusion(dense_ids: list[str], sparse_ids: list[str]) -> list[str]:
@@ -62,7 +123,7 @@ def query(text: str) -> dict:
         )
 
     collection, bm25_data = _load_index()
-    all_chunks: dict[str, dict] = bm25_data["chunks"]   # id -> chunk dict
+    all_chunks: dict[str, dict] = bm25_data["chunks"]
     bm25: BM25Okapi = bm25_data["bm25"]
     chunk_ids: list[str] = bm25_data["ids"]
 
@@ -70,21 +131,31 @@ def query(text: str) -> dict:
     query_embedding = _embed(text)
     dense_results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=min(TOP_K, collection.count()),
+        n_results=min(DENSE_K, collection.count()),
     )
     dense_ids = dense_results["ids"][0]
 
-    # Sparse retrieval (BM25)
-    tokenized = text.lower().split()
+    # Sparse retrieval — CamelCase-aware tokenization improves recall for
+    # fprime identifiers (e.g. 'ActiveComponent' → also matches 'active component').
+    # SPARSE_K > DENSE_K because BM25 is more precise for fprime technical terms.
+    tokenized = tokenize(text)
     scores = bm25.get_scores(tokenized)
-    top_sparse_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:TOP_K]
+    top_sparse_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:SPARSE_K]
     sparse_ids = [chunk_ids[i] for i in top_sparse_indices]
 
-    # Merge via RRF, take top FINAL_K
-    merged_ids = reciprocal_rank_fusion(dense_ids, sparse_ids)[:FINAL_K]
+    # Merge via RRF — keep RERANK_K candidates for keyword re-ranking pass
+    merged_ids = reciprocal_rank_fusion(dense_ids, sparse_ids)[:RERANK_K]
+    candidates = [all_chunks[cid] for cid in merged_ids if cid in all_chunks]
 
-    # Fetch full chunk data
-    top_chunks = [all_chunks[cid] for cid in merged_ids if cid in all_chunks]
+    # Re-rank: sort candidates by presence of CamelCase identifiers from the
+    # query. A chunk about 'ActiveComponent' that literally contains
+    # 'activecomponent' or 'active component' scores higher than a chunk about
+    # subtopologies that happens to mention 'active' in passing.
+    kws = extract_keywords(text)
+    if kws:
+        candidates.sort(key=lambda c: keyword_score(c["text"], kws), reverse=True)
+
+    top_chunks = candidates[:FINAL_K]
 
     return {
         "answer_context": format_context(top_chunks),
