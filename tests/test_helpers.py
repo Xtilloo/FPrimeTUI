@@ -1,28 +1,30 @@
 import asyncio
-from typing import List, AsyncGenerator
-from TUI.fprime_ai_client import FPrimeAIClient
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from textual.events import Key
+
+from TUI.fprime_ai_client import FPrimeAIClient
+
 
 async def submit_query(pilot, app, text: str):
     """Helper to reliably submit a query in tests."""
     await pilot.pause()
     input_widget = app.query_one("#ai-input")
-    
+
     # Wait for input to be enabled if it's currently disabled (AI is thinking)
     # In tests, we should probably just assert it's enabled to catch logic errors.
     assert not input_widget.disabled, f"Cannot submit query '{text}', input is disabled!"
-    
+
     await pilot.click("#ai-input")
     if text:
         await pilot.press(*text)
         await pilot.pause()
-    
+
     # Hide autocomplete list to ensure Enter triggers query, not selection
     app.query_one("#autocomplete-list").display = False
-    
+
     # Manually trigger the on_key handler of the input widget
-    from textual.events import Key
     input_widget.on_key(Key("enter", "\r"))
     await pilot.pause()
 
@@ -38,8 +40,8 @@ class MockAIClient(FPrimeAIClient):
         self.model = model
         self.mode = mode
         self.chat_history = []
-        self.responses: asyncio.Queue[List[str]] = asyncio.Queue()
-        self.stream_chat_calls = []
+        self.responses: asyncio.Queue[list[str]] = asyncio.Queue()
+        self.stream_chat_calls: list[dict[str, Any]] = []
 
     def add_message(self, role: str, content: str):
         """Adds a message to the internal chat history."""
@@ -49,7 +51,7 @@ class MockAIClient(FPrimeAIClient):
         """Clears the internal chat history."""
         self.chat_history = []
 
-    async def queue_response(self, response_chunks: List[str]):
+    async def queue_response(self, response_chunks: list[str]):
         """Queues a complete, chunked response to be yielded by stream_chat."""
         await self.responses.put(response_chunks)
 
@@ -131,6 +133,6 @@ class MockAIClient(FPrimeAIClient):
             full_response_for_history += chunk
             yield chunk
             await asyncio.sleep(0.05) # Small sleep to allow cancellation between chunks
-        
+
         # The real client adds the assistant's full response to history *after* streaming.
         self.add_message("assistant", full_response_for_history)

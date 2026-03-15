@@ -1,6 +1,6 @@
 # F-Prime-TUI Project Makefile
 
-.PHONY: TUI install clean help
+.PHONY: TUI install clean help cmux close remind
 
 # Path to the project's virtual environment python
 PYTHON = ./venv/bin/python3
@@ -9,13 +9,6 @@ PIP = ./venv/bin/pip
 TUI: ## Launch Mission Control (F-Prime-TUI)
 	@echo "🚀 Launching Mission Control..."
 	@PYTHONPATH=./TUI $(PYTHON) TUI/app.py
-
-cmux: ## Launch the cmux terminal workspace
-	@echo "🌀 Launching cmux workspace..."
-	@./scripts/cmux.py
-
-remind: ## Show current task reminders
-	@cmux list-panels --json | jq '.[] | select(.name=="1 plan-stories") | .notes'
 
 alias: ## Create a symbolic link to fprime-tui in /usr/local/bin (requires sudo)
 	@echo "🔗 Creating fprime-tui alias..."
@@ -33,7 +26,13 @@ clean: ## Remove temporary and build files
 	find . -type d -name "__pycache__" -exec rm -rf {} +
 	find . -type f -name "*.pyc" -delete
 
-test: ## Run the full pytest test suite
+lint: ## Run static analysis (ruff and mypy)
+	@echo "🔍 Running static analysis with ruff..."
+	@$(PYTHON) -m ruff check .
+	@echo "🔍 Checking types with mypy..."
+	@$(PYTHON) -m mypy .
+
+test: lint ## Run the full test suite (lint + pytest)
 	@echo "🧪 Running test suite with pytest..."
 	@PYTHONPATH=./TUI $(PYTHON) -m pytest tests/
 

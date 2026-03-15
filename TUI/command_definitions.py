@@ -1,6 +1,6 @@
-from enum import Enum
 from dataclasses import dataclass
-from typing import List, Set
+from enum import Enum
+
 
 class TUIMode(Enum):
     MISSION_CONTROL = "dev"
@@ -10,7 +10,7 @@ class TUIMode(Enum):
 class CommandMetadata:
     name: str
     description: str
-    allowed_modes: Set[TUIMode]
+    allowed_modes: set[TUIMode]
 
 COMMANDS = [
     CommandMetadata("/clear", "Clear chat history", {TUIMode.MISSION_CONTROL, TUIMode.ACADEMY}),
@@ -19,7 +19,7 @@ COMMANDS = [
     CommandMetadata("/mode", "Switch TUI mode (/mode dev|academy)", {TUIMode.MISSION_CONTROL, TUIMode.ACADEMY}),
     CommandMetadata("/info", "Print contextual target and cache info", {TUIMode.MISSION_CONTROL, TUIMode.ACADEMY}),
     CommandMetadata("/version-check", "Print toolchain versions", {TUIMode.MISSION_CONTROL, TUIMode.ACADEMY}),
-    
+
     # Mission Control Only Commands
     CommandMetadata("/build", "Build components, deployments, and unit tests", {TUIMode.MISSION_CONTROL}),
     CommandMetadata("/check", "Run unit tests with optional test coverage", {TUIMode.MISSION_CONTROL}),

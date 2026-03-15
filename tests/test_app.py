@@ -1,15 +1,16 @@
-import pytest
 import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
-from textual.widgets import Markdown, TextArea, OptionList
-from TUI.app import FPrimeTUI
+
+import pytest
 from command_definitions import TUIMode
+from textual.widgets import OptionList, TextArea
 
 # Note: The 'mock_ai_client' fixture is auto-injected by conftest.py
 # and automatically patches the app's AI client.
-
 from tests.test_helpers import submit_query
+from TUI.app import FPrimeTUI
+
 
 @pytest.mark.asyncio
 async def test_ui_immediate_user_message(mock_ai_client):
@@ -51,7 +52,7 @@ async def test_slash_command_execution(mock_ai_client):
     app = FPrimeTUI()
     app.mode = TUIMode.MISSION_CONTROL # Ensure we are in Mission Control for /build
     mock_res = {"exit_code": 0, "stdout": "Mock Build Success", "stderr": ""}
-    
+
     # After the command, the app will ask the AI to summarize.
     await mock_ai_client.queue_response(["Build successful."])
 
@@ -59,11 +60,11 @@ async def test_slash_command_execution(mock_ai_client):
          patch("TUI.app.find_fprime_venv", return_value=Path("/dummy/venv")):
         mock_run.return_value = mock_res
         app._show_agent_thoughts = True
-        
+
         async with app.run_test() as pilot:
             await submit_query(pilot, app, "/build")
             await pilot.wait_for_scheduled_animations()
-            
+
             chat_log = app.chat_history
             assert "Mock Build Success" in chat_log
             assert "> *Running fprime-util build...*" in chat_log
@@ -76,17 +77,17 @@ async def test_ui_autocomplete_and_apply():
     app.mode = TUIMode.MISSION_CONTROL # Ensure we are in Mission Control for /build
     async with app.run_test() as pilot:
         await pilot.pause()
-        
+
         # Focus input and press keys
         input_area = app.query_one("#ai-input", TextArea)
         input_area.focus()
-        
+
         await pilot.press("slash")
         await pilot.press("b")
-        
+
         # Wait for the Changed event to be processed and OptionList to show
         import asyncio
-        await asyncio.sleep(0.1) 
+        await asyncio.sleep(0.1)
         await pilot.pause()
 
         option_list = app.query_one(OptionList)
@@ -119,7 +120,7 @@ async def test_ui_hitl_flow(mock_execute, mock_ai_client, tmp_path):
         "```"
     ]
     confirmation_response = ["Okay, I have updated the file as you requested."]
-    
+
     await mock_ai_client.queue_response(tool_call_response)
     await mock_ai_client.queue_response(confirmation_response)
     mock_execute.return_value = "File updated successfully."
@@ -149,7 +150,7 @@ async def test_ui_hitl_flow(mock_execute, mock_ai_client, tmp_path):
 async def test_ui_at_file_mention_context(mock_ai_client, tmp_path):
     """Tests that using @file adds the file's content to the AI prompt context."""
     app = FPrimeTUI()
-    
+
     test_file = tmp_path / "test.md"
     file_content = "This is the secret file content."
     test_file.write_text(file_content)

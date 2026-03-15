@@ -1,8 +1,9 @@
-import os
 import re
 from pathlib import Path
+from typing import Optional
 
-def find_fprime_venv(start_path: Path = None) -> Path | None:
+
+def find_fprime_venv(start_path: Optional[Path] = None) -> Optional[Path]:
     if start_path is None:
         start_path = Path.cwd()
     current = start_path.resolve()

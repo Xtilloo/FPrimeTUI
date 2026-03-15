@@ -1,8 +1,9 @@
+
 import pytest
-import asyncio
-from textual.widgets import Markdown
-from TUI.app import FPrimeTUI
+
 from tests.test_helpers import submit_query
+from TUI.app import FPrimeTUI
+
 
 @pytest.mark.asyncio
 async def test_verify_code_block_preservation(mock_ai_client):
@@ -33,7 +34,7 @@ async def test_verify_code_block_preservation(mock_ai_client):
             await pilot.pause(0.1)
             if "Does this look correct?" in app.chat_history:
                 break
-        
+
         # Check if the chat history contains the exact Markdown structure
         history = app.chat_history
         assert "```cpp" in history
@@ -71,22 +72,22 @@ async def test_verify_json_tool_hiding_but_code_preservation(mock_ai_client):
         await pilot.wait_for_scheduled_animations()
         await pilot.pause(0.5)
         await app._mount_ai_turn("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.")
-        
+
         # Trigger the first stream
         await submit_query(pilot, app, "Read the file and show example.")
-        
+
         # Wait for the first stream (which triggers the tool)
         for _ in range(20):
             await pilot.pause(0.1)
             # We wait for the text BEFORE the JSON block to appear
             if "Example code:" in app.chat_history:
                 break
-        
+
         history = app.chat_history
-        
+
         # 1. The JSON tool block should be hidden (since _show_agent_thoughts is False)
         assert '{"tool_name": "read_file"' not in history
-        
+
         # 2. The regular python code block SHOULD be preserved
         assert "```python" in history
         assert "print('hello')" in history
@@ -109,14 +110,14 @@ async def test_user_unclosed_code_block_plain_text(mock_ai_client):
         await app._mount_ai_turn("# Mission Control Online\nAwaiting command. Use `@file` or `/command`.")
         # User sends a prompt with backticks
         await submit_query(pilot, app, "```")
-        
+
         for _ in range(10):
             await pilot.pause(0.1)
             if "Mission Control:" in app.chat_history:
                 break
-        
+
         history = app.chat_history
-        
+
         # In the new architecture, the user's ``` is plain text in a Static widget.
         # The history string still records it literally.
         assert "User: ```" in history

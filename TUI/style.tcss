@@ -145,7 +145,7 @@ MarkdownFence * {
 }
 
 /* Decorative elements */
-MarkdownBlockQuote, MarkdownBullet, .markdown--strong, .markdown--em, .markdown--link {
+MarkdownBlockQuote, MarkdownBullet, .markdown--strong, .markdown--link {
     color: #e67e22 !important;
 }
 

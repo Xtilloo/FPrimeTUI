@@ -1,6 +1,8 @@
+
 import pytest
-from pathlib import Path
+
 from tests.test_helpers import MockAIClient
+
 
 @pytest.fixture
 def mock_ai_client():
@@ -26,14 +28,14 @@ def temp_project(tmp_path):
     """Creates a dummy F' project structure for testing."""
     project_dir = tmp_path / "my_project"
     project_dir.mkdir()
-    
+
     venv_dir = project_dir / "fprime-venv"
     venv_dir.mkdir()
     (venv_dir / "bin").mkdir()
     (venv_dir / "bin" / "activate").touch()
-    
+
     # Create a sub-component directory
     comp_dir = project_dir / "Components" / "MyComp"
     comp_dir.mkdir(parents=True)
-    
+
     return project_dir

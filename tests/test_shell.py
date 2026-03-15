@@ -1,9 +1,11 @@
-import pytest
 import asyncio
 from pathlib import Path
-from unittest.mock import patch, AsyncMock, MagicMock
-from TUI.utils import find_fprime_venv
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+
 from TUI.shell import run_fprime_command
+from TUI.utils import find_fprime_venv
 
 # The 'temp_project' fixture is now in conftest.py and available to all tests.
 
@@ -61,6 +63,6 @@ async def test_run_command_timeout(mock_create_subprocess):
     assert res['exit_code'] == -1
     assert "Command timed out" in res['stderr']
     assert f"after {timeout_duration} seconds" in res['stderr']
-    
+
     # Verify kill was called
     mock_process.kill.assert_called_once()

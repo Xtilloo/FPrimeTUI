@@ -1,14 +1,15 @@
-import pytest
-import os
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
-from textual.widgets import Markdown
-from TUI.app import FPrimeTUI
+
+import pytest
+
 from tests.test_helpers import submit_query
+from TUI.app import FPrimeTUI
+
 
 def read_golden_file(path: str) -> str:
     """Helper to read a golden file, normalizing newlines."""
-    with open(path, "r") as f:
+    with open(path) as f:
         return f.read().replace("\r\n", "\n")
 
 @pytest.mark.asyncio
@@ -33,11 +34,11 @@ async def test_hitl_golden_output(mock_execute, mock_ai_client, tmp_path):
     ]
     # The mock AI will then confirm the action after user approval
     confirmation_response = ["Okay, I have updated the file as you requested."]
-    
+
     await mock_ai_client.queue_response(tool_call_response)
     await mock_ai_client.queue_response(confirmation_response)
     mock_execute.return_value = "File updated successfully."
-    
+
     # The starting `chat_history` in the app has a trailing newline, which we want to match.
     app.chat_history = ""
     async with app.run_test() as pilot:
@@ -52,13 +53,15 @@ async def test_hitl_golden_output(mock_execute, mock_ai_client, tmp_path):
         await pilot.pause()
 
         # 2. User approves the HITL prompt
+        await pilot.pause(0.1) # Extra buffer for state change
         await submit_query(pilot, app, "1")
+
         await pilot.wait_for_scheduled_animations()
         await pilot.pause()
 
         # 3. Get the final state of the chat log
         final_chat_log = app.chat_history
-        
+
         # 4. Read the golden file
         golden_path = Path(__file__).parent / "golden_files" / "hitl_success.md"
         golden_content = read_golden_file(str(golden_path))

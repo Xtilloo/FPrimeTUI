@@ -1,14 +1,16 @@
 import asyncio
 from pathlib import Path
+from typing import Optional
 
-async def run_fprime_command(venv_path: Path, command: str, args: str = "", cwd: str = ".", timeout: int = None) -> dict:
+
+async def run_fprime_command(venv_path: Path, command: str, args: str = "", cwd: str = ".", timeout: Optional[float] = None) -> dict:
     activation_cmd = f"source {venv_path}/bin/activate"
     full_cmd = f"{activation_cmd} && fprime-util {command} {args}"
-    
+
     # Debug: Print to console (will show up in the terminal that launched the TUI)
     print(f"DEBUG: Executing command in {cwd}")
     print(f"DEBUG: Full command: {full_cmd}")
-    
+
     try:
         process = await asyncio.create_subprocess_shell(
             full_cmd,
@@ -19,14 +21,14 @@ async def run_fprime_command(venv_path: Path, command: str, args: str = "", cwd:
         )
 
         stdout_data, stderr_data = await asyncio.wait_for(process.communicate(), timeout=timeout)
-        
+
         stdout = stdout_data.decode().strip()
         stderr = stderr_data.decode().strip()
-        
+
         print(f"DEBUG: Exit code: {process.returncode}")
         if stderr:
             print(f"DEBUG: Stderr: {stderr[:100]}...")
-        
+
         return {
             "exit_code": process.returncode,
             "stdout": stdout,
