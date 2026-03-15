@@ -149,6 +149,8 @@ class FPrimeTUI(App):
             return
         await containers[0].mount(Static(text, classes="user-prompt"))
         self.chat_history += f"\n\nUser: {text}\n\n"
+        with open(self._chat_log_path, "a") as _log:
+            _log.write(f"\n\n---USER---\n{text}\n---RESPONSE---\n")
         self._scroll_to_end_if_at_bottom()
 
     async def _mount_ai_turn(self, initial_text: str = ""):
@@ -173,10 +175,15 @@ class FPrimeTUI(App):
             self.chat_history += f"Mission Control:\n{initial_text}"
         self._scroll_to_end_if_at_bottom()
 
+    _chat_log_path: str = "/Users/xtilloo/Projects/FPrimeTUI/ClaudesLogs/sessions/2026-03-14-raw.log"
+
     def _add_to_chat_history(self, message: str, is_agent_thought: bool = False) -> None:
         """Appends to the current Turn's widget and the global memory."""
         if is_agent_thought and not self._show_agent_thoughts:
             return
+
+        with open(self._chat_log_path, "a") as _log:
+            _log.write(message)
 
         self.chat_history += message
         if self.active_ai_widget:
@@ -341,6 +348,8 @@ class FPrimeTUI(App):
         if final_displayed_seg.strip():
             self.turn_buffer = initial_turn_prefix + final_displayed_seg
             self.chat_history += final_displayed_seg
+            with open(self._chat_log_path, "a") as _log:
+                _log.write(final_displayed_seg)
 
         self.ai_client.add_message("assistant", full_res)
         if self.active_ai_widget:

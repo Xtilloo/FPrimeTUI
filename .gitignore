@@ -37,3 +37,7 @@ CLAUDE.md
 
 TUI/rag/db/
 TUI/rag/raw/
+
+# Claude's working directory — always tracked
+!ClaudesLogs/
+!ClaudesLogs/**
