@@ -2806,3 +2806,272 @@ In F', such dependencies are generally avoided by restructuring components or us
 For specific examples in your project, check the `.fpp` files for port declarations and inter-component connections.
 
 *Sources: Svc/BufferRepeater/docs/sdd.md · Svc/FrameAccumulator/docs/sdd.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+How do you configure the stack size of an active component?
+---RESPONSE---
+To configure the stack size of an active component in F', you specify the `stack_size` parameter in the component's topology declaration. The stack size is defined in **bytes** and must be set in the component's block in the `.fpp` file.
+
+### Example
+```cpp
+active component Receiver {
+    import TypedPortsSyncInputs
+    import TypedPortsGuardedInputs
+    import TypedPortsAsync
+
+    output port replyOut: [SenderId.N] Reply
+
+    stack_size = 1024 * 1024; // 1 MB
+}
+```
+
+### Key Notes:
+1. **Units**: The value is in **bytes** (e.g., `1024 * 1024` for 1 MB).
+2. **System Limits**: Ensure the stack size does not exceed system/thread limits (e.g., `ulimit` on Linux).
+3. **Rebuild**: After modifying the topology, rebuild the project with `fprime-util build`.
+
+### Steps to Apply:
+1. Open the component's `.fpp` file (e.g., `Receiver.fpp`).
+2. Add the `stack_size` line to the component block.
+3. Run `fprime-util build` to regenerate code with the new setting.
+
+*Sources: docs/user-manual/framework/building-topology.md · FppTestProject/FppTest/component/README.md · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp*
+
+
+---USER---
+How do you clear the event table in the GDS GUI?
+---RESPONSE---
+The GDS GUI typically provides a "Clear All" or "Reset" option in the **View** or **Tools** menu to clear the event table. Look for:
+
+1. **Menu Bar**: Check `View > Clear Events` or `Tools > Reset Event Log`.
+2. **Toolbar Button**: A "Clear" icon (trash bin or similar) in the event display window.
+3. **Right-Click Context Menu**: Select "Clear Table" from the event table's context menu.
+
+If these options are not explicitly listed, consult the [GDS CLI guide](../gds/gds-cli.md) for command-line alternatives. Let me know if you need further assistance!
+
+*Sources: Svc/FatalHandler/docs/sdd.md · docs/user-manual/overview/gds-introduction.md · Svc/Ccsds/ApidManager/docs/sdd.md*
+
+
+---USER---
+What is the FwEnumStoreType used for in State Machines?
+---RESPONSE---
+The `FwEnumStoreType` is a numeric type used as the underlying storage type for the `SmId` enumeration in F' state machines. It is specifically used to represent **state machine identifiers** (IDs) for instances of state machines within a component. 
+
+### Key Purpose:
+- Each state machine instance in a component is assigned a unique numeric value of type `FwEnumStoreType` via the `SmId` enum.
+- This allows the framework to uniquely identify and manage multiple state machines within a component, enabling features like state transitions, error checking, and runtime introspection.
+
+### Example:
+If a component has three state machines, `SmId` might look like:
+```cpp
+enum SmId {
+    SmId_Statemachine1 = 0,
+    SmId_Statemachine2 = 1,
+    SmId_Statemachine3 = 2
+};
+```
+Here, `FwEnumStoreType` (typically a fixed-size integer type) stores these numeric IDs.
+
+*Sources: docs/user-manual/framework/state-machines.md · docs/user-manual/framework/state-machines.md · Fw/DataStructures/docs/Array.md*
+
+
+---USER---
+Define NASA Rule #2: Fixed Loop Bounds.
+---RESPONSE---
+NASA Rule #2: Fixed Loop Bounds requires that all loops in F' code must have explicitly defined, fixed bounds that are verifiable at compile time. This ensures loops terminate predictably and prevents infinite loops or buffer overflows. Loops must not use variables that could change during iteration (e.g., dynamic array sizes) without explicit bounds checks. The rule enforces static analysis to verify loop termination conditions and prevent unsafe behavior in safety-critical systems. 
+
+This rule is critical for ensuring deterministic execution and meeting NASA's safety and reliability standards for spaceflight software. 
+
+If you need specifics about this rule in the context of F' or your project, please provide additional context or check your project's documentation.
+
+*Sources: Svc/FileManager/docs/sdd.md · Svc/DpWriter/test/ut/README.md · cmake/docs/sdd.md*
+
+
+---USER---
+How does F prime abstract thread creation?
+---RESPONSE---
+F' abstracts thread creation through its **OS abstraction layer**, providing a unified interface while delegating platform-specific implementation details to the underlying operating system. Here's how it works:
+
+1. **Task Creation Interface**:  
+   The `Arguments` class in `Os/Task.hpp` defines a parameterized interface for task creation, including:
+   ```cpp
+   //! \param cpuAffinity: (optional) cpu affinity of this task
+   ```
+   This allows developers to specify CPU affinity (core binding) for tasks, while the OS implementation handles the actual thread creation and scheduling.
+
+2. **OS-Specific Implementation**:  
+   - For **Posix systems**, thread creation and affinity are delegated to `pthread_attr_setaffinity_np` (see [Posix Task.cpp](https://github.com/nasa/fprime/blob/5e1a22edce86133957dfeb54a31ac135b42bb92b/Os/Posix/Task.cpp#L108-L127)).
+   - Other OS implementations (e.g., Windows, RTEMS) would use their own native APIs for thread creation and affinity.
+
+3. **Default Behavior**:  
+   If `cpuAffinity` is not specified, the OS dynamically assigns threads to cores, abstracting away core management.
+
+4. **Synchronization**:  
+   Mutexes and other synchronization primitives are also OS-delegated, relying on the OS implementation to ensure SMP safety.
+
+This abstraction allows F' to maintain portability across platforms while leveraging native OS capabilities for thread management. Developers interact with the abstracted interface, while the OS-specific code handles low-level details.
+
+*Sources: fprime-tools/src/fprime/common/error.py · docs/user-manual/framework/run-multi-core.md · docs/tutorials/index.md*
+
+
+---USER---
+What is the SimpleObjRegistry?
+---RESPONSE---
+```json
+{
+  "tool_name": "list_directory",
+  "path": "Obj"
+}
+```
+
+*Sources: docs/reference/nomenclature.md · docs/user-manual/overview/source-tree.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+What are the constraints on State Machine initial transitions?
+---RESPONSE---
+The constraints on State Machine initial transitions in FPP (F Prime) are primarily defined by the framework's requirements for valid state machine behavior and are enforced through testing. Based on the provided knowledge base and FPP best practices:
+
+1. **Single Initial State**:  
+   A state machine must have exactly **one initial state** defined. This state is the starting point for all transitions and must be explicitly declared in the `topology.fpp` file (e.g., using `initial` keyword).
+
+2. **No Outgoing Transitions from Initial State**:  
+   The initial state **cannot have outgoing transitions**. It serves as the entry point, and transitions must originate from other states. If a transition is required from the initial state, it must be handled via an `entry` action or a `reconfigure` transition (as seen in the `ImuStateMachine` example).
+
+3. **Guarded Transitions**:  
+   Transitions from the initial state (if any) must be **explicitly guarded** by conditions. Unconditional transitions from the initial state are disallowed to prevent undefined behavior.
+
+4. **Entry Actions**:  
+   The initial state may include **entry actions** to initialize variables or perform setup logic. These actions are executed once when the state machine starts.
+
+5. **Validation via Tests**:  
+   The `state_machine/internal/initial` test suite verifies that initial transitions adhere to these constraints. For example, it ensures the initial state is correctly configured and that invalid transitions (e.g., multiple initial states) are rejected.
+
+For detailed implementation, refer to the `ImuStateMachine.fpp` example in the FPP repository, which demonstrates how to handle transitions from the initial state using `reconfigure` logic.
+
+*Sources: FppTestProject/FppTest/state_machine/internal/initial/README.md · docs/how-to/define-state-machines.md · FppTestProject/FppTest/state_machine/internal/choice/README.md*
+
+
+---USER---
+How do you run all unit tests in a project?
+---RESPONSE---
+To run all unit tests in an F Prime project, follow these steps:
+
+1. **Navigate to the project root directory** containing the test files (e.g., `FppTest/` or the main project directory).
+2. **Build the unit tests** using:
+   ```bash
+   fprime-util build --ut
+   ```
+3. **Run all unit tests** with:
+   ```bash
+   fprime-util check
+   ```
+
+If the project has subdirectories for specific test types (e.g., `active`, `passive`), you may need to run `fprime-util check` in each directory individually. Ensure you are inside the F Prime Python virtual environment and have F Prime installed.
+
+*Sources: FppTestProject/README.md · FppTestProject/FppTest/component/README.md · docs/user-manual/overview/unit-testing.md*
+
+
+---USER---
+Describe the fprime-gds -g none option.
+---RESPONSE---
+The `-g none` option for `fprime-gds` is not explicitly documented in the provided F' knowledge base sources. Based on the context of the `fprime-gds` command described in the sources, this option likely relates to configuring the GDS's generation or runtime behavior (e.g., disabling certain generators, specifying a minimal setup, or altering dictionary handling). However, the exact purpose of `-g none` is not detailed in the given materials.
+
+To resolve this, you would need to:
+1. Check the official F' documentation or source code for `fprime-gds` command-line options.
+2. Run `fprime-gds --help` in your project directory to see available options and their descriptions.
+
+The provided knowledge base focuses on default behavior and basic usage, so further investigation into the tool's full option set is required for this specific flag.
+
+*Sources: docs/user-manual/overview/gds-introduction.md · cmake/test/src/cmake.py · fprime-tools/src/fprime/util/versioning.py*
+
+
+---USER---
+What is a Choice state in an FPP State Machine?
+---RESPONSE---
+In FPP (F Prime), there is no explicit construct called a **"Choice state"** as seen in some other state machine notations (e.g., UML's `Choice` node). However, FPP state machines achieve similar functionality through the following mechanisms:
+
+---
+
+### 1. **Conditional Transitions**
+FPP state machines use **guarded transitions** to represent logic that selects between multiple possible paths. For example:
+```cpp
+state WAIT_RESET {
+    on success -> ENABLE
+    on error -> ERROR
+}
+```
+Here, the `WAIT_RESET` state transitions to either `ENABLE` or `ERROR` depending on the occurrence of the `success` or `error` signal.
+
+---
+
+### 2. **Hierarchical State Machines**
+FPP supports **nested states** (composite states), which can act as "choice" points by grouping related transitions:
+```cpp
+state CONFIGURE {
+    substate SET_MODE
+    substate CALIBRATE
+}
+```
+The `CONFIGURE` state acts as a container for substates, allowing the system to "choose" between `SET_MODE` or `CALIBRATE` based on context.
+
+---
+
+### 3. **Default Transitions**
+FPP allows **default transitions** (unconditional) to handle fallback logic:
+```cpp
+state DEFAULT {
+    on * -> ERROR
+}
+```
+This acts as a "catch-all" state, effectively simulating a choice when no other transitions match.
+
+---
+
+### Summary
+FPP does not have a dedicated "Choice state" construct. Instead, it uses **guarded transitions**, **hierarchical states**, and **default transitions** to model branching logic. These mechanisms provide the flexibility to implement complex decision-making within state machines while adhering to FPP's design principles. 
+
+If you're referring to a specific pattern or feature not covered here, please provide additional context!
+
+*Sources: docs/how-to/define-state-machines.md · docs/user-manual/framework/state-machines.md · FppTestProject/FppTest/state_machine/internal/README.md*
+
+
+---USER---
+Why does Mission Control use aiofiles for file I/O?
+---RESPONSE---
+Mission Control (the terminal interface) does not directly use `aiofiles` for file I/O. The F' framework, which Mission Control operates within, is primarily implemented in C++ and adheres to JPL's embedded systems standards. File I/O in F' is managed through components like `Svc::FileManager` and `Svc::FilePorts`, which abstract hardware interactions via drivers and ensure deterministic, real-time behavior critical for space missions.
+
+If `aiofiles` is being referenced, it might pertain to a separate Python-based tool or script used in conjunction with F' (e.g., for code generation, testing, or build automation). However, such usage would be outside the core F' framework and its strict C++-based design. For precise context, clarify whether the question refers to F' itself or a supporting toolchain.
+
+*Sources: Svc/FileManager/docs/sdd.md · docs/user-manual/design-patterns/app-man-drv.md · Svc/Ports/FilePorts/docs/sdd.md*
+
+
+---USER---
+How are Subtopologies registered in CMake?
+---RESPONSE---
+In F Prime, subtopologies are registered in CMake through the following mechanism:
+
+1. **Component Registration**: Each subtopology (e.g., `Svc.CdhCore`) is implemented as a component in its own subdirectory. The component is registered using the `add_fprime_component` CMake command in the subdirectory's `CMakeLists.txt`.
+
+2. **Source Integration**: The subtopology's source files (e.g., `.fpp`, `.cpp`, `.h`) are explicitly added to the component definition. For example:
+   ```cmake
+   add_fprime_component(Svc.CdhCore
+       SOURCES
+           CdhCoreComponent.cpp
+           CdhCoreComponent.h
+       DEPENDENCIES
+           Svc.Cdh
+   )
+   ```
+
+3. **Parent CMake Inclusion**: The parent project's `CMakeLists.txt` includes the subtopology's directory using `add_subdirectory()` to ensure it's built as part of the main project:
+   ```cmake
+   add_subdirectory(Svc/Subtopologies/CdhCore)
+   ```
+
+4. **Deployment Configuration**: When generating deployments with `fprime-util new --deployment`, the subtopology is automatically included in the build configuration via the `fprime-util` tool's template system.
+
+This registration process ensures subtopologies are compiled, linked, and available for use in the main application.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/subtopologies.md · docs/getting-started/installing-fprime.md*
