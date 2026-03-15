@@ -1924,3 +1924,336 @@ The `FW_OBJECT_NAMES` configuration setting in F' controls the naming convention
 For deeper details, refer to the [FpConfig.hpp](#fpconfigh) section in the F' user manual.
 
 *Sources: docs/user-manual/framework/configuring-fprime.md · docs/user-manual/framework/configuring-fprime.md · docs/user-manual/framework/configuring-fprime.md*
+
+
+---USER---
+What is a "Predicate" in the fprime_test_api?
+---RESPONSE---
+A **Predicate** in the `fprime_test_api` is a condition used to define the **start** of a search scope when querying historical data (e.g., events, telemetry) in tests. It allows you to specify criteria that the search must meet to determine the earliest point in the history to begin evaluating. 
+
+For example:
+- You could use a predicate to wait for a specific event (e.g., `"CommandReceived"`) **after** another event (e.g., `"TelemetrySent"`) occurs.
+- Predicates can be combined with `start` and `timeout` arguments to narrow the search scope in the test API's history.
+
+This is particularly useful for synchronizing test steps based on dynamic conditions rather than fixed timestamps or indices.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+How does F´ support "Baremetal" (No-OS) systems?
+---RESPONSE---
+F' supports "Baremetal" (no-OS) systems through its **baremetal pattern**, which is specifically designed to run on resource-constrained hardware without an operating system. Key features include:
+
+1. **No OS Dependencies**:  
+   - F' abstracts away OS-specific features like threads, message queues, and process management. Instead, it uses **interrupt service routines (ISRs)** and direct hardware access for real-time operations.
+
+2. **Single Entry Point**:  
+   - Applications have a single entry point (e.g., `main()`), aligning with baremetal's lack of multitasking. F' manages state and scheduling without OS-level abstractions.
+
+3. **Interrupt Handling**:  
+   - F' provides mechanisms to register and manage ISRs for hardware peripherals, enabling real-time responsiveness without an OS.
+
+4. **Resource Constraints**:  
+   - The framework minimizes memory and CPU usage, optimizing for limited RAM and storage typical in baremetal environments.
+
+5. **Platform Library**:  
+   - For supported baremetal platforms, F' includes a platform library that provides OSAL (Operating System Abstraction Layer) implementations, drivers, and build tools tailored for no-OS execution.
+
+6. **Continuous Integration**:  
+   - Supported baremetal platforms are tested via CI pipelines, ensuring reliability and compatibility with F' standards.
+
+This approach allows F' to run on microcontrollers and other embedded systems where an OS is either unnecessary or impractical.
+
+*Sources: docs/user-manual/framework/run-baremetal.md · docs/user-manual/framework/supported-platforms.md · docs/user-manual/framework/run-baremetal.md*
+
+
+---USER---
+What is the role of `initial enter` in a State Machine?
+---RESPONSE---
+The `initial enter` directive in an F' state machine defines the **initial state** that the state machine transitions into upon creation. It serves two key purposes:
+
+1. **Initialization Point**: It specifies the starting state (e.g., `RESET` in the example) that the state machine begins in when instantiated. This is critical for setting up the system's initial behavior.
+
+2. **Entry Action**: The `enter` keyword indicates that the state's entry action (if defined) will be executed when transitioning into this state. This is where initialization logic (like resetting hardware or variables) is typically placed.
+
+### Example Context
+In the `ImuStateMachine` example:
+```fpp
+initial enter RESET
+```
+- The state machine starts in the `RESET` state.
+- The `enter` clause ensures any logic defined in the `RESET` state (e.g., hardware initialization) is executed immediately upon creation.
+
+This is a fundamental part of F' state machine design, ensuring deterministic startup behavior.
+
+*Sources: Fw/DataStructures/docs/SizedContainer.md · docs/how-to/define-state-machines.md · Fw/DataStructures/docs/FifoQueueBase.md*
+
+
+---USER---
+What is the `Svc::RateGroupDriver` configuration "DividerSet"?
+---RESPONSE---
+The `Svc::RateGroupDriver` configuration "DividerSet" defines the set of divisors used to generate the subdivided clock signals (e.g., 100Hz, 10Hz, 1Hz) from the system clock input (`CycleIn`). These divisors determine how the input cycle is split into slower rates for the attached rate groups.
+
+### Key Details:
+1. **Purpose**: 
+   - The `DividerSet` specifies the ratios at which the system clock is divided to produce the output cycles (`CycleOut`) for passive rate groups.
+   - For example, if `DividerSet` is `{10, 100, 1000}`, the input clock (e.g., 1000Hz) would generate output rates of 100Hz, 10Hz, and 1Hz.
+
+2. **Configuration Location**:
+   - The `DividerSet` is typically defined in the project's configuration files (e.g., `Config/RateGroupDriverConfig.c` or similar) or via runtime parameters.
+   - It may also be hardcoded in the `RateGroupDriver` implementation if not dynamically configurable.
+
+3. **Relation to Code**:
+   - The `CycleIn` port receives the system clock signal, and the `CycleOut` port outputs the subdivided cycles based on the `DividerSet`.
+   - The actual logic for dividing the cycle is implemented in the `RateGroupDriver` component's C++ code (e.g., `RateGroupDriver.c`).
+
+To find the exact definition of `DividerSet` in your project, check:
+- Configuration files (e.g., `Config/RateGroupDriverConfig.c`).
+- The `RateGroupDriver` implementation file (e.g., `RateGroupDriver.c`).
+- Generated code from `RateGroupDriver.fpp` (if divisors are derived from a dictionary).
+
+Would you like me to locate the `DividerSet` definition in your project's files?
+
+*Sources: Svc/RateGroupDriver/RateGroupDriver.fpp · docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md*
+
+
+---USER---
+How do you implement a custom serializable class?
+---RESPONSE---
+To implement a custom serializable class in F', follow these steps using the F' framework's serialization model:
+
+### 1. **Define the Class with `Serializable` Base Class**
+```cpp
+#include "fprime/serializable.h"
+
+class MySerializableClass : public fprime::Serializable {
+public:
+    // Constructor with buffer and offset
+    MySerializableClass(uint8_t* buffer, uint32_t offset)
+        : fprime::Serializable(buffer, offset) {}
+
+    // Implement serialize and deserialize methods
+    void serialize() override {
+        // Use FPP macros to handle member serialization
+        FPP_SERIALIZE_MEMBER(uint32_t, myVariable);
+    }
+
+    void deserialize() override {
+        // Use FPP macros to handle member deserialization
+        FPP_DESERIALIZE_MEMBER(uint32_t, myVariable);
+    }
+
+private:
+    uint32_t myVariable; // Example member
+};
+```
+
+### 2. **Use FPP Macros for Member Handling**
+- **`FPP_SERIALIZE_MEMBER`**: Generates code to write class members to a buffer.
+- **`FPP_DESERIALIZE_MEMBER`**: Generates code to read class members from a buffer.
+- These macros handle type-specific serialization (e.g., `uint32_t`, `float`).
+
+### 3. **Ensure Proper Buffer Management**
+- The constructor must accept a `uint8_t* buffer` and `uint32_t offset` to track the current position in the byte stream.
+- The `serialize()` and `deserialize()` methods must be implemented to manage the buffer offset.
+
+### 4. **Build and Verify**
+Run the F' build system to generate serialization code:
+
+
+> *[Running fprime-util build... (PENDING)]*The error indicates a missing Python virtual environment (venv) required for the F' build system. Let's resolve this:
+
+1. **Check/Setup Python Environment**  
+   First verify the venv exists at the specified path. If not, create it:
+   ```bash
+   python3 -m venv <path_to_venv>
+   ```
+
+2. **Activate the Venv and Install Dependencies**  
+   After creating the venv, activate it and install required packages:
+   ```bash
+   source <path_to_venv>/bin/activate  # On Linux/Mac
+   <path_to_venv>\Scripts\activate     # On Windows
+   pip install -r requirements.txt
+   ```
+
+3. **Retry the Build Command**  
+   Once the venv is properly configured, retry the build command. If the path in the error is incorrect,修正 the path in your build configuration file (e.g., `CMakeLists.txt` or `fprime-config.yaml`). 
+
+Would you like me to check the current directory structure to locate the venv?
+
+*Sources: fprime-tools/src/fprime/fbuild/enumerator.py · docs/how-to/custom-framing.md · fprime-tools/src/fprime/fbuild/enumerator.py*
+
+
+---USER---
+What is the purpose of the "Orb" in the GDS GUI?
+---RESPONSE---
+The provided knowledge base does not explicitly define the purpose of the "Orb" in the GDS GUI. However, based on the context of the GDS CLI requirements (which aim for feature parity with the GUI), the "Orb" is likely a visual element in the GDS GUI used to represent telemetry data, command status, or system health indicators. It may serve as a circular or spherical graphical interface component for monitoring spacecraft operations, aligning with the CLI's functionality to receive telemetry and send commands. For precise details, consult the GDS GUI documentation or source code.
+
+*Sources: Fw/DataStructures/docs/Array.md · docs/user-manual/gds/gds-dev-guide.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+What is a Software Bill of Materials (SBOM) in F´?
+---RESPONSE---
+The Software Bill of Materials (SBOM) in F' is a record of all software components, libraries, and dependencies that constitute a product. F Prime automatically generates this SBOM as part of its build system, leveraging the `syft` tool to analyze and document the software components. This provides transparency into the software's composition, aiding in security, compliance, and dependency management. To use this feature, ensure `syft` is installed in your development environment.
+
+*Sources: Fw/DataStructures/docs/Array.md · docs/user-manual/security/software-bill-of-materials.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+Define NASA Rule #3: "No dynamic memory allocation after initialization."
+---RESPONSE---
+NASA Rule #3: *"No dynamic memory allocation after initialization."*  
+
+**Rule Statement:**  
+Dynamic memory allocation (e.g., `malloc()`/`free()`) is strictly prohibited during runtime operations. All memory allocations must occur during system initialization using the `Fw::MemAllocator` interface or pre-allocated buffer pools managed by `Svc::BufferManager`.  
+
+**Key Requirements:**  
+1. **Initialization-Only Allocation:**  
+   - Memory blocks must be allocated during system initialization (e.g., via `configureTopology()` or `configure()` methods).  
+   - Use `Fw::MemAllocator` (e.g., `Fw::MallocAllocator`) for dynamic allocation during setup.  
+
+2. **Runtime Restrictions:**  
+   - No heap allocation allowed during active operation.  
+   - Use static/stack allocation or pre-allocated buffer pools (via `Svc::BufferManager`) for runtime memory needs.  
+
+3. **Safety Justification:**  
+   - Prevents runtime memory fragmentation, leaks, and undefined behavior.  
+   - Ensures deterministic resource management critical for safety-critical systems.  
+
+**Alternatives:**  
+- For configurable buffer sizes, use `Fw::MemAllocatorRegistry` to manage multiple allocators.  
+- For runtime buffers, leverage buffer pools (see [Buffer Pool Guide](./buffer-pool.md)).  
+
+This rule aligns with F' architecture principles and JPL flight software standards.
+
+*Sources: docs/user-manual/framework/memory-management/memory-allocation.md · docs/user-manual/framework/memory-management/index.md · docs/user-manual/framework/memory-management/index.md*
+
+
+---USER---
+What is a "Buffer Manager ID Collision"?
+---RESPONSE---
+A **"Buffer Manager ID Collision"** occurs when two or more components or modules within an F' system attempt to use the **same unique identifier (ID)** for buffer management purposes, leading to conflicts in resource allocation, data corruption, or incorrect behavior. 
+
+### Key Context from F' Architecture:
+1. **Parameter Management (Fw::PrmGet/PrmSet):**  
+   - Parameters are identified by unique IDs. If two components accidentally use the same ID for parameters, `Fw::PrmGet`/`Fw::PrmSet` operations could retrieve/update the wrong data, causing inconsistencies.
+
+2. **BufferRepeater (Svc::BufferRepeater):**  
+   - This passive component manages buffer replication. If buffer IDs are not uniquely assigned, repeated buffers might overwrite each other, leading to data loss or incorrect propagation.
+
+3. **ComQueue (Svc::ComQueue):**  
+   - Message queues use IDs to route data. A collision here could result in messages being delivered to the wrong destination or dropped.
+
+### Consequences:
+- **Data Corruption:** Overwritten buffers or parameters.
+- **Unpredictable Behavior:** Components may fail to retrieve/set values correctly.
+- **System Failures:** Critical data paths could be disrupted.
+
+### Prevention in F':
+- **Strict ID Assignment:** F' enforces unique IDs during topology definition (e.g., `topology.fpp`).
+- **Validation Tools:** Commands like `run_fprime_command --check` verify ID uniqueness across components.
+- **Design Guidelines:** The SDDs (e.g., `Svc::BufferRepeater`) mandate unique IDs for all buffers/parameters.
+
+To diagnose this issue, you could check the `topology.fpp` file or use `run_fprime_command --check` to validate ID uniqueness. Would you like me to inspect the `topology.fpp` file for your project?
+
+*Sources: Svc/BufferRepeater/docs/sdd.md · Fw/Prm/docs/sdd.md · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+What is the "CdhCore" subtopology?
+---RESPONSE---
+The **CdhCore** subtopology is a reusable bundle of core flight-software services provided by the F' framework. It integrates essential components such as:
+
+- **Command dispatching** (e.g., `CmdDispatcher`)
+- **Event handling** (e.g., `EventManager`)
+- **Health monitoring**
+- **Version/configuration reporting**
+- **Logging**
+- **Assert/fatal handling**
+
+This subtopology serves as a standardized backbone for F' deployments, reducing boilerplate wiring and ensuring consistent configuration of critical services. It defines configurable instances for telemetry sending and fatal-event handling, allowing integration engineers to connect these services to project-specific implementations (e.g., radios, storage) while reusing the core CDH (Command and Data Handling) functionality.
+
+### Key Features
+- **Configurable**: Parameters can be overridden at deployment time via F' config modules.
+- **Modular**: Components are connected via clearly defined ports, enabling integration with communication stacks (e.g., `ComCcsds`, `FramingFprime`).
+- **Reusable**: Designed to be instantiated in larger system topologies to streamline development.
+
+Example usage involves wiring `CdhCore` with communication subtopologies to complete command/telemetry paths:
+```fpp
+topology Flight {
+  import CdhCore.Subtopology
+  import ComCcsds.Subtopology
+  command connections instance CdhCore.cmdDisp
+  telemetry connections instance CdhCore.tlmSend
+  // ... other connections
+}
+``` 
+
+This pattern ensures consistent, maintainable integration of core services across F' deployments.
+
+*Sources: Svc/Subtopologies/CdhCore/docs/sdd.md · Svc/Subtopologies/CdhCore/docs/sdd.md · docs/user-manual/design-patterns/subtopologies.md*
+
+
+---USER---
+How do you define a port array in FPP?
+---RESPONSE---
+To define a port array in FPP, you declare a single port with a name and specify the array size using square brackets. The framework will generate multiple instances of the port (e.g., `Port_0`, `Port_1`, etc.) based on the array size. Here's the syntax:
+
+```fpp
+port MyPort[3]  // Creates 3 instances: MyPort_0, MyPort_1, MyPort_2
+```
+
+### Key Details:
+1. **Port Array Declaration**: Use `port <name>[<size>]` to define a port array.
+2. **PortNum Parameter**: When handling input port calls, `portNum` (a `NATIVE_INT_TYPE`) identifies which instance was invoked (e.g., `0`, `1`, etc.).
+3. **Usage**: This is useful for handling multiple instances of the same port type (e.g., multiple command inputs).
+
+For example, if you define:
+```fpp
+port CommandIn[5]
+```
+The framework will generate `CommandIn_0` to `CommandIn_4`, and each will have its own `CommandIn_handler` function in the generated code.
+
+*Sources: docs/user-manual/framework/autocoded-functions.md · FppTestProject/FppTest/component/active/port_types.fpp · docs/user-manual/overview/03-port-comp-top.md*
+
+
+---USER---
+What is the `Fw::ExternalSerializeBuffer` used for?
+---RESPONSE---
+The `Fw::ExternalSerializeBuffer` is a class in the F' framework used to manage serialized data buffers for external communication or storage. It is primarily used in components like the **GenericHub** (Svc::GenericHub) and **DpWriter** (Svc::DpWriter) to handle the serialization and deserialization of data structures (e.g., port calls, buffer data) for transmission between components or external systems. 
+
+### Key Use Cases:
+1. **Serialization**: 
+   - The `ExternalSerializeBuffer` provides a mechanism to serialize data (e.g., port values, buffer contents) into a contiguous byte buffer for transmission over networks or storage.
+   - This is critical for the **GenericHub**'s requirement to serialize incoming port/buffer calls into an output port (GENHUB-002).
+
+2. **Deserialization**:
+   - It also supports deserializing incoming serialized data (e.g., from another GenericHub) back into structured data for processing (GENHUB-003).
+
+3. **Data Persistence**:
+   - In **DpWriter**, it may be used to buffer data before writing it to persistent storage, ensuring data integrity during serialization.
+
+### Why It Matters:
+- Ensures efficient, type-safe handling of serialized data in distributed or external communication scenarios.
+- Aligns with F' architecture principles for modular, reusable serialization logic. 
+
+For implementation details, you would need to inspect the `ExternalSerializeBuffer` class definition in the F' source code or relevant component headers.
+
+*Sources: Svc/ComQueue/docs/sdd.md · Svc/GenericHub/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How do you check code coverage for F´ unit tests?
+---RESPONSE---
+To check code coverage for F' unit tests, run the following command in your terminal:
+
+```bash
+fprime-util check --coverage
+```
+
+This command is documented in the SDDs for multiple F' services (e.g., `Svc/ActivePhaser`, `Svc/FatalHandler`, `Svc/CmdDispatcher`). It provides unit test coverage analysis for your F' project.
+
+*Sources: Svc/ActivePhaser/docs/sdd.md · Svc/FatalHandler/docs/sdd.md · Svc/CmdDispatcher/docs/sdd.md*
