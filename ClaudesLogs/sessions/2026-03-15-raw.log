@@ -1296,3 +1296,210 @@ The `Svc::FileManager::ShellCommand` command is part of the `Svc::FileManager` s
 For precise implementation details (e.g., parameters, error handling), you would need to inspect the F' code for `Svc::FileManager` or its associated test cases. Would you like me to retrieve specific files for further analysis?
 
 *Sources: Svc/Health/test/int/test_cmd_health.py · Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/FileManager/test/ut/FileManagerMain.cpp · Svc/CmdSequencer/docs/sdd.md · Svc/CmdSequencer/docs/sdd.md*
+
+
+---USER---
+What is the FW_TASK_STK_SIZE_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not contain information about the `FW_TASK_STK_SIZE_BUFFER_SIZE` macro. This macro is likely related to task stack size configuration in an F' project, but its specific purpose and usage would need to be determined from additional documentation or source files not included in the current context.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/FifoQueueBase.md · Fw/DataStructures/docs/StackBase.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'Overrun' port.
+---RESPONSE---
+The provided knowledge base does not explicitly describe an `Overrun` port in the `Svc::ActiveRateGroup` component. The component's documented ports include:
+
+- `CycleIn` (async input for rate group cycles)
+- `RateGroupMemberOut` (output to members)
+- `PingIn`/`PingOut` (health check ports)
+
+The `ActiveRateGroupTester.cpp` test code references an `m_causeOverrun` flag and mentions simulating overruns by interacting with the `CycleIn` port, but this does not define a dedicated `Overrun` port in the component itself. Further context or source code would be required to confirm its existence or behavior.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActiveRateGroup/test/ut/ActiveRateGroupTester.cpp · Svc/ActivePhaser/ActivePhaser.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::TimePort` is used to pass **time stamps** throughout the system, primarily for telemetry and event logging purposes. It facilitates the transmission of time-related data (e.g., timestamps for telemetry events or system events) using the `Fw::Time` object, which encapsulates the time base, context, seconds, and microseconds portions of a time stamp. This port is critical for synchronizing and timestamping events across distributed systems. 
+
+This definition is derived from the [Fw/Time/docs/sdd.md](#source-1) documentation, which explicitly states:  
+> *"The `Fw::Time` port is used to pass time stamps around the system, either for telemetry and events or other uses."*
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+The `STest::Random::lowerUpper()` function is used in F' tests to generate random integer values within a specified range. It is part of the `STest::Random` namespace, which provides utilities for creating randomized test scenarios. 
+
+### Key Usage Examples from the Knowledge Base:
+1. **Random Size for Messages**:
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   Generates a random `FwSizeType` between `1` and `max_size` for message size.
+
+2. **Random Priority Values**:
+   ```cpp
+   message.priority = STest::Random::lowerUpper(0, std::numeric_t::max());
+   ```
+   Produces a random `FwQueuePriorityType` between `0` and the maximum signed 8-bit integer value.
+
+3. **Random Data Filling**:
+   ```cpp
+   message.sent[i] = STest::Random::lowerUpper(0, std::numeric_limits<U8>::max());
+   ```
+   Populates message data with random `U8` values (0–255).
+
+### Purpose:
+This function enables **test-driven development** (TDD) in F' by ensuring tests cover edge cases and varied inputs, validating robustness of components like queues or communication protocols.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+Describe the MultiString serializable in FPP tests.
+---RESPONSE---
+The provided sources do not contain specific information about a serializable type named `MultiString` in the context of FPP tests. However, the `ConstStringBase` class in `Fw/Types/ConstStringBase.hpp` is a foundational serializable string type in F Prime, providing methods for handling string serialization and capacity management. 
+
+If `MultiString` refers to a composite or array-based string type (e.g., storing multiple strings), it would likely build on `ConstStringBase` or similar mechanisms. For precise details about `MultiString`, additional context or source files containing its definition would be required. 
+
+To proceed, you might:
+1. Check if `MultiString` is defined in your project's `Fw` or `Test` namespaces.
+2. Verify if it’s part of a test case (e.g., `Gds/test/...` or `Fw/SerializableFile/test/...`).
+3. Use `list_directory` or `read_file` to inspect relevant files. 
+
+Let me know if you’d like to search for `MultiString` in your project files.
+
+*Sources: docs/how-to/test-driven-development.md · Svc/CmdSequencer/docs/AMPCSSequence.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/Types/ConstStringBase.hpp · docs/user-manual/gds/gds-dev-guide.md*
+
+
+---USER---
+What are the loadParameters and readParameters phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `loadParameters` and `readParameters` phases in `Fpp::ToCpp::Phases` are part of the initialization sequence for components in F' (F Prime). Here's what they represent based on the provided knowledge base:
+
+1. **`loadParameters`**  
+   This phase is tied to the `loadParameters()` method, which is called to request the values of all parameters for a component via its parameter port. Once called, these values become available to the component's implementation for use during initialization or runtime. It is typically invoked during software initialization to populate parameters.
+
+2. **`readParameters`**  
+   The documentation does not explicitly describe `readParameters` in the provided sources. However, based on naming conventions and F' framework patterns, it may represent a phase where components explicitly read or access preloaded parameter values. This could occur after `loadParameters` to ensure parameters are available for use in component logic.
+
+These phases are part of the broader "init specifiers" system in F', which allows components to define their own initialization steps (e.g., configuration, startup, teardown) in a unified fpp file. For subtopologies, these phases help maintain consistency across component instances. 
+
+For precise behavior, refer to the [F' User Manual](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Component-Instances_Init-Specifiers).
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · docs/user-manual/framework/building-topology.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'CycleIn' port.
+---RESPONSE---
+The `CycleIn` port in the `Svc::ActiveRateGroup` component is defined as an **asynchronous input port** with the type `Svc.Cycle drop`. Here's its key characterization:
+
+- **Purpose**: It serves as the **rate group cycle input**, receiving asynchronous cycle signals to synchronize the component's operations.
+- **Type**: `Svc.Cycle` (a predefined type in the F' framework, likely representing a cycle signal or timestamp).
+- **Behavior**: The `drop` keyword indicates the port **does not retain or buffer data** between cycles, discarding any excess data. This is critical for real-time systems to ensure timely processing.
+- **Direction**: It is an **input port**, meaning it receives data from external sources (e.g., a scheduler or timer).
+
+This port enables the `ActiveRateGroup` component to align its execution with the rate group's cycle timing, ensuring deterministic behavior in asynchronous systems.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActivePhaser/ActivePhaser.fpp · Svc/RateGroupDriver/RateGroupDriver.fpp · Svc/PassiveRateGroup/PassiveRateGroup.fpp · Fw/Cmd/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::LogPort?
+---RESPONSE---
+The `Fw::LogPort` (specifically `Fw::Log` and `Fw::LogText` ports) serves to transmit event logs from components to external systems for monitoring, debugging, or downlinking. Here's the purpose broken down:
+
+1. **`Fw::Log` Port**  
+   - Transmits **serialized event data** (ID, time tag, severity, and binary arguments) for telemetry.  
+   - Used for formal event logging in flight software.  
+   - Defined in `Fw/Log/Log.fpp` as a port accepting serialized ISF events.  
+
+2. **`Fw::LogText` Port**  
+   - Transmits **human-readable text** representations of events (ID, time tag, severity, and descriptive text).  
+   - Intended for **development and debugging** (explicitly noted as "turn off for flight" in the documentation).  
+   - Provides context-rich logs for diagnosing issues during testing.  
+
+### Key Purpose  
+These ports enable components to report events to the `Svc::EventManager` or external loggers, ensuring traceability of system activities. The `Log` port is critical for flight operations, while `LogText` aids in debugging during development.  
+
+Source: [Fw/Log/docs/sdd.md](#Fw/Log/docs/sdd.md) | [Fw/Log/Log.fpp](#Fw/Log/Log.fpp)
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · Fw/Log/docs/sdd.md · Fw/Log/docs/sdd.md · docs/user-manual/overview/source-tree.md · Fw/Log/Log.fpp*
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+The `STest::Random::lowerUpper()` function in F' tests is used to generate random values within a specified range for testing scenarios. Here's how it's applied based on the provided code:
+
+### Key Usage in Tests
+1. **Message Size Randomization**  
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   Generates a random `FwSizeType` between `1` and `max_size` for message size.
+
+2. **Priority Randomization**  
+   ```cpp
+   message.priority = STest::Random::lowerUpper(0, std::numeric_limits<I8>::max());
+   ```
+   Produces a random `FwQueuePriorityType` (I8) between `0` and the maximum I8 value.
+
+3. **Payload Data Randomization**  
+   ```cpp
+   message.sent[i] = STest
+   ```
+   Fills the message payload with random U8 values between `0` and `std::numeric_limits<U8>::max()`.
+
+### Purpose
+This randomness ensures tests validate robustness against varied input sizes, priorities, and data values. The `check_received()` function then verifies that the system correctly handles and reproduces these randomized values, ensuring correctness under diverse conditions.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+Describe the MultiSerializable serializable in FPP tests.
+---RESPONSE---
+The `MultiSerializable` concept in FPP tests is not explicitly documented in the provided sources, but based on the `Test` class in `Fw/SerializableFile/test/ut/Test.cpp`, it can be inferred that **composite serializables** (e.g., structures containing multiple data types) are supported. Here's how it works:
+
+### Key Behavior of MultiSerializable in FPP Tests
+1. **Composite Data Handling**:
+   - The `Test` class in the example combines multiple data types into a single serializable:
+     ```cpp
+     class Test {
+     public:
+         U32 element1;
+         I8 element2;
+         F64 element3;
+     };
+     ```
+   - This acts as a "multi-serializable" by encapsulating `U32`, `I8`, and `F64` fields.
+
+2. **Serialization/Deserialization**:
+   - The `SerializableFile` class handles saving and loading such composite structures:
+     ```cpp
+     Status save(const char* fileName, Serializable& serializable);
+     Status load(const char* fileName, Serializable& serializable);
+     ```
+   - These methods serialize all fields of the composite type into a file and vice versa.
+
+3. **Validation**:
+   - After loading, the test compares all fields to ensure correctness:
+     ```cpp
+     FW_ASSERT(config == config2); // Compares all fields in the composite
+     ```
+
+### Notes
+- The term `MultiSerializable` is not explicitly used in the sources, but the pattern of combining multiple data types into a single serializable is standard in F'.
+- For precise details on `MultiSerializable` (if it exists in other parts of the codebase), you would need to inspect additional files or documentation. Use the `list_directory` or `read_file` tools to explore the project structure. 
+
+Would you like to check for files that might define `MultiSerializable`?
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/gds/gds-test-api-guide.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/SerializableFile/SerializableFile.cpp · Fw/SerializableFile/SerializableFile.hpp*
