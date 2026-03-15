@@ -7015,3 +7015,30 @@ void GetFiles(const std::string& directory, const std::string& extension) {
 For precise details about your specific `Svc::FileManager` implementation, check the `topology.fpp` file or interface definitions in the project. Let me know if you need help locating these files!
 
 *Sources: Svc/ComQueue/docs/sdd.md · Svc/Interfaces/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::PrmSubscrPort?
+---RESPONSE---
+The `Fw::PrmSubscrPort` is a **subscription port** in the F Prime framework used to monitor and subscribe to changes in **parameters** (e.g., `Fw::Param`). When a parameter is updated, components connected to this port receive notifications, enabling real-time or event-driven responses to parameter changes. This is critical for systems requiring dynamic configuration or state tracking (e.g., sensor data, command parameters).
+
+**Key Use Case**:  
+It allows components (e.g., processors, controllers) to react to parameter updates without polling, adhering to F Prime's event-driven architecture.
+
+**Note**: The provided knowledge base does not explicitly mention `Fw::PrmSubscrPort`, so this answer is based on general F Prime framework understanding. For specifics tied to your project's context, check your `topology.fpp` or service-specific documentation.
+
+*Sources: Svc/BufferManager/docs/sdd.md · Svc/Ports/FilePorts/docs/sdd.md · Svc/ComRetry/docs/sdd.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'TimeOut' port.
+---RESPONSE---
+The `Svc::ActiveRateGroup` component does not have a `TimeOut` port in the provided documentation or code snippets. Instead, the related functionality is handled via events and ports as described in the `ActivePhaser` component. 
+
+In the `ActivePhaser` component, a `MissedDeadline` event is defined to signal when a rate group misses its deadline. This event includes parameters like the port index, execution window details, and latency. 
+
+If you are referring to a `TimeOut` port, it may be part of a different component or a newer version not included in the provided sources. For precise details, please check the latest F' documentation or source code for the `Svc::ActiveRateGroup` component. 
+
+For now, based on the given knowledge base, there is no `TimeOut` port in `Svc::ActiveRateGroup`.
+
+*Sources: docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md · Svc/ActivePhaser/ActivePhaser.fpp*
