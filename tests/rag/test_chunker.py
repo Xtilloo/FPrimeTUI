@@ -234,3 +234,11 @@ class BarBase {
     chunks = chunk_autocoded_cpp(text, source="BarAc.hpp")
     # Even with no public/protected methods, should return something
     assert len(chunks) >= 1
+
+
+def test_fpp_spec_larger_chunks():
+    # Create content longer than 1200 chars but under 2000
+    text = "## FPP Keyword: active component\n" + ("x " * 700)  # ~1400 chars
+    chunks = chunk_markdown(text, source="docs/reference/fpp-user-guide.md")
+    # Should NOT be truncated at 1200 — FPP spec gets 2000 char limit
+    assert len(chunks[0]["text"]) > 1200

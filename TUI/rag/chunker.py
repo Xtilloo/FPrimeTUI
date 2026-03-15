@@ -6,6 +6,9 @@ CHARS_PER_TOKEN = 4  # rough estimate
 
 _CODE_EXTENSIONS = {".fpp", ".hpp", ".h", ".cpp", ".py"}
 
+_FPP_SPEC_PREFIXES = ("docs/reference/fpp-", "docs/user-manual/fpp-")
+FPP_SPEC_MAX_CHARS = 2000  # ~500 tokens — dense DSL docs need larger chunks
+
 
 def detect_content_type(text: str, source_file: str) -> str:
     """Classify chunk content as code, concept, reference, or tutorial."""
@@ -57,13 +60,14 @@ def _truncate(text: str, max_chars: int = TARGET_TOKENS * CHARS_PER_TOKEN) -> st
 
 def chunk_markdown(text: str, source: str) -> list[dict]:
     """Split markdown on ## headers. Each section becomes one chunk."""
+    max_chars = FPP_SPEC_MAX_CHARS if source.startswith(_FPP_SPEC_PREFIXES) else TARGET_TOKENS * CHARS_PER_TOKEN
     sections = re.split(r'(?=^#{1,2} )', text, flags=re.MULTILINE)
     chunks = []
     for section in sections:
         section = section.strip()
         if not section:
             continue
-        truncated = _truncate(section)
+        truncated = _truncate(section, max_chars=max_chars)
         chunks.append({
             "text": truncated,
             "source_file": source,
