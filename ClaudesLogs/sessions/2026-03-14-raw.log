@@ -3822,3 +3822,268 @@ if (event.data > threshold) {
 Would you like me to check your FPP model for event definitions or show how to modify it to carry data?
 
 *Sources: Svc/TlmChan/docs/sdd.md · docs/user-manual/framework/state-machines.md · Svc/FileDispatcher/docs/sdd.md*
+
+
+---USER---
+What is the purpose of nomic-embed-text in the RAG system?
+---RESPONSE---
+The `nomic-embed-text` model is a specialized embedding model designed to convert text into numerical vectors (embeddings) that capture semantic meaning. In a Retrieval-Augmented Generation (RAG) system, its primary purpose is to:
+
+1. **Generate Embeddings**: Convert input text (e.g., user queries) into dense vector representations that encode semantic relationships between words and phrases.
+2. **Enable Semantic Retrieval**: Allow the RAG system to retrieve documents from a database that are semantically similar to the input query, rather than relying solely on keyword matches.
+3. **Facilitate Efficient Similarity Search**: By transforming both the query and pre-stored documents into embeddings, the system can efficiently compute similarity scores (e.g., cosine similarity) to identify the most relevant documents for context-aware generation.
+
+This model is critical for bridging the gap between natural language understanding and document retrieval, enhancing the accuracy and relevance of generated responses in RAG workflows.
+
+*Sources: docs/user-manual/overview/gds-introduction.md · .github/ISSUE_TEMPLATE/feature-request.md · docs/user-manual/overview/development-practice.md*
+
+
+---USER---
+How do you enable tab completion for the fprime-cli?
+---RESPONSE---
+To enable tab completion for `fprime-cli`, follow these steps based on your shell:
+
+### For Bash (Linux/macOS):
+1. **Install `bash-completion`** (if not already installed):
+   ```bash
+   sudo apt install bash-completion  # Debian/Ubuntu
+   brew install bash-completion     # macOS
+   ```
+
+2. **Check for a completion script** in your `fprime-cli` installation directory (e.g., `/usr/local/share/fprime/` or `~/.fprime/`). Look for files like `fprime-cli.bash` or `fprime-cli-completion`.
+
+3. **Source the completion script** in your shell configuration (e.g., `~/.bashrc` or `~/.bash_profile`):
+   ```bash
+   source /path/to/fprime-cli.bash
+   ```
+
+4. **Reload your shell**:
+   ```bash
+   exec bash
+   ```
+
+### For Zsh:
+1. Install `zsh-completion` (if needed):
+   ```bash
+   brew install zsh-completion
+   ```
+
+2. Add the following to your `~/.zshrc`:
+   ```zsh
+   fpath+=/path/to/fprime-cli/zsh_completion
+   ```
+
+3. Reload Zsh:
+   ```zsh
+   exec zsh
+   ```
+
+### General Notes:
+- If no pre-built script exists, check if `fprime-cli` has a `--generate-completion` flag (run `fprime-cli --help` to confirm).
+- For headless environments, ensure the `fprime-cli` binary is in your `PATH` and the completion script is accessible.
+
+If you're using a specific OS or shell, let me know for tailored instructions!
+
+*Sources: docs/user-manual/gds/gds-cli.md · docs/user-manual/overview/gds-introduction.md · fprime-tools/src/fprime/util/__main__.py*
+
+
+---USER---
+What is the fprime-util hash-to-file command used for?
+---RESPONSE---
+The `fprime-util hash-to-file` command is used to **compute and process hash values for files** as part of the F' (F Prime) build system's dependency management. 
+
+### Key Purpose:
+- **Hash-based dependency tracking**: It generates cryptographic hashes (e.g., SHA-256) for files, which are used by the F' build system to determine if files need to be rebuilt based on content changes.
+- **Versioning**: Helps track file versions via hashes, ensuring builds are reproducible and consistent.
+- **Build optimization**: Enables the F' build system to efficiently manage dependencies by comparing hashes during the build process.
+
+This command is critical for ensuring the F' build system's reliability and efficiency in managing complex software architectures. 
+
+For implementation details, you'd need to inspect the `hash-to-file` logic in the `fprime-tools` codebase. Would you like me to locate the relevant source file?
+
+*Sources: fprime-tools/src/fprime/util/commands.py · docs/user-manual/gds/gds-dev-guide.md · docs/tutorials/cross-compilation.md*
+
+
+---USER---
+Describe the Os::Mutex LockGuard pattern.
+---RESPONSE---
+The `Os::Mutex` `LockGuard` pattern is a RAII (Resource Acquisition Is Initialization) mechanism designed to manage mutex locks safely in C++. Here's a concise description:
+
+### Key Behavior
+1. **Immediate Locking**: When a `LockGuard` object is constructed with an `Os::Mutex` reference, it attempts to lock the mutex immediately.
+2. **Scoped Locking**: The lock is held for the lifetime of the `LockGuard` object. The mutex is automatically unlocked when the `LockGuard` goes out of scope (e.g., function returns, loop exits).
+3. **Guaranteed Unlocking**: Even in the case of early returns or exceptions, the mutex is released when the `LockGuard` object is destroyed.
+
+### Example Usage
+```cpp
+#include <Utils/LockGuard.hpp>
+Os::Mutex mutex;
+{
+    LockGuard lock(mutex); // Locks the mutex
+    // Critical section: mutex is held here
+    if (xyz) {
+        return 0; // Automatically unlocks mutex on return
+    }
+    if (abc) {
+        return 1; // Automatically unlocks mutex on return
+    }
+} // Mutex unlocked here
+```
+
+### Benefits
+- **Thread Safety**: Ensures mutual exclusion in critical sections.
+- **Avoids Deadlocks**: Automatic unlocking prevents resource leaks.
+- **Simplifies Code**: Eliminates manual `lock()`/`unlock()` calls, reducing error-prone boilerplate.
+
+This pattern mirrors C++11's `std::lock_guard` but is tailored for NASA JPL's `Os::Mutex` implementation in the F' framework.
+
+*Sources: Utils/docs/LockGuard.md · Utils/docs/LockGuard.md · Svc/DpWriter/test/ut/README.md*
+
+
+---USER---
+What is the Time Context used for in Fw::Time?
+---RESPONSE---
+The **Time Context** in `Fw::Time` is used to store **metadata about the time reference or system context** in which the time value is valid. It provides additional information about the time stamp's origin or environment, such as:
+
+- The **time base** (e.g., mission time, UTC, or a custom reference point).
+- The **contextual frame of reference** (e.g., spacecraft clock, ground system clock, or a specific mission phase).
+
+This context is critical for ensuring time values are interpreted correctly across different systems or phases of a mission. The exact representation and allowed values for the time context are defined in the `TimeValue` data structure within `Time.fpp`, which is used by the `Fw::Time` class. 
+
+For precise details, you would need to inspect the `TimeValue` definition in `Time.fpp`. Would you like me to retrieve that file?
+
+*Sources: Svc/ComQueue/docs/sdd.md · Fw/Time/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+Why does Mission Control use a bash entry script?
+---RESPONSE---
+Mission Control uses a bash entry script to automate and standardize the initialization of the F' framework and its dependencies. This script typically handles tasks such as:
+
+1. **Environment Setup**: Setting required environment variables (e.g., compiler paths, library locations) for the F' build system.
+2. **Dependency Management**: Ensuring external libraries or tools (e.g., CMake, compilers) are properly installed and configured.
+3. **Build/Run Automation**: Invoking F' commands (e.g., `run_fprime_command`) to compile, validate, or execute the flight software stack.
+4. **Cross-Platform Consistency**: Standardizing behavior across different operating systems by abstracting platform-specific configurations.
+
+This approach aligns with JPL's emphasis on reproducibility and adherence to coding standards in F' development.
+
+*Sources: docs/how-to/integrate-external-libraries.md · docs/user-manual/design-patterns/app-man-drv.md · Fw/FilePacket/docs/sdd.md*
+
+
+---USER---
+What is Reciprocal Rank Fusion (RRF)?
+---RESPONSE---
+Reciprocal Rank Fusion (RRF) is a technique used in information retrieval to combine ranked lists from multiple sources (e.g., search engines) into a single, more effective ranking. It works by taking the reciprocal of the rank position of each item across all sources and summing these values, with lower ranks (higher relevance) contributing more significantly. This approach aims to improve diversity and robustness in combined results.
+
+**Note**: The provided F' knowledge base (Svc/ComQueue, Baremetal, Svc/DpWriter) does not mention RRF. This answer is based on general knowledge outside the scope of the given context. Let me know if you need assistance with F' framework-specific tasks!
+
+*Sources: Svc/ComQueue/docs/sdd.md · docs/user-manual/framework/run-baremetal.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How do you define a constant in FPP?
+---RESPONSE---
+In FPP, constants are defined using the `constant` keyword within a module. The syntax is:
+
+```fpp
+module M1 {
+  @ Annotation (optional)
+  constant C = 1  // Value can be numeric or boolean
+}
+```
+
+### Key Details:
+1. **Syntax**: `constant <name> = <value>`
+2. **Types**:
+   - Positive values default to `U64` (unsigned 64-bit integer)
+   - Negative values default to `I64` (signed 64-bit integer)
+   - Boolean values use `Bool`
+3. **Annotations**: Optional comments starting with `@` describe the constant
+4. **Scope**: Constants are module-scoped and accessible via `M1.C` notation
+
+### Example with Annotation:
+```fpp
+module MathUtils {
+  @ "Maximum 32-bit unsigned value"
+  constant MAX_U32 = 4294967295
+}
+```
+
+*Sources: docs/reference/fpp-json-dict.md · fprime-tools/src/fprime/fpp/utils/fpp_to_json/visitors/json_conversion.py · docs/user-manual/framework/state-machines.md*
+
+
+---USER---
+What is the gds.ini file?
+---RESPONSE---
+The `gds.ini` file is a configuration file used by the **Ground Data System (GDS)** in the F Prime framework. It defines how the GDS operates, including:
+
+1. **Plugin Configuration**: Specifies which plugins (e.g., `DataHandlerPlugin`) are loaded and their parameters.
+2. **Data Handling Pipelines**: Defines how data is routed between channels, processors, and storage.
+3. **Environment Settings**: Includes paths, logging levels, or authentication credentials for ground systems.
+4. **Channel Definitions**: Maps spacecraft channels to ground processing logic (e.g., for the Cosine example in the GDS plugins).
+
+For example, it might contain sections like:
+```ini
+[DataHandler]
+plugin = CosineDataHandler
+input_path = /path/to/data
+output_path = /path/to/processed
+```
+
+This file is critical for customizing the GDS behavior without modifying source code. For detailed syntax, refer to the [GDS CLI guide](../gds/gds-cli.md) and [DataHandlerPlugin Reference](../reference/gds-plugins/data-handler.md) linked in the documentation.
+
+*Sources: docs/user-manual/overview/gds-introduction.md · fprime-tools/src/fprime/fbuild/enumerator.py · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+Describe the Semantic Chunker in the RAG system.
+---RESPONSE---
+The Semantic Chunker in a Retrieval-Augmented Generation (RAG) system is a critical component that processes raw textual data into structured, semantically meaningful segments (chunks) to enhance retrieval and generation accuracy. Here's a breakdown of its role and functionality:
+
+---
+
+### **1. Core Function**
+The Semantic Chunker **analyzes unstructured text** (e.g., documents, articles) and **splits it into coherent, contextually relevant chunks** based on **semantic relationships** rather than superficial markers like sentences or tokens. This ensures that each chunk retains logical coherence and captures the essence of the original content.
+
+---
+
+### **2. Key Responsibilities**
+- **Semantic Segmentation**: Uses NLP techniques (e.g., topic modeling, entity recognition, sentence similarity) to group related ideas, entities, or concepts into chunks.
+- **Context Preservation**: Ensures chunks are meaningful and retain contextual relationships, avoiding fragmentation of ideas.
+- **Preprocessing for Retrieval**: Prepares data for efficient indexing and retrieval by the RAG system's retrieval component.
+
+---
+
+### **3. Integration in RAG**
+- **Input**: Raw text (e.g., documents, web pages).
+- **Output**: Structured chunks (e.g., JSON or embeddings) that are indexed for fast retrieval.
+- **Synergy with Retrieval**: Enables the RAG system to fetch precise, contextually relevant information during query time, improving the quality of generated responses.
+
+---
+
+### **4. Benefits**
+- **Improved Retrieval Accuracy**: Semantic chunks reduce ambiguity, allowing the retrieval model to match queries with relevant content more effectively.
+- **Enhanced Generation**: By providing well-structured, context-rich data, the generation model can produce more accurate and coherent responses.
+- **Scalability**: Efficient chunking allows handling large document corpora without overwhelming the system.
+
+---
+
+### **5. Example Use Case**
+If the input is a scientific paper about climate change, the Semantic Chunker might split it into chunks like:
+- "Overview of greenhouse gas emissions."
+- "Impact of deforestation on carbon cycles."
+- "Policy recommendations for mitigation."
+
+Each chunk is semantically distinct yet thematically coherent, enabling precise retrieval for queries like *"What are the main causes of climate change?"*.
+
+---
+
+### **6. Challenges**
+- **Balancing Granularity**: Too fine-grained chunks may lose context; too coarse chunks may dilute relevance.
+- **Computational Cost**: Semantic analysis requires resource-intensive NLP models, which must be optimized for efficiency.
+
+---
+
+In summary, the Semantic Chunker bridges raw data and actionable insights in RAG systems, ensuring that both retrieval and generation stages operate on well-organized, semantically rich information. Let me know if you need further details!
+
+*Sources: docs/reference/nomenclature.md · docs/user-manual/build-system/01-cmake-intro.md · Svc/PassiveRateGroup/docs/sdd.md*
