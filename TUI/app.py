@@ -278,8 +278,8 @@ class FPrimeTUI(App):
                 if rag_result["answer_context"]:
                     extra_ctx += f"\n\n### RELEVANT F' KNOWLEDGE BASE ###\n{rag_result['answer_context']}\n###################################\n"
                     rag_sources = rag_result["sources"]
-            except FileNotFoundError:
-                pass  # Index not built yet — proceed with plain LLM call
+            except Exception:
+                pass  # Index not built or retriever error — proceed with plain LLM call
 
         self.ai_client.add_message("user", user_query)
         await self._stream_and_handle_tools(extra_ctx)

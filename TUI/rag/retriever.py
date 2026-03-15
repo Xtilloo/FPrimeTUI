@@ -2,6 +2,7 @@ import os
 import pickle
 
 import chromadb
+import requests
 from rank_bm25 import BM25Okapi
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "db")
@@ -30,6 +31,17 @@ def format_context(chunks: list[dict]) -> str:
     return "\n\n".join(blocks)
 
 
+def _embed(text: str) -> list[float]:
+    """Embed text using ollama nomic-embed-text (same model used at index time)."""
+    resp = requests.post(
+        "http://localhost:11434/api/embed",
+        json={"model": "nomic-embed-text", "input": [text]},
+        timeout=30,
+    )
+    result: list[float] = resp.json()["embeddings"][0]
+    return result
+
+
 def _load_index() -> tuple:
     client = chromadb.PersistentClient(path=DB_PATH)
     collection = client.get_collection("fprime")
@@ -54,9 +66,10 @@ def query(text: str) -> dict:
     bm25: BM25Okapi = bm25_data["bm25"]
     chunk_ids: list[str] = bm25_data["ids"]
 
-    # Dense retrieval
+    # Dense retrieval — embed query with ollama to match index embeddings
+    query_embedding = _embed(text)
     dense_results = collection.query(
-        query_texts=[text],
+        query_embeddings=[query_embedding],
         n_results=min(TOP_K, collection.count()),
     )
     dense_ids = dense_results["ids"][0]

@@ -28,6 +28,7 @@ exclude = [
     "__pycache__",
     "build-fprime-automatic-native",
     "FPrimeSampleProject",
+    "TUI/rag/raw",
 ]
 
 line-length = 120
@@ -61,4 +62,5 @@ ignore_missing_imports = true
 exclude = [
     "venv/",
     "FPrimeSampleProject/",
+    "TUI/rag/raw/",
 ]
