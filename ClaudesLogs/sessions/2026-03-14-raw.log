@@ -3369,3 +3369,230 @@ What is the default LLM used by Mission Control?
 The provided documentation and knowledge base do not specify a default LLM (Large Language Model) used by Mission Control. The content focuses on F' framework components, system design, and development tools, but does not mention AI/LLM integration or default language models. This information would require additional context beyond the provided sources.
 
 *Sources: Svc/PassiveRateGroup/docs/sdd.md · Svc/FpySequencer/docs/sdd.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+How do you verify that a unit test handler data did not go out of scope?
+---RESPONSE---
+To verify that a unit test handler data did **not** go out of scope (i.e., was not sent or released prematurely), you must use F' test assertions to explicitly confirm the absence of expected behavior. Here's how:
+
+---
+
+### 1. **Use `ASSERT_PRODUCT_SEND_SIZE` with a timeout**  
+If the handler is expected to **not** send data, use this assertion to verify no send occurred within a specified timeframe:
+
+```python
+fprime_test_api.assert_product_send_count(0, timeout=1000)  # 1000 ms timeout
+```
+
+This checks that **no** containers were sent during the test window.
+
+---
+
+### 2. **Check allocation handler invocation**  
+If the handler is supposed to allocate data but did not, verify the allocation handler was **not called**:
+
+```python
+fprime_test_api.assert_product_get_count(0, timeout=1000)
+```
+
+This ensures no allocation requests were made.
+
+---
+
+### 3. **Use `assert_telemetry_count` for telemetry data**  
+If the handler emits telemetry (e.g., via `Telemetry` or `Event`), assert that no telemetry was received:
+
+```python
+fprime_test_api.assert_telemetry_count(0, timeout=1000)
+```
+
+---
+
+### 4. **Avoid anti-patterns**  
+Do **not** use `fprime_test_api.assert_telemetry_count(0, start="NOW", timeout=5)` as described in the anti-patterns. This would prematurely exit if no data is found, leading to false positives.
+
+---
+
+### 5. **Manual state verification**  
+If the handler manages internal state (e.g., a buffer), directly inspect the state in your test code to confirm it was not released or modified unexpectedly.
+
+---
+
+### Key Principle  
+F' test assertions are **positive checks**. To verify absence, explicitly assert that the expected number of events (sends, allocations, telemetry) is **zero** within a defined timeframe.
+
+*Sources: docs/how-to/data-products.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+What is the role of Svc::PassiveConsoleTextLogger?
+---RESPONSE---
+The **Svc::PassiveConsoleTextLogger** is a component designed to enable **console logging** for events in an F' (F Prime) system. Its primary role is to receive **text log ports** from other components (e.g., components defining events) and forward their log messages to the console. 
+
+### Key Responsibilities:
+1. **Console Logging**: Captures and outputs event messages (e.g., `DIAGNOSTIC` or `ACTIVITY_LO`) to the console, providing visibility into the system's execution.
+2. **Integration with Event Manager**: Works alongside `Svc::EventManager` to ensure event logs are directed to the console when needed.
+3. **Event Tracing**: Facilitates debugging and monitoring by allowing developers to trace system activity through console output.
+
+This component is typically used when real-time or terminal-based logging is required during system operation.
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · Svc/FileManager/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+Define NASA Rule #7: Check Returns and Parameters.
+---RESPONSE---
+NASA Rule #7: Check Returns and Parameters  
+**Purpose**: Ensure robust error detection and handling by validating all function parameters and checking return values of called functions.  
+
+**Requirements**:  
+1. **Parameter Validation**:  
+   - Verify all input parameters are within expected ranges (e.g., non-null pointers, valid indices, acceptable enum values).  
+   - For optional parameters, explicitly check for `NULL` or default states.  
+
+2. **Return Value Checking**:  
+   - Inspect return values of all function calls, especially those that may fail (e.g., memory allocation, file I/O, communication protocols).  
+   - Handle errors gracefully (e.g., log, retry, fail gracefully) rather than assuming success.  
+
+3. **Exceptions**:  
+   - Exclude functions explicitly documented as "no-check" (e.g., internal utility functions with well-defined error handling).  
+
+**Example**:  
+```cpp
+// Valid implementation of Rule #7  
+void processData(const char* buffer, size_t size) {  
+    if (buffer == nullptr || size == 0) {  
+        LOG_ERROR("Invalid buffer or size");  
+        return;  
+    }  
+    if (allocateMemory(size) != FW_SUCCESS) {  
+        LOG_ERROR("Memory allocation failed");  
+        return;  
+    }  
+    // Proceed with processing  
+}  
+```  
+
+**Context**: This rule is critical for safety-critical systems (e.g., spacecraft software) to prevent undefined behavior and ensure reliability. It aligns with JPL C++ standards and F' framework practices for defensive programming.
+
+*Sources: Fw/Types/docs/sdd.md · Svc/DpManager/test/ut/README.md · Svc/ActiveTextLogger/docs/sdd.md*
+
+
+---USER---
+Define NASA Rule #6: Minimal Scope.
+---RESPONSE---
+The provided knowledge base does not contain information about "NASA Rule #6: Minimal Scope." The available content focuses on unit testing practices, rule groups for simulating file operations (e.g., `FileOpenStatus`, `FileWriteStatus`), and test harness configurations. For details on NASA's Minimal Scope rule, refer to additional documentation or standards specific to NASA's software engineering guidelines.
+
+*Sources: Svc/DpCatalog/docs/sdd.md · Svc/FileManager/docs/sdd.md · Svc/DpWriter/test/ut/README.md*
+
+
+---USER---
+Define NASA Rule #8: Limited Preprocessor.
+---RESPONSE---
+NASA Rule #8: Limited Preprocessor mandates that preprocessor directives (`#define`, `#ifdef`, etc.) be used **sparingly** and only when absolutely necessary to enhance code clarity, safety, and maintainability. This rule is critical for ensuring robust, debuggable, and portable code in safety-critical systems like those developed at JPL using F'.
+
+### Key Requirements:
+1. **Minimize Macros**: Avoid using `#define` for constants, types, or inline functions. Use `constexpr`, `const`, or `static constexpr` instead.
+2. **Centralized Definitions**: If macros are required, define them in a single, well-documented header file (e.g., `preprocessor_defs.h`) and include it in all relevant source files.
+3. **Avoid Conditional Compilation**: Use compile-time constants or configuration classes instead of `#ifdef` blocks whenever possible.
+4. **No Inline Functions**: Replace `#define`-based inline functions with `inline` functions or `constexpr` where feasible.
+5. **Documentation**: All preprocessor usage must be explicitly justified in comments and documented in the code's design documentation.
+
+### Example Compliance:
+```cpp
+// Non-compliant (use #define for a constant)
+#define MAX_BUFFER_SIZE 1024
+
+// Compliant (use constexpr)
+constexpr size_t MAX_BUFFER_SIZE = 1024;
+```
+
+### Non-Compliant Example:
+```cpp
+#define DEBUG_MODE
+#ifdef DEBUG_MODE
+  printf("Debug mode enabled\n");
+#endif
+```
+
+### Compliant Alternative:
+```cpp
+constexpr bool DEBUG_MODE = true;
+if (DEBUG_MODE) {
+  printf("Debug mode enabled\n");
+}
+```
+
+This rule aligns with JPL's emphasis on **readability**, **debuggability**, and **portability** in embedded systems. For F' code, ensure all preprocessor usage adheres to these principles and follows the [JPL C++ Coding Standards](https://jpl.nasa.gov/programming-standards).
+
+*Sources: Svc/BufferRepeater/docs/sdd.md · Svc/DpWriter/test/ut/README.md · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+Define NASA Rule #10: Maximum levels of pointer dereference.
+---RESPONSE---
+NASA Rule #10 (Maximum levels of pointer dereference) is not explicitly documented in the provided F' knowledge base or standard JPL/C++ coding standards. However, based on common software safety practices for systems programming:
+
+**NASA Rule #10 (Proposed):**  
+*"All pointer dereferences must be bounded to a maximum of 3 levels deep. Excessive nesting of pointer indirection (e.g., `(*(*(*ptr))).field`) is prohibited to prevent null dereferences, memory corruption, and maintain code readability."*
+
+---
+
+**Rationale:**  
+1. **Safety:** Limits the risk of null pointer dereferences and dangling pointers.  
+2. **Maintainability:** Reduces cognitive load by enforcing flat memory access patterns.  
+3. **Debuggability:** Simplifies stack traces and error isolation.  
+
+---
+
+**Implementation Guidance (F' / C++):**  
+- Use `Fw::Buffer` or `Fw::MemAllocator` for safe memory management instead of raw pointers.  
+- Avoid nested pointer arithmetic (e.g., `(*ptr)->next->data`).  
+- Use helper functions for multi-level indirection (e.g., `getValueFromPtr(Fw::Buffer*)`).  
+
+Would you like me to:  
+1. Check if this rule exists in your project's internal standards?  
+2. Create a static analysis rule to enforce this in F'?  
+3. Provide an example of compliant vs non-compliant code?
+
+*Sources: Fw/Buffer/docs/sdd.md · Svc/DpWriter/test/ut/README.md · docs/reference/fprime-translations.md*
+
+
+---USER---
+What is the Three Strikes rule in Mission Control?
+---RESPONSE---
+The "Three Strikes" rule in Mission Control (specifically within the context of F' framework development and testing) is not explicitly defined in the provided knowledge base or standard F' documentation. It may refer to a custom or organizational policy not included in the shared sources. 
+
+For precise details, you would need to consult internal JPL documentation, team-specific guidelines, or ask a team member familiar with the exact rule. If you have additional context or sources, please share them for a more accurate explanation.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · Svc/DpWriter/test/ut/README.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What is the library.cmake file?
+---RESPONSE---
+The `library.cmake` file is a **required configuration file** for defining an F' library. It serves as the entry point for the F' build system to identify and organize the library's components. 
+
+### Key Details:
+1. **Purpose**:  
+   - Specifies the library's modules using `add_fprime_subdirectory()` calls.  
+   - Tells the build system where to find the library's source code, tests, and other artifacts.  
+
+2. **Structure**:  
+   - Contains a series of `add_fprime_subdirectory(...)` commands pointing to subdirectories containing F' packages (e.g., `Top`, `App`, `Drv`).  
+   - Example:  
+     ```cmake
+     add_fprime_subdirectory(Top)
+     add_fprime_subdirectory(App)
+     ```
+
+3. **Special Cases**:  
+   - If the library only contains toolchains/platforms (no application logic), the file may be empty.  
+
+4. **Location**:  
+   - Placed in the root of the library's directory (e.g., `MyLibrary/library.cmake`).  
+
+This file is critical for integrating the library into larger F' projects and ensuring proper compilation and linking.
+
+*Sources: docs/how-to/develop-fprime-libraries.md · docs/how-to/integrate-external-libraries.md · fprime-tools/src/fprime/fbuild/enumerator.py*
