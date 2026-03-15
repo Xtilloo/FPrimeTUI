@@ -815,3 +815,151 @@ What is the FW_TASK_PRIORITY_BUFFER_SIZE macro used for?
 The provided knowledge base does not mention the `FW_TASK_PRIORITY_BUFFER_SIZE` macro or its usage. The sources cover topics like asserts, data structures (Arrays, Stacks), port classes, and object registries in the F' framework, but none reference this specific macro. To answer this question accurately, additional documentation or context about this macro would be required.
 
 *Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+What is the FW_TASK_AFFINITY_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not mention the `FW_TASK_AFFINITY_BUFFER_SIZE` macro or its usage. The sources cover topics like asserts, data structures (Arrays, Stacks), port systems, and object registries, but none reference task affinity buffer sizes. For details on this macro, consult F' configuration headers (e.g., `FpConfig.hpp`) or JPL-specific task scheduling documentation outside the provided context.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'OverrunIn' port.
+---RESPONSE---
+The provided knowledge base does not contain any information about an `OverrunIn` port in the `Svc::ActiveRateGroup` component. The sources listed for `ActiveRateGroup.fpp` only describe the following ports:
+
+- `CycleIn` (async input port for rate group cycle)
+- `RateGroupMemberOut` (output port for scheduler signals)
+- `PingIn` (async input port for health checks)
+- `PingOut` (output port for health checks)
+
+If `OverrunIn` is part of a different component or a newer version of the code not included in the provided context, please provide additional details or verify the component's definition in other files.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::TimePort` is used to pass **time stamps** throughout the system, enabling synchronization and timing-related operations. Its primary purposes include:
+
+1. **Telemetry and Events**: Transmitting time stamps for telemetry data and events to track when specific actions or measurements occurred.
+2. **Time Context Management**: Carrying the `Fw::Time` object, which encapsulates the time base, time context, seconds, and microseconds portions of a timestamp (as defined by the `FPP TimeValue` data structure).
+3. **System Synchronization**: Facilitating coordinated timing across components, critical for real-time systems and deterministic behavior.
+
+This port is distinct from `Fw::Log` (for event logging) and `Fw::Tlm` (for telemetry data), as it focuses specifically on time stamp propagation.
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::upperCase() used in F´ tests?
+---RESPONSE---
+The provided knowledge base does not explicitly detail the usage of `STest::Random::upperCase()` in F' tests. However, based on general F' testing practices and the role of `STest::Random` utilities, this function likely generates a random uppercase character (e.g., 'A'–'Z') for use in test cases requiring randomized input validation.
+
+For precise usage examples, you would need to:
+1. Locate test files in your F' project (e.g., `Tests/` directories).
+2. Search for instances of `STest::Random::upperCase()` in test cases.
+3. Refer to the [F' User Manual's Testing chapter](https://github.com/nasa/fprime/blob/main/docs/user-manual/index.md) (if available) for framework-specific guidance.
+
+Would you like me to search your project files for references to `STest::Random::upperCase()`?
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/index.md*
+
+
+---USER---
+Describe the MultiString serializable in FPP tests.
+---RESPONSE---
+The provided knowledge base does not explicitly mention a serializable type named `MultiString` in the context of FPP tests. However, based on F' serializable patterns (e.g., `ConstStringBase` in `Fw/Types/ConstStringBase.hpp`), we can infer that `MultiString` would likely be a custom serializable type designed to handle multiple strings. 
+
+If `MultiString` exists in your project, it would likely:
+1. Extend `Fw::Serializable` or a similar base class.
+2. Use `ConstStringBase` or similar types to manage individual strings.
+3. Implement serialization/deserialization logic to handle multiple strings, possibly with size metadata.
+
+To provide a precise description, please share the relevant FPP or C++ code for `MultiString` (e.g., via `read_file` tool). Without direct access to its definition, this explanation is based on standard F' serializable patterns.
+
+*Sources: docs/how-to/test-driven-development.md · Svc/CmdSequencer/docs/AMPCSSequence.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/Types/ConstStringBase.hpp · docs/user-manual/gds/gds-dev-guide.md*
+
+
+---USER---
+What are the stopTasks and freeThreads phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `stopTasks` and `freeThreads` phases are enumerated in the `Fpp::ToCpp::Phases` enum and are part of the lifecycle management framework for components in F'. Here's what they represent based on their placement in the phase sequence:
+
+1. **stopTasks**  
+   This phase is executed during the termination phase of a component's lifecycle. It is responsible for gracefully stopping all active tasks associated with the component, ensuring proper cleanup and resource release before the component is deinitialized.
+
+2. **freeThreads**  
+   This phase occurs after `stopTasks` and is dedicated to freeing up any threads or thread resources allocated to the component. It ensures that thread pools or worker threads associated with the component are properly released, preventing resource leaks.
+
+These phases are part of the broader init specifier pattern, where each component instance defines its own configuration and lifecycle steps. For detailed usage, refer to the [F' phase documentation](https://nasa.github.io/fpp/fpp-users-guide.html#Defining-Component-Instances_Init-Specifiers).
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · Os/IntervalTimer.hpp*
+
+
+---USER---
+Describe the VMIN=0 and VTIME=10 configuration in LinuxUartDriver.
+---RESPONSE---
+The provided sources do not explicitly mention the `VMIN=0` and `VTIME=10` configuration parameters for the `LinuxUartDriver`. The example code in the tutorial focuses on configuring baud rate, flow control, parity, and buffer size (e.g., `1024` as a buffer size), but does not detail how `VMIN` or `VTIME` (which are Linux `termios` settings for UART non-blocking behavior) are handled by the driver.
+
+To determine how these parameters are configured in the `LinuxUartDriver`, you would need to:
+1. Inspect the driver's implementation code (e.g., `LinuxUartDriver.cpp` or related files).
+2. Check if the driver's `open()` method or configuration API allows setting `VMIN` and `VTIME` via additional arguments or a separate configuration interface.
+
+For now, the sources only show how to open the UART device and configure basic parameters, not the non-blocking read settings.
+
+*Sources: docs/how-to/implement-radio-manager.md · Drv/LinuxUartDriver/LinuxUartDriver.fpp · docs/how-to/develop-device-driver.md · docs/how-to/implement-radio-manager.md · Fw/Types/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the m_driverIsReady flag in buffer adapters?
+---RESPONSE---
+The `m_driverIsReady` flag in buffer adapters is used to track the readiness state of the underlying byte stream driver. Its primary purposes are:
+
+1. **Synchronization**: Ensures the adapter only initiates data transmission/reception when the driver is explicitly signaled as ready via the `ByteStreamReady` port. This prevents operations when the driver is not prepared to handle data.
+
+2. **Error Prevention**: Prevents attempts to send data through the synchronous `$send` port or asynchronous `$send` port until the driver confirms it is operational. This avoids errors like `RECV_NO_DATA` or `SEND_RETRY` due to premature operations.
+
+3. **State Management**: Coordinates with the `Ready` port semantics from `Fw::Ready`, ensuring the adapter adheres to the protocol requirement that drivers must be explicitly marked as ready before being used.
+
+This flag is critical for adhering to the communication adapter protocol and ensuring robust error handling as outlined in the best practices.
+
+*Sources: Drv/Interfaces/ByteStreamDriver.fpp · Drv/Interfaces/AsyncByteStreamDriver.fpp · Fw/Ports/Ready/Ready.fpp · docs/how-to/implement-radio-manager.md · Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp*
+
+
+---USER---
+Define Drv::ByteStreamStatus::SEND_RETRY.
+---RESPONSE---
+The `Drv::ByteStreamStatus::SEND_RETRY` enumeration value is defined in the `ByteStreamDriverModel.fpp` file. According to the source:
+
+```
+enum ByteStreamStatus : U8 {
+    OP_OK         @< Operation worked as expected
+    SEND_RETRY    @< Data send should be retried
+    RECV_NO_DATA  @< Receive worked, but there was no data 
+    OTHER_ERROR   @< Error occurred, retrying may succeed
+}
+```
+
+**Definition**:  
+`SEND_RETRY` is a status code indicating that a data send operation should be retried. It is part of the `ByteStreamStatus` enum used in the `Drv` module to report the result of send operations via the `ByteStreamSend` port. This status is explicitly documented in the [ByteStreamDriverModel.fpp](https://github.com/nasa/fprime/blob/devel/Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp) source file.
+
+*Sources: Svc/CmdSplitter/docs/sdd.md · Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp · docs/user-manual/framework/ground-interface.md · Svc/ComQueue/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How does TcpClientSocket handle failed connections?
+---RESPONSE---
+The `Drv::TcpClientSocket` handles failed connections through the inherent reliability of TCP protocol mechanisms. As described in the documentation, TCP communications acknowledge transmissions, meaning the remote server confirms receipt of data. If a packet is dropped (e.g., due to network issues), the TCP stack will detect this and return an error to the client. 
+
+Key points from the documentation:
+1. **Error on Packet Drops**: Dropped packets cause errors, which are propagated to the client (e.g., via exceptions or error codes in F').
+2. **Connection Establishment**: The `open()` method for `Drv::TcpClientSocket` would likely block until a connection is established or an error occurs.
+3. **Error Handling**: While the documentation does not specify exact error codes or recovery mechanisms, F' components typically use standard C++ error handling (e.g., `std::system_error` or custom exceptions) to report such failures.
+
+For precise implementation details (e.g., timeout handling, retries), you would need to inspect the `Drv::TcpClientSocket` source code or consult additional F' framework documentation. Would you like me to locate the source file for further analysis?
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Fw/Ports/SuccessCondition/SuccessCondition.fpp · Drv/Ip/docs/sdd.md*
