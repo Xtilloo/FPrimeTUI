@@ -110,6 +110,20 @@ def get_source_category_boost(source_file: str) -> float:
     return _SOURCE_CATEGORY_BOOSTS.get(category, 1.0)
 
 
+# Content-type boost — matches chunk content_type to query_type.
+_CONTENT_TYPE_BOOSTS: dict[str, dict[str, float]] = {
+    "code_seeking": {"code": 1.2, "reference": 1.2},
+    "concept_seeking": {"concept": 1.2, "tutorial": 1.2},
+    "comparison": {"concept": 1.1, "reference": 1.1},
+}
+
+
+def get_content_type_boost(content_type: str, query_type: str) -> float:
+    """Return boost multiplier for a content_type given the query_type."""
+    boosts = _CONTENT_TYPE_BOOSTS.get(query_type, {})
+    return boosts.get(content_type, 1.0)
+
+
 def keyword_score(chunk_text: str, keywords: list[str]) -> float:
     """Return the fraction of keywords present in chunk_text (0.0–1.0)."""
     if not keywords:

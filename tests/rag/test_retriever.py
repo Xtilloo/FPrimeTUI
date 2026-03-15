@@ -2,6 +2,7 @@
 from rag.retriever import (
     extract_keywords,
     format_context,
+    get_content_type_boost,
     get_source_category,
     get_source_category_boost,
     keyword_score,
@@ -153,3 +154,37 @@ def test_source_category_boost_framework_core_highest():
 def test_source_category_boost_test_projects_below_neutral():
     test_boost = get_source_category_boost("FppTestProject/README.md")
     assert test_boost < 1.0
+
+
+def test_content_type_boost_code_for_code_seeking():
+    assert get_content_type_boost("code", "code_seeking") == 1.2
+
+
+def test_content_type_boost_concept_for_code_seeking():
+    # concept chunks are not boosted for code queries
+    assert get_content_type_boost("concept", "code_seeking") == 1.0
+
+
+def test_content_type_boost_concept_for_concept_seeking():
+    assert get_content_type_boost("concept", "concept_seeking") == 1.2
+
+
+def test_content_type_boost_tutorial_for_concept_seeking():
+    assert get_content_type_boost("tutorial", "concept_seeking") == 1.2
+
+
+def test_content_type_boost_reference_for_comparison():
+    assert get_content_type_boost("reference", "comparison") == 1.1
+
+
+def test_content_type_boost_general_query_no_boost():
+    assert get_content_type_boost("code", "general") == 1.0
+    assert get_content_type_boost("concept", "general") == 1.0
+
+
+def test_content_type_boost_file_specific_no_boost():
+    assert get_content_type_boost("code", "file_specific") == 1.0
+
+
+def test_content_type_boost_component_specific_no_boost():
+    assert get_content_type_boost("code", "component_specific") == 1.0
