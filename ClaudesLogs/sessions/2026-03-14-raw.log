@@ -1456,3 +1456,471 @@ Where `k` is a constant (e.g., 60), and `rank` is the position of the result in 
 This is critical for systems requiring robust, multi-source information retrieval, such as mission-critical applications at NASA JPL.
 
 *Sources: docs/user-manual/design-patterns/subtopologies.md · docs/user-manual/overview/development-practice.md · docs/how-to/integrate-external-libraries.md*
+
+
+---USER---
+List and define the 7 F´ Event Severities.
+---RESPONSE---
+The F' framework defines **seven event severities** to categorize the importance and urgency of events logged by the Event Data Recorder (EDR). These severities are standardized across F' projects and are used to filter and prioritize events. Here are the seven severities and their definitions:
+
+1. **Debug**  
+   - **Description**: Low-priority information used for detailed debugging during development. Typically not enabled in production.  
+
+2. **Information**  
+   - **Description**: General operational status updates, useful for monitoring system behavior without indicating issues.  
+
+3. **Warning**  
+   - **Description**: Indicates a potential problem that may affect functionality but does not immediately compromise system operation.  
+
+4. **Error**  
+   - **Description**: Signals a failure that impacts system operation but does not necessarily halt the system.  
+
+5. **Critical**  
+   - **Description**: Severe failure that requires immediate attention to prevent further damage or system instability.  
+
+6. **Fatal**  
+   - **Description**: Critical error that causes the system to terminate or enter a non-operational state.  
+
+7. **Maybe**  
+   - **Description**: Indicates uncertainty or a potential issue that may or may not require action. Used for ambiguous conditions (e.g., "maybe a fault occurred").  
+
+These severities are part of the `EventSeverity` enum in F' and are used in event definitions (`.fpp` files) to specify the severity of each event. The exact behavior (e.g., logging thresholds) may vary based on the project's configuration.
+
+*Sources: Svc/ActiveTextLogger/docs/sdd.md · docs/user-manual/gds/gds-test-api-guide.md · Svc/FileManager/docs/sdd.md*
+
+
+---USER---
+What are the three default ports used by the F´ GDS?
+---RESPONSE---
+The F' Ground Data System (GDS) does not have a predefined set of "three default ports" in its core architecture. Port configurations in F' are typically determined by the communication plugins (e.g., `IpAdapter` for TCP/IP) and their associated settings. For example:
+
+1. **TCP Communication**: Defaults to port `80` (HTTP) or `443` (HTTPS), depending on the plugin configuration.
+2. **Serial/UART**: Uses hardware-specific port numbers (e.g., `/dev/ttyUSB0` on Linux), which are not "default" in the software sense.
+3. **Custom Radio Links**: Port numbers are defined by the mission-specific communication adapter implementations.
+
+The exact ports depend on the plugin and runtime configuration. For precise values, inspect the plugin's implementation or configuration files (e.g., `IpAdapter` settings in `fprime-gds`). 
+
+If you're referring to a specific mission's GDS setup, consult its documentation or source code for port definitions.
+
+*Sources: Svc/ComStub/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/reference/gds-plugins/communications.md*
+
+
+---USER---
+How do you enable "Port Tracing" in F´?
+---RESPONSE---
+To enable "Port Tracing" in F', you typically use the `--enable-port-tracing` flag during the build process. Here's how to do it:
+
+
+
+> *[Running fprime-util build... (PENDING)]*The error indicates that the Python virtual environment (venv) required by F' is not properly initialized. To resolve this:
+
+1. **Create the venv** in your project root directory:
+   ```bash
+   python -m venv venv
+   ```
+
+2. **Activate the venv**:
+   - On macOS/Linux:
+     ```bash
+     source venv/bin/activate
+     ```
+   - On Windows:
+     ```bash
+     venv\Scripts\activate
+     ```
+
+3. **Retry the build command** with port tracing enabled:
+   
+
+> *[Running fprime-util build... (PENDING)]*To resolve the "venv not found" error, follow these steps carefully:
+
+---
+
+### **1. Create the Python Virtual Environment (venv)**
+Ensure you are in your project root directory (where `Top` and `fprime` directories are located). Run:
+```bash
+python -m venv venv
+```
+
+---
+
+### **2. Activate the Virtual Environment**
+- **macOS/Linux**:
+  ```bash
+  source venv/bin/activate
+  ```
+- **Windows**:
+  ```bash
+  venv\Scripts\activate
+  ```
+
+Verify activation by checking the terminal prompt (it should show `(venv)`).
+
+---
+
+### **3. Install F' Dependencies**
+Ensure F' is installed in the venv:
+```bash
+pip install fprime
+```
+
+---
+
+### **4. Retry the Build Command**
+Now run the build with port tracing enabled:
+
+
+> *[Running fprime-util build... (PENDING)]*To resolve the "venv not found" error definitively, follow this **step-by-step guide** with precise actions:
+
+---
+
+### **Step 1: Navigate to Project Root Directory**
+Ensure you are in the directory containing `Top/` and `fprime/` (the root of your F' project). For example:
+```bash
+cd /path/to/your/fprime/project
+```
+Verify your location:
+```bash
+ls
+```
+You should see `Top/` and `fprime/` directories.
+
+---
+
+### **Step 2: Create the Virtual Environment**
+Run this command **exactly**:
+```bash
+python -m venv venv
+```
+This creates a `venv/` folder in your project root.
+
+---
+
+### **Step 3: Activate the Virtual Environment**
+- **macOS/Linux**:
+  ```bash
+  source venv/bin/activate
+  ```
+- **Windows**:
+  ```bash
+  venv\Scripts\activate
+  ```
+Check activation by looking for `(venv)` in your terminal prompt.
+
+---
+
+### **Step 4: Install F' Dependencies**
+Install F' in the activated venv:
+```bash
+pip install fprime
+```
+This ensures all tools are available in the isolated environment.
+
+---
+
+### **Step 5: Retry the Build Command**
+Now run the build with port tracing:
+
+
+> *[Running fprime-util build... (PENDING)]*To definitively resolve the "venv not found" error, let's **diagnose and fix** the issue step-by-step with precise actions:
+
+---
+
+### **Step 1: Verify Current Directory**
+Run these commands to confirm your location:
+```bash
+pwd
+ls
+```
+- The first command shows your current working directory.
+- The second lists the files/folders in that directory.
+
+**Expected Output**:
+```
+/path/to/your/fprime/project
+Top/  fprime/  CMakeLists.txt  ...
+```
+If you don't see `Top/` and `fprime/`, you're not in the project root.
+
+---
+
+### **Step 2: Create the `venv` Folder (If Missing)**
+If `venv/` is missing, create it **exactly**:
+```bash
+python -m venv venv
+```
+This creates a subdirectory named `venv` in your current location.
+
+---
+
+### **Step 3: Activate the Virtual Environment**
+After creating `venv`, activate it:
+- **macOS/Linux**:
+  ```bash
+  source venv/bin/activate
+  ```
+- **Windows**:
+  ```bash
+  venv\Scripts\activate
+  ```
+Your terminal prompt should now show `(venv)`.
+
+---
+
+### **Step 4: Install F' Dependencies**
+Install F' in the activated environment:
+```bash
+pip install fprime
+```
+This ensures all tools are available in the isolated environment.
+
+---
+
+### **Step 5: Retry the Build Command**
+Now run the build with port tracing:
+
+
+> *[Running fprime-util build... (PENDING)]*
+
+**[SYSTEM]: Maximum depth reached.**
+
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · FppTestProject/FppTest/component/README.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+Explain the Manager/Worker pattern in F´.
+---RESPONSE---
+The **Manager/Worker pattern** in F' is a design pattern used to decouple task orchestration from execution, enabling modular, scalable, and reusable component architectures. Here's a breakdown:
+
+---
+
+### **Key Concepts**
+1. **Manager Component**  
+   - Acts as a **controller** or **orchestrator**.  
+   - Issues commands (e.g., `startWorker`, `cancelWorker`) to initiate or terminate tasks.  
+   - Manages task scheduling, prioritization, or resource allocation.  
+
+2. **Worker Component**  
+   - Executes specific tasks or processes.  
+   - Responds to commands from the Manager (e.g., `startWork`, `cancelWork`).  
+   - May handle data processing, I/O, or computations.  
+
+3. **Subtopology**  
+   - A logical grouping of components (Manager + Worker) with defined **port connections**.  
+   - Ensures message passing between components (e.g., `manager.startWorker -> worker.startWork`).  
+
+4. **Ports and Message Passing**  
+   - Components communicate via **ports** (e.g., `startWorker` port on Manager, `startWork` port on Worker).  
+   - Messages are routed through the subtopology's connection definitions.  
+
+---
+
+### **Example: ManagerWorker Subtopology**
+```python
+topology Subtopology {
+    instance manager
+    instance worker
+
+    connections ManagerWorker {
+        manager.startWorker -> worker.startWork
+        manager.cancelWorker -> worker.cancelWork
+        worker.workComplete -> manager.workComplete
+    }
+}
+```
+- **Manager** sends `startWorker` to trigger the Worker.  
+- **Worker** sends `workComplete` back to notify the Manager.  
+- This creates a bidirectional flow of control.  
+
+---
+
+### **Configuration Parameters**
+- **Base IDs**: Unique identifiers for components (e.g., `ManagerWorkerSubtopologyConfig.ManagerWorkerSubtopology_BASE_ID`).  
+- **Queue/Stack Sizes**: Define resource allocation for each component.  
+- **Priorities**: Set scheduling priorities for real-time responsiveness.  
+
+---
+
+### **Benefits**
+- **Modularity**: Manager and Worker can be developed, tested, and deployed independently.  
+- **Scalability**: Easily extend to multiple Workers (e.g., a pool of workers handling tasks).  
+- **Reusability**: Worker logic can be reused across different Managers.  
+
+---
+
+### **Use Cases**
+- Task scheduling in embedded systems.  
+- Data processing pipelines.  
+- Distributed systems with centralized coordination.  
+
+For deeper insights, refer to the [ManagerWorker example](https://github.com/nasa/fprime-examples/tree/devel/FlightExamples/ManagerWorker) in the F' repository.
+
+*Sources: Fw/Prm/docs/sdd.md · docs/user-manual/design-patterns/subtopologies.md · Svc/Ports/FilePorts/docs/sdd.md*
+
+
+---USER---
+What is the Fw.Signal port type in F´?
+---RESPONSE---
+The `Fw::Signal` port type in F' is a simple signal port used to indicate the occurrence of a condition or event. It is defined in the `Fw/Ports/Signal/Signal.fpp` file and has the following characteristics:
+
+```cpp
+module Fw {
+    @ Port to signal some condition
+    port Signal()
+}
+```
+
+This port has no arguments (parameters) and is typically used for signaling purposes in embedded systems, such as indicating the completion of a task or the occurrence of a specific event. Its usage aligns with the "signal" pattern in F' for lightweight, condition-based communication.
+
+*Sources: Fw/Ports/Signal/Signal.fpp · Svc/Fatal/docs/sdd.md · Svc/Ports/TlmPacketizerPorts/sdd.md*
+
+
+---USER---
+How do you cross-compile F´ for an ARM architecture?
+---RESPONSE---
+To cross-compile F' for an ARM architecture, follow these steps:
+
+### 1. **Install Cross-Compiler Tools**
+   - **Windows 10/11 WSL**: Install WSL and Ubuntu via `wsl --install`.
+   - **macOS/Linux**: Use package managers (e.g., `brew`, `apt`, `yum`) to install ARM cross-compilers (e.g., `aarch64-linux-gnu-gcc` for 64-bit, `armhf-linux-gnueabi-gcc` for 32-bit).
+
+### 2. **Set Environment Variable**
+   Export the path to your ARM cross-compiler tools:
+   ```bash
+   export ARM_TOOLS_PATH=/opt/toolchains  # Update this path based on your installation
+   ```
+
+### 3. **Build for ARM**
+   Use the `run_fprime_command` tool with the target platform:
+   - **64-bit ARM (aarch64-linux)**:
+     ```bash
+     run_fprime_command build --platform aarch64-linux
+     ```
+   - **32-bit ARM (arm-hf-linux)**:
+     ```bash
+     run_fprime_command build --platform arm-hf-linux
+     ```
+
+### 4. **Generate for Target**
+   Ensure you generate code for each target platform separately:
+   ```bash
+   run_fprime_command generate --platform aarch64-linux
+   ```
+
+### Notes:
+- Verify `ARM_TOOLS_PATH` is correctly set with `echo $ARM_TOOLS_PATH`.
+- Cross-compilation requires the target toolchain to be installed locally.
+
+*Sources: docs/tutorials/cross-compilation.md · docs/tutorials/index.md · docs/tutorials/cross-compilation.md*
+
+
+---USER---
+What is the purpose of Os::Mutex in F´?
+---RESPONSE---
+The `Os::Mutex` in F' is a **thread synchronization primitive** designed to enforce mutual exclusion, ensuring that only one thread or process can access a critical resource or section of code at a time. This prevents race conditions and maintains data consistency in concurrent environments.
+
+### Key Purposes:
+1. **Thread Safety**: Protects shared resources (e.g., data structures, hardware registers) from simultaneous access by multiple threads.
+2. **Deadlock Prevention**: The `MutexStatus` enum includes `ERROR_DEADLOCK` to handle cases where a thread attempts to acquire a mutex it already owns.
+3. **Error Handling**: Provides status codes (e.g., `ERROR_BUSY`, `NOT_SUPPORTED`) to indicate the result of mutex operations, enabling robust error recovery.
+
+### Example Use Case:
+In a multi-threaded F' component, `Os::Mutex` would safeguard access to a shared buffer or sensor data, ensuring safe concurrent execution. The `MutexStatus` enum helps developers diagnose issues like busy waits or unsupported operations.
+
+*Sources: Svc/ComQueue/docs/sdd.md · Os/Models/Mutex.fpp · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How does fprime-seqgen handle absolute vs. relative time in sequence files?
+---RESPONSE---
+F' sequence files (`.seq`) use **absolute** and **relative** time formats as specified in the F' User Manual. Here's how `fprime-seqgen` handles them:
+
+---
+
+### **Absolute Time**
+- **Format**: `A` + ISO 8601 ordinal datetime  
+  Example: `A2015-075T22:32:40.123`  
+  - `2015` = Year  
+  - `075` = Day of year (75th day of 2015)  
+  - `T22:32:40.123` = Time in HH:MM:SS.sss format  
+
+- **Behavior**:  
+  - The sequence assumes the spacecraft's time base (e.g., `TB_SC_TIME`) matches the time in the sequence.  
+  - If the flight software's time base differs (e.g., `TB_UNIX_TIME`), the sequence will **not execute** to avoid unsafe operations.  
+
+---
+
+### **Relative Time**
+- **Format**: `R` + ISO 8601 duration  
+  Example: `R01:00:01.050`  
+  - Time is relative to the previous command or sequence start.  
+  - Cannot exceed 24 hours (per F' constraints).  
+
+- **Behavior**:  
+  - Automatically adjusts based on the sequence's execution timeline.  
+  - No dependency on external time synchronization.  
+
+---
+
+### **Key Considerations**
+1. **Time Bases**:  
+   - Sequences can specify an expected time base (e.g., `TB_SC_TIME`). If the flight software's time base mismatches, the sequence is rejected.  
+   - Use `fprime-seqgen`'s `--time-base` flag to enforce this.  
+
+2. **Safety**:  
+   - Absolute times require strict synchronization with the spacecraft's clock. Use them only when time sources are reliable.  
+   - Relative times are safer for sequences that do not depend on external time references.  
+
+3. **Validation**:  
+   - `fprime-seqgen` validates time formats during sequence generation. Invalid times (e.g., malformed ISO formats) will fail compilation.  
+
+For detailed syntax rules, refer to the [F' User Manual](https://github.com/fprime-community/fprime-gds/blob/devel/docs/user-manual/gds/seqgen.md).
+
+*Sources: docs/user-manual/gds/seqgen.md · docs/user-manual/gds/seqgen.md · Svc/CmdSequencer/docs/AMPCSSequence.md*
+
+
+---USER---
+What are Internal Interfaces in an F´ component?
+---RESPONSE---
+Internal interfaces in an F' component are mechanisms that allow the component to communicate with other components or systems within the framework. When an internal interface is defined in a component's FPP (F Prime Protocol) file, the framework automatically generates two key functions:
+
+1. **`<internal_interface_name>_internalInterfaceInvoke(arg_list)`**  
+   This function is used by implementation code to dispatch a message to the internal interface. It handles the low-level logic of sending the message through the framework's message loop.
+
+2. **`<internal_interface_name>_internalInterfaceHandler(arg_list)`**  
+   This is a **pure virtual function** that must be implemented by the component. It defines the logic for processing messages received via the internal interface. The handler is called when the corresponding message is dispatched.
+
+### Purpose
+Internal interfaces enable components to exchange data or trigger actions internally (e.g., between components in a system) while adhering to the F' framework's structured communication model. The generated functions abstract the message-passing details, requiring developers to focus on implementing the business logic in the handler.
+
+*Sources: Svc/FileManager/docs/sdd.md · docs/user-manual/framework/autocoded-functions.md · Svc/ComLogger/README.md*
+
+
+---USER---
+Describe the FW_OBJECT_NAMES configuration setting in F´.
+---RESPONSE---
+The `FW_OBJECT_NAMES` configuration setting in F' controls the naming convention for generated C++ classes representing objects in the system. This setting allows users to customize the base name used for object classes, which is particularly useful when distinguishing between multiple instances of the same class in complex systems.
+
+### Key Details:
+1. **Default Value**:  
+   The default value is `"Object"` (e.g., `Object0`, `Object1` for multiple instances).
+
+2. **Customization**:  
+   You can override this by defining `FW_OBJECT_NAMES` in `FpConfig.hpp` or component-specific `<component>Cfg.hpp` files. For example:
+   ```cpp
+   #define FW_OBJECT_NAMES "MyObject"
+   ```
+   This would generate class names like `MyObject0`, `MyObject1`, etc.
+
+3. **Impact**:  
+   - Affects the readability of generated C++ code.
+   - Influences how objects are referenced in the system, especially in multi-instance scenarios.
+   - Must align with naming conventions in the target platform (e.g., RTOS, OS).
+
+4. **Configuration Location**:  
+   Defined in `FpConfig.hpp` (top-level) or component-specific configuration files (e.g., `MyComponentCfg.hpp`).
+
+For deeper details, refer to the [FpConfig.hpp](#fpconfigh) section in the F' user manual.
+
+*Sources: docs/user-manual/framework/configuring-fprime.md · docs/user-manual/framework/configuring-fprime.md · docs/user-manual/framework/configuring-fprime.md*
