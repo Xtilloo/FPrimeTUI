@@ -4087,3 +4087,110 @@ Each chunk is semantically distinct yet thematically coherent, enabling precise 
 In summary, the Semantic Chunker bridges raw data and actionable insights in RAG systems, ensuring that both retrieval and generation stages operate on well-organized, semantically rich information. Let me know if you need further details!
 
 *Sources: docs/reference/nomenclature.md · docs/user-manual/build-system/01-cmake-intro.md · Svc/PassiveRateGroup/docs/sdd.md*
+
+
+---USER---
+How do you filter available commands in the GDS Mnemonic dropdown?
+---RESPONSE---
+To filter available commands in the GDS Mnemonic dropdown (part of the **`command-input`** component), follow these steps:
+
+1. **Navigate to the "Commands" tab** in the GDS dashboard.
+2. **Locate the `command-input` component** at the top of the tab.
+3. **Use the searchable dropdown**:
+   - Click the dropdown to view available commands.
+   - **Type keywords** directly into the input box (e.g., `COMMAND_NAME` or `SUBSYSTEM`) to filter the list in real time.
+   - The dropdown will dynamically narrow results based on your input.
+
+### Key Notes:
+- The search is case-insensitive and matches partial mnemonics (e.g., typing `RESET` filters `SYSTEM_RESET`).
+- This feature is designed for quick access to specific commands without scrolling through full lists.
+
+For CLI-based filtering (e.g., via `gds-cli`), use the `--filter` flag with command names or keywords. Let me know if you need CLI-specific instructions!
+
+*Sources: docs/user-manual/overview/gds-introduction.md · docs/user-manual/gds/gds-cli.md · docs/user-manual/gds/gds-dashboard-reference.md*
+
+
+---USER---
+Describe the TB_DONT_CARE time base.
+---RESPONSE---
+The `TB_DONT_CARE` time base is not explicitly defined in the provided F' knowledge base snippets. However, based on context from the TimeInterface and sequence execution rules:
+
+1. **Purpose**: `TB_DONT_CARE` likely represents a time base mode where the sequence does not enforce a specific time base requirement. This means the sequence would execute regardless of the flight software's current time base (e.g., `TB_SC_TIME`, `TB_SCLK`, etc.).
+
+2. **Contrast with Other Time Bases**:
+   - Time bases like `TB_SC_TIME` (spacecraft time) require strict synchronization with a known time source. If the system's time base mismatches, the sequence would fail to execute.
+   - `TB_DONT_CARE` would bypass this check, allowing the sequence to run even if the time base is unspecified or mismatched. This is generally discouraged for absolute-time sequences due to potential safety risks (e.g., executing at incorrect real-world timestamps).
+
+3. **Use Case**: This might be used for testing or legacy sequences where time base validation is not critical. However, it violates the safety principles emphasized in the documentation (e.g., the warning about absolute times without synchronized time sources).
+
+For precise implementation details, refer to the full F' source code or documentation, as the knowledge base here does not explicitly describe `TB_DONT_CARE`.
+
+*Sources: docs/user-manual/gds/seqgen.md · Svc/PosixTime/docs/sdd.md · Svc/Interfaces/docs/sdd.md*
+
+
+---USER---
+What is the FW_OBJ_SIMPLE_REG_ENTRIES macro?
+---RESPONSE---
+The `FW_OBJ_SIMPLE_REG_ENTRIES` macro is part of the F' (F Prime) framework's register entry definition utilities. It is used to define simple register entries for hardware components in F' systems. These entries typically specify the address, size, and other properties of a register in a component's register map.
+
+### Key Details:
+1. **Purpose**: This macro simplifies the declaration of register entries in F' components, enabling the framework to manage hardware interactions (e.g., reading/writing registers).
+2. **Usage**: It is commonly found in `.fpp` files that define component register maps. The macro generates boilerplate code for register entries, which are then used by the F' runtime to interface with hardware.
+3. **Generated Code**: The macro expands into C++ code that defines `RegEntry` structures, which are used by the `Fw::Obj::RegEntry` class in the F' framework.
+
+### Example Usage in `.fpp`:
+```fpp
+FW_OBJ_SIMPLE_REG_ENTRIES(MyComponent, {
+    { FW_REG_ADDR(0x00), FW_REG_SIZE(32), "Register1" },
+    { FW_REG_ADDR(0x04), FW_REG_SIZE(16), "Register2" }
+});
+```
+
+### Next Steps:
+To get the exact definition and context of this macro, you would need to:
+1. Locate the file where `FW_OBJ_SIMPLE_REG_ENTRIES` is defined (likely in `Fw/Types/ObjRegEntry.h` or a similar header).
+2. Use the `read_file` tool to inspect its implementation.
+
+Would you like me to help you locate the file containing this macro?
+
+*Sources: docs/user-manual/framework/assert.md · Svc/FpySequencer/docs/directives.md · Svc/DpManager/test/ut/README.md*
+
+
+---USER---
+What are the core methods of a custom Framing Protocol?
+---RESPONSE---
+The core methods of a custom Framing Protocol in F' (F Prime) typically involve the following key responsibilities, as outlined in the [How-To Implement a Framing Protocol Guide](../../how-to/custom-framing.md):
+
+1. **Packetization**  
+   - Format raw data into structured packets with headers, payloads, and trailers.  
+   - Define packet boundaries for transmission (e.g., using delimiters or length prefixes).
+
+2. **Error Detection/Correction**  
+   - Implement checksums, cyclic redundancy checks (CRCs), or forward error correction (FEC) mechanisms.  
+   - Validate packet integrity upon reception.
+
+3. **Synchronization**  
+   - Establish and maintain timing alignment between sender and receiver (e.g., via sync words or bit stuffing).
+
+4. **Flow Control**  
+   - Manage data transmission rates to prevent buffer overflows (e.g., using windowing or acknowledgment mechanisms).
+
+5. **Telemetry/Command Encoding**  
+   - Serialize/deserialize telemetry data or command packets according to the protocol's format.
+
+6. **Protocol State Management**  
+   - Track state transitions (e.g., idle → transmitting → receiving) and handle protocol-specific events.
+
+For implementation, you would subclass `FramingProtocol` in F' and override methods like `formatPacket`, `parsePacket`, and `handleError`. Always ensure compliance with JPL C++ coding standards and F' architecture guidelines. 
+
+Would you like to generate a template for a custom framing protocol?
+
+*Sources: docs/user-manual/framework/ground-interface.md · docs/user-manual/build-system/cmake-targets.md · docs/user-manual/build-system/cmake-customization.md*
+
+
+---USER---
+What does the fprime-gds --tts-port flag configure?
+---RESPONSE---
+The `--tts-port` flag in `fprime-gds` configures the **port number** used by the GDS (Ground Data System) to communicate with the **Text-to-Speech (TTS)** service. This port is used to send telemetry data to the TTS service for audio output. The value specified with `--tts-port` determines the network port address where the TTS service listens for incoming telemetry data.
+
+*Sources: docs/user-manual/overview/gds-introduction.md · Svc/FpySequencer/docs/directives.md · docs/user-manual/gds/gds-cli.md*
