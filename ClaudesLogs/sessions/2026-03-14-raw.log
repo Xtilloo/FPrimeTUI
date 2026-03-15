@@ -2257,3 +2257,91 @@ fprime-util check --coverage
 This command is documented in the SDDs for multiple F' services (e.g., `Svc/ActivePhaser`, `Svc/FatalHandler`, `Svc/CmdDispatcher`). It provides unit test coverage analysis for your F' project.
 
 *Sources: Svc/ActivePhaser/docs/sdd.md · Svc/FatalHandler/docs/sdd.md · Svc/CmdDispatcher/docs/sdd.md*
+
+
+---USER---
+Describe the "Time Base" field in an `Fw::Time` object.
+---RESPONSE---
+The `Time Base` field in an `Fw::Time` object represents the **base timestamp** used to calculate the absolute time in the system. It is part of the `Fw::Time` struct, which also includes a `TimeContext` field that defines the time scale (e.g., microseconds, milliseconds).
+
+### Key Details:
+1. **Epoch Time**:  
+   The `Time Base` is initialized during the `Svc::OsTime` component's configuration with an epoch time. This epoch consists of:  
+   - An `Fw::Time` object (with a `TimeBase` and `TimeContext`).  
+   - An `Os::RawTime` object (a system-specific timestamp).  
+
+2. **Time Calculation**:  
+   The current time is computed by:  
+   ```cpp
+   Fw::Time current_time = epoch_time_base + (current_raw_time - epoch_raw_time);
+   ```  
+   Here, `TimeBase` represents the number of ticks since the epoch, and `TimeContext` defines the resolution (e.g., `Fw::TimeContext::MICROSECOND`).
+
+3. **Error Handling**:  
+   If the `Os::RawTime` implementation returns an error, `Svc::OsTime` defaults to `ZERO_TIME`, which has:  
+   ```cpp
+   Fw::Time{0, Fw::TimeContext::MICROSECOND}  // TimeBase = 0, TimeContext = 0
+   ```
+
+### Summary:  
+The `Time Base` is the **offset** from the epoch's start time, stored as a 32-bit integer. It, combined with `TimeContext`, forms the full timestamp for timekeeping in F Prime.
+
+*Sources: Svc/ComQueue/docs/sdd.md · Svc/OsTime/docs/sdd.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How do you send a command with a string argument containing spaces via `fprime-cli`?
+---RESPONSE---
+To send a command with a string argument containing spaces via `fprime-cli`, you must enclose the argument in **double quotes** to preserve the space as part of the string. Here's the correct syntax:
+
+```bash
+fprime-cli send-command <command_mnemonic> "<argument_with_spaces>"
+```
+
+### Example:
+```bash
+fprime-cli send-command "TEST_CMD_1" "Hello World"
+```
+
+### Key Details:
+1. **Double quotes** around the argument ensure spaces are treated as part of the string, not as separators.
+2. The `send-command` subcommand is used to transmit the command via the GDS layer.
+3. This matches the behavior of the `send_command` API in F' tests, where arguments are passed as Python strings (e.g., `["235", "43"]`).
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-cli.md · Ref/test/int/ref_integration_test.py*
+
+
+---USER---
+What is the difference between binary and text log ports?
+---RESPONSE---
+The difference between binary and text log ports in F' lies in their purpose, data format, and integration with components:
+
+1. **Binary Log Ports**  
+   - Used for **serializing binary data** (e.g., telemetry, commands) via the `Fw::Com` port.  
+   - Data is encoded as structured binary buffers for efficient transmission over communication links.  
+   - Integrated with `Fw::Com` components to send data out of the system.  
+   - Example: Telemetry packets serialized using `Fw::Com::Buffer`.
+
+2. **Text Log Ports**  
+   - Used for **human-readable logging** (e.g., events, diagnostics).  
+   - Logs are text strings formatted for readability, often directed to console output or files.  
+   - Integrated with `Svc::ActiveTextLogger` or `Svc::PassiveConsoleTextLogger` components.  
+   - Example: Event messages like `"DIAGNOSTIC: Command executed successfully"`.
+
+**Key Contrast**:  
+- **Binary ports** handle structured, compact data for system communication.  
+- **Text ports** prioritize human interpretability for debugging and monitoring.  
+
+For implementation details, refer to `Fw/Com/docs/sdd.md` for binary ports and `Svc/ActiveTextLogger/docs/sdd.md` for text logging.
+
+*Sources: Fw/Com/docs/sdd.md · docs/user-manual/overview/04-cmd-evt-chn-prm.md · Svc/ActiveTextLogger/docs/sdd.md*
+
+
+---USER---
+How can you list all available commands for a deployment using the CLI?
+---RESPONSE---
+To list all available commands for a deployment using the GDS CLI, you can use the `gds list` command. This command provides an overview of the available operations and tasks specific to the deployment. For detailed guidance, refer to the [GDS CLI guide](../gds/gds-cli.md) mentioned in the documentation. 
+
+If you need further assistance, let me know!
+
+*Sources: docs/user-manual/overview/gds-introduction.md · cmake/docs/sdd.md · Svc/Ccsds/TmFramer/docs/sdd.md*
