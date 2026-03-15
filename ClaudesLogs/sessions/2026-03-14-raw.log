@@ -4820,3 +4820,258 @@ This macro is usually defined in a configuration header file (e.g., `Fw/Cfg/Conf
 Would you like me to locate the file where `FW_ASSERT_LEVEL` is defined?
 
 *Sources: Fw/DataStructures/docs/Stack.md · Svc/DpManager/test/ut/README.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+How does the fprime-gds find its dictionary by default?
+---RESPONSE---
+The `fprime-gds` tool finds its dictionary by default based on the following priority logic:
+
+1. **If explicitly provided**:  
+   If you use the `--dictionary` flag (e.g., `fprime-gds --dictionary path/to/dictionary.json`), it will use the specified dictionary file.
+
+2. **If a deployment directory is specified**:  
+   If you use the `-d`/`--deploy` flag (e.g., `fprime-gds -d path/to/deployment`), it will look for the dictionary within that deployment directory (typically in `dict/` subfolder).
+
+3. **Fallback to current working directory**:  
+   If neither is provided, it searches the current working directory for a dictionary file. If found, it uses that. If not, it defaults to the deployment's dictionary (if a deployment is implicitly inferred).
+
+4. **No deployment/dictionary specified**:  
+   If no deployment or dictionary is specified, it will still attempt to locate the dictionary in the current directory. If unsuccessful, logs are saved to the user's home directory.
+
+**Note**: The default behavior assumes a standard project structure. For custom setups, explicitly specifying the dictionary or deployment directory is recommended.
+
+*Sources: docs/user-manual/overview/gds-introduction.md · docs/user-manual/overview/gds-introduction.md · docs/tutorials/cross-compilation.md*
+
+
+---USER---
+What is the difference between Os::Task::join() and Os::Task::suspend()?
+---RESPONSE---
+In the F' framework, `Os::Task::join()` and `Os::Task::suspend()` serve distinct purposes in task management:
+
+### `Os::Task::join()`
+- **Purpose**: Blocks the calling task until the target task completes execution.
+- **Behavior**: 
+  - Waits for the target task to terminate (e.g., via `exit()` or completion of its entry point).
+  - Ensures the calling task does not proceed until the joined task has finished.
+  - Typically used for synchronization (e.g., ensuring task completion before proceeding).
+- **Use Case**: When you need to wait for a child task to finish (e.g., in parent-child task hierarchies).
+
+### `Os::Task::suspend()`
+- **Purpose**: Temporarily halts the execution of a task without waiting for it to finish.
+- **Behavior**:
+  - Puts the target task into a "suspended" state, pausing its execution.
+  - The task can be resumed later (e.g., via `resume()`).
+  - Does not wait for the task to complete; it is paused at the current point.
+- **Use Case**: For dynamic resource management (e.g., pausing a task to free CPU/GPU resources temporarily).
+
+### Key Difference
+- `join()` is for **synchronization** (wait for completion).
+- `suspend()` is for **pausing** execution temporarily, with the possibility of resuming later.
+
+For precise implementation details in F', refer to the `Os::Task` interface in the F' source code or documentation.
+
+*Sources: Fw/DataStructures/docs/ExternalRedBlackTreeMap.md · docs/user-manual/framework/run-multi-core.md · Fw/DataStructures/docs/ExternalArrayMap.md*
+
+
+---USER---
+What is an FPP Module?
+---RESPONSE---
+An **FPP Module** (F Prime Preprocessor Module) is a logical grouping of FPP (F Prime Preprocessor) files that define specific components, data structures, or functionalities within the F Prime framework. These modules organize the codebase by encapsulating related functionality, such as:
+
+1. **Data Product State Management**: For example, the `Fw/Dp` module defines types like `DpState` (an enumeration for data product states) and associated logic.
+2. **Component Implementations**: Such as the `RateGroupDriver` component in the `Svc/PassiveRateGroup` module, which manages rate-group telemetry.
+3. **Shared Types/Utilities**: Common data structures or helper functions used across multiple components.
+
+Each FPP module typically contains `.fpp` files that define:
+- Enumerations, structs, or unions
+- Command and telemetry packet definitions
+- State machine logic
+- Data product interfaces
+
+Modules are critical for maintaining modularity, reusability, and clarity in F Prime systems. They are processed by the FPP tool to generate C++ code, which is then compiled into the flight software.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · Fw/Dp/docs/sdd.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+Describe the Fw::Time math operations.
+---RESPONSE---
+The `Fw::Time` (implemented as `TimeType` in Python) supports the following math operations, as defined in the F Prime GDS documentation:
+
+### **Supported Operations**
+1. **Addition (`+`)**  
+   - Combines time values.  
+   - Example: `t0 + 1` → `TimeType(1.0 seconds)`.
+
+2. **Subtraction (`-`)**  
+   - Computes the difference between two time values.  
+   - Example: `t3 - t1` (3.0 - 1.0) → `TimeType(2.0 seconds)`.  
+   - If the result is negative, it is clamped to `0.0` (e.g., `t0 = t1 - t3` → `0.0`).
+
+3. **Multiplication (`*`)**  
+   - Scales the time value.  
+   - Example: `t3 * 0.5` → `TimeType(1.5 seconds)`.
+
+4. **Division (`/`)**  
+   - Divides the time value.  
+   - Example: `t3 / 2` → `TimeType(1.5 seconds)`.
+
+5. **Comparison Operators (`<`, `>`, `==`, etc.)**  
+   - Leverages Python's special methods for rich comparison.
+
+---
+
+### **Key Rules**
+- **Time Base/Context Handling**:  
+  Operations between `TimeType` objects with different `time_base` or `time_context` use the **left operand's** base and context.  
+  Example: `tA (time_base=ms) - tB (time_base=s)` → result uses `ms` base.
+
+- **Non-Negative Results**:  
+  All operations return a new `TimeType` object. Negative values are clamped to `0.0`.
+
+- **Python Integration**:  
+  These operations are implemented via Python's special methods (e.g., `__add__`, `__sub__`) in the `fprime_gds.common.models.serialize.time_type` module.
+
+This design ensures compatibility with floating-point arithmetic while preserving time semantics for telemetry and event timestamps.
+
+*Sources: Svc/ComQueue/docs/sdd.md · docs/user-manual/gds/gds-test-api-guide.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What is the Passive Rate Group component?
+---RESPONSE---
+The **Passive Rate Group** is a component in the F' framework that operates as part of a **passive rate group architecture**. Here's a concise summary:
+
+### Key Characteristics:
+1. **Execution Context**:  
+   - Runs in the **context of the caller** (e.g., the rate group driver or parent component).  
+   - All work (including synchronous port calls) is executed **synchronously** and **high-priority**, ensuring deterministic timing.
+
+2. **Rate Behavior**:  
+   - Receives input signals (e.g., "ticks") at a **divided rate** from the rate group driver.  
+   - Subdivides the rate into slower intervals (e.g., 1000Hz → 100Hz, 10Hz, 1Hz) and executes at those intervals.
+
+3. **Passive Nature**:  
+   - Does **not** run on a dedicated thread (unlike active rate groups).  
+   - Avoids jitter but requires **quick and critical execution** to prevent delaying other rate groups.
+
+4. **Use Case**:  
+   - Ideal for **synchronous, time-critical tasks** where deterministic execution is essential (e.g., real-time data processing).  
+
+### Example Scenario:
+If the rate group driver operates at 1000Hz, a passive rate group might execute at 100Hz, triggering attached components at that slower rate. All operations occur in the caller's context, ensuring tight integration with the system timing.  
+
+For deeper details, refer to the [rate-group design patterns documentation](docs/user-manual/design-patterns/rate-group.md).
+
+*Sources: Svc/FileManager/docs/sdd.md · docs/user-manual/design-patterns/rate-group.md · Svc/ComLogger/README.md*
+
+
+---USER---
+How do you check for a Command Response in an integration test?
+---RESPONSE---
+To check for a Command Response in an integration test using the F' GDS Test API, you would typically:
+
+1. Use `TestAPI::send_command()` to transmit the command
+2. Use `TestAPI::wait_for_command_response()` to await the response
+3. Validate the response using assertions like:
+   - `TestAPI::assert_response_status()` for status code checks
+   - `TestAPI::assert_response_data()` for payload verification
+
+Example pattern:
+```python
+response = TestAPI.send_command("COMMAND_NAME", payload)
+TestAPI.wait_for_command_response(response)
+TestAPI.assert_response_status(response, "SUCCESS")
+TestAPI.assert_response_data(response, {"key": "value"})
+```
+
+This approach leverages the test API's built-in command handling and verification capabilities as demonstrated in the `test_cmd_dpWriter.py` and `test_cmd_dpMgr.py` examples.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · Svc/DpWriter/test/int/test_cmd_dpWriter.py · Svc/DpManager/test/int/test_cmd_dpMgr.py*
+
+
+---USER---
+What is the Svc::TlmPacketizer?
+---RESPONSE---
+The **Svc::TlmPacketizer** is a component in the F' (F Prime) framework responsible for packaging telemetry data into structured packets for transmission. While it is not explicitly detailed in the provided knowledge base (which focuses on `Svc::ComQueue` and `Svc::DpWriter`), its role aligns with standard telemetry handling in F' systems. 
+
+To provide a precise answer, I would need to inspect the relevant files (e.g., `Svc/TlmPacketizer` directories or source code). Could you confirm if you have specific files or documentation related to this component? If so, I can analyze them for details.
+
+*Sources: Svc/ComQueue/docs/sdd.md · docs/user-manual/overview/development-practice.md · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How does the Mission Control Orchestrator handle AI tokens?
+---RESPONSE---
+The Mission Control Orchestrator in the F' framework does not natively handle AI tokens, as the provided context focuses on hardware-driven components like the RateGroupDriver and Manager Component. To address your question, we would need to:
+
+1. Identify if AI token handling is implemented in your project's specific components
+2. Check if the Orchestrator (or related components) has logic for token management
+
+Could you please run `list_directory` on your project's root directory to show the files/folders present? This will help identify where AI token handling might be implemented.
+
+*Sources: Svc/PassiveRateGroup/docs/sdd.md · docs/user-manual/design-patterns/app-man-drv.md · docs/getting-started/installing-fprime.md*
+
+
+---USER---
+What is the config.js file in the GDS?
+---RESPONSE---
+```json
+{
+  "tool_name": "list_directory",
+  "path": "GDS"
+}
+```
+
+*Sources: docs/user-manual/framework/configuring-fprime.md · docs/user-manual/gds/gds-custom-dashboards.md · docs/how-to/integrate-external-libraries.md*
+
+
+---USER---
+How do you define a bool type in a serializable struct?
+---RESPONSE---
+To define a `bool` type in a serializable struct in F', follow these steps:
+
+### 1. **Define the Struct with `bool` Member**
+Use FPP syntax to create a struct containing a `bool` field. The `bool` type is natively supported in FPP and will serialize to JSON's `true`/`false` values.
+
+Example:
+```cpp
+type MySerializableStruct {
+    bool is_active;
+};
+```
+
+### 2. **Ensure Struct is Part of a Module**
+Wrap the struct in an FPP module (e.g., `Os` or `App`) to ensure it is processed by the F' framework:
+```cpp
+module MyModule {
+    type MySerializableStruct {
+        bool is_active;
+    };
+};
+```
+
+### 3. **Serialize the Struct**
+When the struct is included in a container (e.g., a `Record` or `Container`), F' will automatically handle serialization to JSON. For example:
+```cpp
+type MyRecord {
+    MySerializableStruct status;
+};
+```
+
+### 4. **Usage in JSON**
+The `bool` field will serialize to JSON as:
+```json
+{
+    "status": {
+        "is_active": true
+    }
+}
+```
+
+### Key Notes:
+- **No special annotations** are required for `bool` in FPP; it is inherently serializable.
+- Ensure the struct is part of a module and included in your topology (`topology.fpp`) for the F' build system to process it.
+
+*Sources: docs/reference/fpp-json-dict.md · docs/how-to/data-products.md · Os/Types.fpp*
