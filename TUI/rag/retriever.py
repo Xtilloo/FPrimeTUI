@@ -271,11 +271,22 @@ def reciprocal_rank_fusion(dense_ids: list[str], sparse_ids: list[str]) -> dict[
     return scores
 
 
-def format_context(chunks: list[dict]) -> str:
+def format_context(chunks: list[dict], query_type: str = "general") -> str:
     """Format retrieved chunks into labeled context blocks for the prompt."""
+    # Query-type instruction prefix
+    _QUERY_INSTRUCTIONS: dict[str, str] = {
+        "code_seeking": "Prioritize code examples and exact syntax from the sources below.",
+        "concept_seeking": "Explain the concept using the sources below. Cite specific F' terminology.",
+        "file_specific": "Answer using the content from the requested file below.",
+        "comparison": "Compare using specific details from the sources below.",
+    }
     blocks = []
+    instruction = _QUERY_INSTRUCTIONS.get(query_type, "")
+    if instruction:
+        blocks.append(instruction)
     for chunk in chunks:
-        header = f"[SOURCE: {chunk['source_file']} | type: {chunk['chunk_type']}]"
+        content_type = chunk.get("content_type", "")
+        header = f"[SOURCE: {chunk['source_file']} | type: {chunk['chunk_type']} | content: {content_type}]"
         blocks.append(f"{header}\n{chunk['text']}")
     return "\n\n".join(blocks)
 

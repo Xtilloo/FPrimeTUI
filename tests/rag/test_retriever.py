@@ -43,11 +43,12 @@ def test_rrf_deduplicates_ids():
 
 def test_format_context_produces_labeled_blocks():
     chunks = [
-        {"text": "Port definitions here.", "source_file": "Fw/Com.fpp", "chunk_type": "fpp_block"},
-        {"text": "How to connect.", "source_file": "docs/guide.md", "chunk_type": "markdown"},
+        {"text": "Port definitions here.", "source_file": "Fw/Com.fpp", "chunk_type": "fpp_block", "content_type": "code"},
+        {"text": "How to connect.", "source_file": "docs/guide.md", "chunk_type": "markdown", "content_type": "concept"},
     ]
     context = format_context(chunks)
-    assert "[SOURCE: Fw/Com.fpp | type: fpp_block]" in context
+    assert "[SOURCE: Fw/Com.fpp | type: fpp_block | content: code]" in context
+    assert "[SOURCE: docs/guide.md | type: markdown | content: concept]" in context
     assert "Port definitions here." in context
 
 
