@@ -1,6 +1,7 @@
 # tests/rag/test_retriever.py
 from rag.retriever import (
     classify_query,
+    composite_score,
     extract_keywords,
     format_context,
     get_content_type_boost,
@@ -16,8 +17,11 @@ def test_rrf_merges_two_lists():
     dense = ["a", "b", "c"]
     sparse = ["b", "c", "a"]
     result = reciprocal_rank_fusion(dense, sparse)
+    # Returns dict[str, float] now
+    assert isinstance(result, dict)
     # "b" appears at rank 2 and 1 — should score highest
-    assert result[0] == "b"
+    sorted_ids = sorted(result, key=lambda x: result[x], reverse=True)
+    assert sorted_ids[0] == "b"
 
 
 def test_rrf_handles_disjoint_lists():
@@ -25,13 +29,15 @@ def test_rrf_handles_disjoint_lists():
     sparse = ["c", "d"]
     result = reciprocal_rank_fusion(dense, sparse)
     assert len(result) == 4
+    assert all(isinstance(v, float) for v in result.values())
 
 
 def test_rrf_deduplicates_ids():
     dense = ["a", "a", "b"]
     sparse = ["a", "b"]
     result = reciprocal_rank_fusion(dense, sparse)
-    assert result.count("a") == 1
+    assert "a" in result
+    assert "b" in result
 
 
 def test_format_context_produces_labeled_blocks():
@@ -274,3 +280,33 @@ def test_classify_query_precedence_comparison_over_concept():
     entities = set()
     qtype, _ = classify_query("What is the difference between ports and channels?", entities)
     assert qtype == "comparison"
+
+
+def test_composite_score_combines_signals_multiplicatively():
+    chunk = {
+        "text": "ActiveComponent runs in its own thread.",
+        "source_file": "Fw/Comp/docs/sdd.md",
+        "content_type": "concept",
+    }
+    kws = ["activecomponent"]
+    score = composite_score(0.02, chunk, kws, "concept_seeking")
+    # Base: 0.02
+    # Source boost (framework_core): * 1.3
+    # Content boost (concept for concept_seeking): * 1.2
+    # Keyword (1.0 match * 0.3 weight): * 1.3
+    expected_approx = 0.02 * 1.3 * 1.2 * 1.3
+    assert abs(score - expected_approx) < 0.001
+
+
+def test_composite_score_no_keyword_match():
+    chunk = {
+        "text": "Subtopology configuration guide.",
+        "source_file": "docs/how-to/subtopologies.md",
+        "content_type": "tutorial",
+    }
+    score = composite_score(0.02, chunk, ["activecomponent"], "code_seeking")
+    # Source boost (docs_tutorial): * 1.2
+    # Content boost (tutorial for code_seeking): * 1.0
+    # Keyword (0.0 match): * 1.0
+    expected_approx = 0.02 * 1.2 * 1.0 * 1.0
+    assert abs(score - expected_approx) < 0.001

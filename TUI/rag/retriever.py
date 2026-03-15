@@ -6,6 +6,8 @@ import chromadb
 import requests
 from rank_bm25 import BM25Okapi
 
+from rag.config import KEYWORD_WEIGHT
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "db")
 BM25_PATH = os.path.join(DB_PATH, "bm25.pkl")
 DENSE_K = 10    # dense retrieval candidates
@@ -124,6 +126,20 @@ def get_content_type_boost(content_type: str, query_type: str) -> float:
     return boosts.get(content_type, 1.0)
 
 
+def composite_score(
+    rrf_score: float,
+    chunk: dict,
+    keywords: list[str],
+    query_type: str,
+) -> float:
+    """Combine all ranking signals into a single score per candidate."""
+    score = rrf_score
+    score *= get_source_category_boost(chunk["source_file"])
+    score *= get_content_type_boost(chunk.get("content_type", ""), query_type)
+    score *= (1 + keyword_score(chunk["text"], keywords) * KEYWORD_WEIGHT)
+    return score
+
+
 # Query-type classification patterns. Checked in precedence order.
 _FILE_EXTENSION_PATTERN = re.compile(r"\b[\w/]+\.\w{1,4}\b")
 _COMPARISON_PATTERNS = re.compile(
@@ -201,14 +217,14 @@ def keyword_score(chunk_text: str, keywords: list[str]) -> float:
     return sum(1 for kw in keywords if kw in lower) / len(keywords)
 
 
-def reciprocal_rank_fusion(dense_ids: list[str], sparse_ids: list[str]) -> list[str]:
-    """Merge two ranked lists using Reciprocal Rank Fusion. Returns deduplicated ranked IDs."""
+def reciprocal_rank_fusion(dense_ids: list[str], sparse_ids: list[str]) -> dict[str, float]:
+    """Merge two ranked lists using Reciprocal Rank Fusion. Returns {id: score}."""
     scores: dict[str, float] = {}
     for rank, doc_id in enumerate(dense_ids):
         scores[doc_id] = scores.get(doc_id, 0) + 1 / (RRF_K + rank + 1)
     for rank, doc_id in enumerate(sparse_ids):
         scores[doc_id] = scores.get(doc_id, 0) + 1 / (RRF_K + rank + 1)
-    return sorted(scores, key=lambda x: scores[x], reverse=True)
+    return scores
 
 
 def format_context(chunks: list[dict]) -> str:
