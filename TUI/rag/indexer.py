@@ -17,7 +17,14 @@ import chromadb
 import requests  # type: ignore[import-untyped]
 from bs4 import BeautifulSoup
 from git import Repo
-from rag.chunker import chunk_fpp, chunk_markdown, chunk_python, deduplicate
+from rag.chunker import (
+    chunk_autocoded_cpp,
+    chunk_cpp,
+    chunk_fpp,
+    chunk_markdown,
+    chunk_python,
+    deduplicate,
+)
 from rag.retriever import tokenize
 from rank_bm25 import BM25Okapi
 
@@ -66,6 +73,16 @@ def fetch_docs(base_url: str, dest: Path) -> None:
         print(f"  WARN: Could not fetch docs: {e}")
 
 
+def _is_generated_skip(filename: str) -> bool:
+    """Files to skip entirely (generated boilerplate with no RAG value)."""
+    return any(pattern in filename for pattern in ("GTestBase", "TesterBase"))
+
+
+def _is_autocoded(filename: str) -> bool:
+    """Autocoded files get API extraction instead of full chunking."""
+    return filename.endswith(("Ac.hpp", "Ac.cpp"))
+
+
 def collect_chunks() -> list[dict[str, Any]]:
     """Walk raw sources and produce all chunks."""
     all_chunks: list[dict[str, Any]] = []
@@ -78,6 +95,25 @@ def collect_chunks() -> list[dict[str, Any]]:
                 text = f.read_text(errors="ignore")
                 rel = str(f.relative_to(repo_path))
                 all_chunks.extend(fn(text, source=rel))
+            except Exception:
+                pass
+
+    # C++ files from fprime framework
+    for ext in (".hpp", ".h", ".cpp"):
+        for f in repo_path.rglob(f"*{ext}"):
+            # Skip build artifacts
+            rel = str(f.relative_to(repo_path))
+            if rel.startswith("build") or "/build/" in rel:
+                continue
+            try:
+                name = f.name
+                if _is_generated_skip(name):
+                    continue
+                text = f.read_text(errors="ignore")
+                if _is_autocoded(name):
+                    all_chunks.extend(chunk_autocoded_cpp(text, source=rel))
+                else:
+                    all_chunks.extend(chunk_cpp(text, source=rel))
             except Exception:
                 pass
 
@@ -134,6 +170,7 @@ def build_index(chunks: list[dict[str, Any]], db_path: Path) -> None:
             "source_file": str(chunk["source_file"]),
             "chunk_type": str(chunk["chunk_type"]),
             "component_name": str(chunk.get("component_name", "")),
+            "content_type": str(chunk.get("content_type", "")),
         })
 
         if len(ids) == BATCH or i == len(chunks) - 1:
