@@ -4,6 +4,52 @@ import re
 TARGET_TOKENS = 300
 CHARS_PER_TOKEN = 4  # rough estimate
 
+_CODE_EXTENSIONS = {".fpp", ".hpp", ".h", ".cpp", ".py"}
+
+
+def detect_content_type(text: str, source_file: str) -> str:
+    """Classify chunk content as code, concept, reference, or tutorial."""
+    # 1. Code files by extension
+    for ext in _CODE_EXTENSIONS:
+        if source_file.endswith(ext):
+            return "code"
+
+    # 2. Tutorial by path
+    if "how-to/" in source_file or "getting-started/" in source_file:
+        return "tutorial"
+
+    lines = text.strip().split("\n")
+    non_empty = [line for line in lines if line.strip()]
+    if not non_empty:
+        return "concept"
+
+    # 3. Code by fenced block ratio (>50% of non-fence lines inside ```)
+    in_fence = False
+    code_lines = 0
+    fence_lines = 0
+    for line in non_empty:
+        if line.strip().startswith("```"):
+            fence_lines += 1
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            code_lines += 1
+    total_content = len(non_empty) - fence_lines
+    if total_content > 0 and code_lines > total_content / 2:
+        return "code"
+
+    # 4. Reference: tables or enum-like listings
+    table_lines = sum(1 for line in non_empty if "|" in line and line.strip().startswith("|"))
+    if table_lines > 2:
+        return "reference"
+
+    # 5. Tutorial: numbered steps
+    numbered = sum(1 for line in non_empty if re.match(r"^\s*\d+[\.\)]\s", line))
+    if numbered >= 3:
+        return "tutorial"
+
+    return "concept"
+
 
 def _truncate(text: str, max_chars: int = TARGET_TOKENS * CHARS_PER_TOKEN) -> str:
     return text[:max_chars]

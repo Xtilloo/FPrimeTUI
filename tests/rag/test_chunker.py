@@ -1,5 +1,5 @@
 # tests/rag/test_chunker.py
-from rag.chunker import chunk_fpp, chunk_markdown, chunk_python, deduplicate
+from rag.chunker import chunk_fpp, chunk_markdown, chunk_python, deduplicate, detect_content_type
 
 
 def test_chunk_markdown_splits_on_headers():
@@ -38,3 +38,34 @@ def test_deduplicate_removes_identical_content():
     ]
     result = deduplicate(chunks)
     assert len(result) == 2
+
+
+def test_detect_content_type_code_by_extension():
+    assert detect_content_type("int main() {}", "main.cpp") == "code"
+    assert detect_content_type("component A {}", "A.fpp") == "code"
+    assert detect_content_type("class Foo:", "foo.py") == "code"
+
+
+def test_detect_content_type_code_by_fenced_blocks():
+    text = "Some text\n```cpp\nint x = 5;\nint y = 10;\nint z = 15;\n```\nMore text"
+    assert detect_content_type(text, "guide.md") == "code"
+
+
+def test_detect_content_type_concept():
+    text = "## Overview\nF Prime is a flight software framework designed for reusability and portability."
+    assert detect_content_type(text, "overview.md") == "concept"
+
+
+def test_detect_content_type_reference_table():
+    text = "| Parameter | Type | Default |\n|---|---|---|\n| timeout | int | 5 |"
+    assert detect_content_type(text, "config.md") == "reference"
+
+
+def test_detect_content_type_tutorial():
+    text = "1. First, create the component\n2. Then, add ports\n3. Finally, build"
+    assert detect_content_type(text, "docs/how-to/add-comp.md") == "tutorial"
+
+
+def test_detect_content_type_tutorial_by_path():
+    text = "Some general text about setup."
+    assert detect_content_type(text, "docs/getting-started/install.md") == "tutorial"
