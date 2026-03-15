@@ -1,5 +1,5 @@
 # tests/rag/test_chunker.py
-from rag.chunker import chunk_fpp, chunk_markdown, chunk_python, deduplicate, detect_content_type
+from rag.chunker import chunk_cpp, chunk_fpp, chunk_markdown, chunk_python, deduplicate, detect_content_type
 
 
 def test_chunk_markdown_splits_on_headers():
@@ -88,3 +88,81 @@ def test_chunk_python_content_type_is_code():
     text = "class Foo:\n    def bar(self):\n        pass\n"
     chunks = chunk_python(text, source="example.py")
     assert chunks[0]["content_type"] == "code"
+
+
+def test_chunk_cpp_splits_on_class():
+    text = """
+#ifndef GUARD_HPP
+#define GUARD_HPP
+
+#include <FpConfig.hpp>
+
+namespace Os {
+
+class Task {
+  public:
+    enum State { RUNNING, IDLE, EXITED };
+    void start();
+    void stop();
+};
+
+class Mutex {
+  public:
+    void lock();
+    void unlock();
+};
+
+}  // namespace Os
+"""
+    chunks = chunk_cpp(text, source="Os/Task/Task.hpp")
+    # Should get chunks for Task and Mutex classes
+    assert len(chunks) >= 2
+    # Task class chunk should mention namespace
+    task_chunk = [c for c in chunks if "Task" in c["text"]][0]
+    assert "Os" in task_chunk["text"]  # namespace context preserved
+    assert task_chunk["content_type"] == "code"
+    assert task_chunk["source_file"] == "Os/Task/Task.hpp"
+
+
+def test_chunk_cpp_splits_on_enum():
+    text = """
+namespace Fw {
+
+enum class CmdResponse {
+    OK,
+    VALIDATION_ERROR,
+    EXECUTION_ERROR,
+};
+
+}  // namespace Fw
+"""
+    chunks = chunk_cpp(text, source="Fw/Cmd/CmdResponse.hpp")
+    assert len(chunks) >= 1
+    assert "CmdResponse" in chunks[0]["text"]
+
+
+def test_chunk_cpp_skips_preprocessor():
+    text = """
+#ifndef GUARD
+#define GUARD
+#include <stdio.h>
+#include "FpConfig.hpp"
+
+class Foo {
+  public:
+    void bar();
+};
+#endif
+"""
+    chunks = chunk_cpp(text, source="test.hpp")
+    for chunk in chunks:
+        assert "#ifndef" not in chunk["text"]
+        assert "#define GUARD" not in chunk["text"]
+        assert "#include" not in chunk["text"]
+
+
+def test_chunk_cpp_fallback_whole_file():
+    # If no class/enum/namespace found, treat whole file as one chunk
+    text = "void standalone_function() { return; }"
+    chunks = chunk_cpp(text, source="util.cpp")
+    assert len(chunks) == 1

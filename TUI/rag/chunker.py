@@ -122,6 +122,69 @@ def chunk_python(text: str, source: str) -> list[dict]:
     return chunks
 
 
+# Patterns for C++ chunking
+_CPP_PREPROCESSOR = re.compile(r"^\s*#\s*(?:ifndef|define|endif|include|pragma)\b.*$", re.MULTILINE)
+_CPP_NAMESPACE = re.compile(r"namespace\s+([\w:]+)\s*\{")
+_CPP_CLASS_OR_STRUCT = re.compile(r"(?:class|struct)\s+(\w+)(?:\s*:\s*(?:public|protected|private)\s+[\w:]+)?\s*\{")
+_CPP_ENUM = re.compile(r"enum\s+(?:class\s+)?(\w+)\s*\{")
+_CPP_SPLIT = re.compile(r"(?=(?:class|struct|enum)\s+\w+)")
+
+
+def chunk_cpp(text: str, source: str) -> list[dict]:
+    """Split C++ header/source files on class, struct, and enum boundaries."""
+    # Strip preprocessor lines
+    cleaned = _CPP_PREPROCESSOR.sub("", text)
+
+    # Detect enclosing namespace for context prefix
+    ns_match = _CPP_NAMESPACE.search(cleaned)
+    ns_prefix = f"namespace {ns_match.group(1)} :: " if ns_match else ""
+
+    # Split on class/struct/enum declarations
+    sections = _CPP_SPLIT.split(cleaned)
+    chunks: list[dict] = []
+
+    for section in sections:
+        section = section.strip()
+        if not section:
+            continue
+
+        # Determine component name from class/struct/enum
+        comp_name = ""
+        class_match = _CPP_CLASS_OR_STRUCT.search(section)
+        enum_match = _CPP_ENUM.search(section)
+        if class_match:
+            comp_name = class_match.group(1)
+        elif enum_match:
+            comp_name = enum_match.group(1)
+
+        # Only keep sections that contain a declaration (skip preamble noise)
+        if not comp_name:
+            continue
+
+        # Prepend namespace context
+        chunk_text = f"{ns_prefix}{section}" if ns_prefix else section
+
+        chunks.append({
+            "text": _truncate(chunk_text),
+            "source_file": source,
+            "chunk_type": "cpp",
+            "component_name": comp_name,
+            "content_type": "code",
+        })
+
+    if not chunks:
+        # Fallback: whole file as one chunk
+        chunks.append({
+            "text": _truncate(cleaned),
+            "source_file": source,
+            "chunk_type": "cpp",
+            "component_name": "",
+            "content_type": "code",
+        })
+
+    return chunks
+
+
 def deduplicate(chunks: list[dict]) -> list[dict]:
     """Remove chunks with identical text content using SHA-256 hashing."""
     seen = set()
