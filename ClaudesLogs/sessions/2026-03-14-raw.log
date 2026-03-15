@@ -6071,3 +6071,247 @@ In the uplink stack (e.g., tutorials), `Svc::FileUplink` works with `Svc::Fprime
 For deeper details, inspect the `Svc::FileUplink` implementation in your project’s source code (e.g., `FileUplink.cpp` or related `.fpp` files).
 
 *Sources: Svc/FprimeRouter/docs/sdd.md · Svc/FprimeProtocol/docs/sdd.md · Svc/FprimeRouter/docs/sdd.md*
+
+
+---USER---
+What is the Os::File::Status enum used for?
+---RESPONSE---
+The `Os::File::Status` enum is part of the F' framework's OS services and is used to represent the status of file operations (e.g., opening, reading, writing, or closing files). It typically encodes return values indicating success, failure, or specific error conditions during file system interactions. For example, it might include values like `OPENED`, `CLOSED`, `ERROR`, or `NOT_FOUND`, depending on the implementation. 
+
+To get the exact definition and usage, you would need to inspect the corresponding header file (e.g., `Os/File.h` or similar) in your F' project. Would you like me to locate or retrieve this file for you?
+
+*Sources: Svc/Ports/TlmPacketizerPorts/sdd.md · FppTestProject/FppTest/component/active/port_index_enums.fpp · fprime-tools/src/fprime/fbuild/settings.py*
+
+
+---USER---
+Describe the Svc::FileManager 'RemoveFile' command.
+---RESPONSE---
+The `Svc::FileManager::RemoveFile` command is a command interface for deleting files managed by the `Svc::FileManager` active component. While the provided knowledge base does not explicitly detail this command, here's how you would typically analyze it in an F' system:
+
+1. **Command Definition**:  
+   The command is likely defined in a `.fpp` file (e.g., `Svc/FileManager/FileManager.fpp`) within the `Svc` module. It would specify parameters such as the file name (`fileName: string size FileNameStringSize`) and possibly a priority or context.
+
+2. **Behavior**:  
+   - Triggers deletion of the specified file.  
+   - May emit events (e.g., via a `DpWritten`-like port) to notify subsystems of the file removal.  
+   - Could include error handling (e.g., if the file does not exist).
+
+3. **Dependencies**:  
+   - Might interact with the `Svc::DpPorts` module via the `DpWritten` port to log file removal events.  
+   - Could rely on the `Svc::DpWriter` component for file management tasks.
+
+To provide precise details, I need to inspect the `Svc::FileManager` component's `.fpp` file and associated SDD documentation. Let me locate these files for you. 
+
+
+
+> *[Listing Svc... (PENDING)]*The directory `Svc` could not be found. Let's check if the `services` directory exists instead. 
+
+
+
+> *[Listing services... (PENDING)]*The directories `Svc` and `services` could not be found in the current working directory. This suggests either:
+1. The project is not properly initialized, or
+2. The `Svc::FileManager` component is located in a different directory.
+
+To proceed, I can describe the **typical** structure and behavior of `Svc::FileManager::RemoveFile` in an F' system, based on standard JPL practices:
+
+---
+
+### **Svc::FileManager::RemoveFile Command (Typical Behavior)**
+1. **Command Definition**:
+   - Likely defined in a `.fpp` file (e.g., `Svc/FileManager/FileManager.fpp`).
+   - Parameters:  
+     ```cpp
+     fileName: string size FileNameStringSize
+     ```
+   - May include a priority or context for command execution.
+
+2. **Functionality**:
+   - Triggers deletion of the file specified by `fileName`.
+   - Validates the file exists before attempting deletion.
+   - Emits events (e.g., via `DpWritten` port) to notify subsystems of the deletion.
+
+3. **Dependencies**:
+   - Interacts with `Svc::DpPorts` for logging (e.g., `DpWritten` port).
+   - May use `Svc::DpWriter` for file management tasks.
+
+4. **Error Handling**:
+   - Returns an error if the file does not exist or cannot be deleted.
+   - Logs errors via the `DpWritten` port.
+
+---
+
+If you provide the correct directory path or file location, I can refine this analysis. Alternatively, you can use the `list_directory` tool to search for the `FileManager` component in other directories. Let me know how to proceed!
+
+*Sources: Svc/ComQueue/docs/sdd.md · Svc/DpPorts/DpPorts.fpp · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the Fw::TlmPort?
+---RESPONSE---
+The `Fw::TlmPort` (Telemetry Port) in F' is a standard port type used to **send telemetry data** from a component to other subsystems or ground systems. Telemetry data includes measurements, statuses, and diagnostic information about the system's health and operational state.
+
+### Key Purposes:
+1. **Data Transmission**: Enables components to emit telemetry messages (e.g., sensor readings, system states) over a communication link.
+2. **Monitoring**: Facilitates real-time monitoring of spacecraft or onboard systems by transmitting critical data to ground control or other components.
+3. **Integration**: Works with F' communication stacks (e.g., `Fw::ComPort`) to route telemetry data through the appropriate transmission protocols.
+
+### Example Use Case:
+A `Fw::TlmPort` might be used by a sensor component to send temperature readings to a health monitoring service, which then forwards the data to ground systems via a downlink channel.
+
+This port is distinct from file-related ports (e.g., `FileAnnounce`) and is central to F' telemetry architectures.
+
+*Sources: Svc/BufferManager/docs/sdd.md · Svc/Ports/FilePorts/docs/sdd.md · Svc/ComRetry/docs/sdd.md*
+
+
+---USER---
+Describe the Os::Task::State enum.
+---RESPONSE---
+The `Os::Task::State` enum (or related status enumeration) is defined in the `Os/Models/Task.fpp` file. Based on the provided knowledge base, the relevant `TaskStatus` enum includes the following values, which represent the state or status codes for a task:
+
+```cpp
+enum TaskStatus : U8 {
+    OP_OK,             // Task operation succeeded
+    INVALID_HANDLE,    // Task handle is invalid
+    INVALID_PARAMS,    // Task started with invalid parameters
+    INVALID_PRIORITY,  // Task started with invalid priority
+    INVALID_STACK,     // Task started with invalid stack size
+    UNKNOWN_ERROR,     // Unexpected error return value
+    INVALID_AFFINITY,  // Unable to set task affinity
+    DELAY_ERROR,       // Error trying to delay the task
+    JOIN_ERROR,        // Error trying to join the task
+    ERROR_RESOURCES,   // Unable to allocate more tasks
+    ERROR_PERMISSION,  // Permissions error setting up tasks
+    NOT_SUPPORTED,     // Task feature is not supported
+    INVALID_STATE      // Task is in an invalid state for the operation
+};
+```
+
+### Key Notes:
+- **`INVALID_STATE`** explicitly references a task's state validity.
+- If a separate `State` enum exists (not shown in the provided sources), it may be defined elsewhere in the project. For precise details, check the full `Os/Models/Task.fpp` file or related components. 
+
+Let me know if you need further clarification!
+
+*Sources: FppTestProject/FppTest/component/active/port_index_enums.fpp · Os/Models/Task.fpp · Svc/PrmDb/PrmDb.fpp*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'PingIn' port used for?
+---RESPONSE---
+The `PingIn` port in the `Svc::ActiveRateGroup` component is an **asynchronous input port** designed to receive **ping requests** from external systems. Its primary purpose is to support **health monitoring** and **liveness checks** for the component. 
+
+When another component sends a `Ping` message through this port, the `ActiveRateGroup` component can respond via its `PingOut` port, confirming it is operational. This mechanism allows external systems (e.g., ground software or other subsystems) to verify the component's availability and responsiveness without blocking its main execution thread. 
+
+This aligns with the design of active rate groups, which run on separate threads to minimize interference with the rate group driver's timing constraints.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'format' in FPP?
+---RESPONSE---
+In FPP, the `format` for a telemetry channel is specified using the `format` keyword in the telemetry definition. The value is a format string that determines how the telemetry data is displayed or processed. For example:
+
+```cpp
+telemetry {
+  identifier = "EngineTemp"
+  type-name = "float"
+  id = 1234
+  format = "%.2f"  // Format as a float with 2 decimal places
+  telemetry-update = "always"
+}
+```
+
+### Key Notes:
+1. **Format String Syntax**: Use standard C-style format specifiers (e.g., `%d` for integers, `%f` for floats).
+2. **Type Constraints**: The `type-name` must be a "displayable type" (e.g., `int`, `float`, `uint`, etc.).
+3. **Optional Field**: The `format` is optional unless specific formatting (e.g., units, precision) is required.
+
+*Sources: docs/how-to/derive-channels-on-ground.md · docs/reference/system-functional/dictionary.md · Svc/FileDispatcher/docs/sdd.md*
+
+
+---USER---
+Describe the purpose of the Fpp::ToCpp::regCommands phase.
+---RESPONSE---
+The `Fpp::ToCpp::regCommands` phase in the F' framework is responsible for **generating C++ code that registers all command handlers defined in the system's Fpp files**. This phase translates the high-level command definitions (e.g., `command` blocks in Fpp) into concrete C++ code that links commands to their corresponding handler functions. 
+
+### Key Purposes:
+1. **Command Registration**: It creates the machinery needed to map command names to their handler functions, enabling the framework to dispatch commands to the correct logic at runtime.
+2. **Runtime Dispatch**: The generated code allows the system to process incoming commands by invoking the appropriate handler, ensuring modular and extensible command processing.
+3. **Integration with F' Architecture**: It ensures commands are properly integrated into the F' execution model, including validation, logging, and error handling.
+
+This phase is critical for enabling the system to respond to commands issued by external clients (e.g., ground systems or other components).
+
+*Sources: .github/ISSUE_TEMPLATE/feature-request.md · fprime-tools/test/fprime/fbuild/test_cmake.py · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'PingOut' port used for?
+---RESPONSE---
+The `PingOut` port in the `Svc::ActiveRateGroup` component is an **output port of type `Ping`**. It is used to **signal health status or respond to ping requests** from external components. 
+
+### Key Purpose:
+- **Health Monitoring**: The `PingOut` port allows the `ActiveRateGroup` component to send a `Ping` signal (e.g., a confirmation or status indicator) to other components in the system, confirming its operational state.
+- **Bidirectional Communication**: It complements the `PingIn` port (an async input port for health checks), enabling a ping-pong mechanism to verify the component's responsiveness and liveness.
+
+This is typical in fault-tolerant systems where components must periodically confirm their status to ensure reliability.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · docs/user-manual/design-patterns/rate-group.md · docs/user-manual/design-patterns/rate-group.md*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' threshold in FPP?
+---RESPONSE---
+In F', telemetry channels do not have a direct "update threshold" parameter like a rate limit. However, you can control telemetry updates using the `delta` parameter in the `Telemetry` block. This delta specifies the minimum absolute change in value required for an update to be sent. If the value changes by less than the delta, the telemetry is suppressed.
+
+Example:
+```cpp
+Telemetry {
+    name = "Counter",
+    type = uint32,
+    delta = 1  // Update only if value changes by ≥1
+}
+```
+
+If you're referring to a time-based rate limit (e.g., "update every X milliseconds"), F' does not natively support this. You would need to implement custom logic in the component to enforce such behavior.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+Describe the Svc::FileManager 'CreateDirectory' command.
+---RESPONSE---
+The **Svc::FileManager::CreateDirectory** command is a standard command in F' used to create a directory within the file system managed by the **FileManager** service. Here's a general description based on F' conventions and typical implementation:
+
+### Key Details:
+1. **Purpose**: 
+   - Creates a new directory at the specified path. 
+   - May support recursive directory creation (e.g., creating parent directories if they do not exist).
+
+2. **Parameters**:
+   - **`path`**: The absolute or relative path of the directory to create (e.g., `/fs/some/path`).
+   - **`recursive`** (optional): A boolean flag to enable recursive directory creation.
+
+3. **Behavior**:
+   - If the directory already exists, the command may return an error or silently ignore it, depending on configuration.
+   - If permissions or file system constraints prevent creation, an error is typically logged or returned.
+
+4. **Error Handling**:
+   - Returns an error code if the directory cannot be created (e.g., invalid path, insufficient permissions).
+
+### Example Usage (hypothetical):
+```cpp
+// Command definition in a .fpp file
+command CreateDirectory {
+    parameter String path;
+    parameter Boolean recursive = false;
+};
+```
+
+### Notes:
+- The actual implementation depends on the specific **FileManager** component's design and the target file system (e.g., simulated or real hardware).
+- For precise details, check the `Svc::FileManager` component's `.fpp` files or documentation in your project. 
+
+If you need specifics about your project's implementation, provide the path to the relevant `.fpp` or source files, and I can analyze them for you.
+
+*Sources: Svc/ComQueue/docs/sdd.md · fprime-tools/test/fprime/fbuild/test_new_deployment.py · Svc/DpWriter/docs/sdd.md*
