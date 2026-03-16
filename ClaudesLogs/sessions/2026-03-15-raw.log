@@ -2587,3 +2587,325 @@ The `Svc::ActiveRateGroup` component's definition in the provided knowledge base
 If `TimeIn` is a port in your specific implementation or a different component (e.g., `ActivePhaser` has a `Tick` internal port), please provide additional context or verify the component definition file (e.g., `ActiveRateGroup.fpp`).
 
 *Sources: Fw/Cmd/docs/sdd.md · Svc/ActivePhaser/ActivePhaser.fpp · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Fw/Prm/docs/sdd.md · docs/user-manual/framework/configuring-fprime.md*
+
+
+---USER---
+How is Os::Task::start() used in F´?
+---RESPONSE---
+The provided knowledge base does not include specific documentation or code examples related to `Os::Task::start()` in F Prime. The available sources cover topics like queues, design patterns, and the GDS CLI, but none explicitly describe the usage of `Os::Task::start()`.
+
+To proceed, you would need to consult the F Prime source code (e.g., `Os/Task.hpp` or related files) or additional documentation outside the provided context. Would you like me to help locate relevant files in your project?
+
+*Sources: Os/Queue.hpp · docs/user-manual/index.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md · docs/user-manual/gds/gds-cli.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'LogOut' port.
+---RESPONSE---
+The `Svc::ActiveRateGroup` component's `LogOut` port is not described in the provided F' source code or documentation. The available sources only mention the following ports for `ActiveRateGroup`:
+
+- `CycleIn` (async input port for rate group cycle input)
+- `RateGroupMemberOut` (output port for scheduler output to members)
+- `PingIn` (async input port for health checks)
+- `PingOut` (output port for health checks)
+
+No `LogOut` port is defined or referenced in the provided context. If this port exists in your project, it may be part of a different module or configuration not included in the current knowledge base. Use the `list_directory` or `read_file` tools to inspect specific files if needed.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+The `STest::Random::lowerUpper()` function in F' tests is used to generate random values within a specified range for testing purposes. Here's how it is applied based on the provided code:
+
+1. **Random Size Generation**:
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   Generates a random `FwSizeType` between 1 and `max_size` to simulate variable message sizes.
+
+2. **Random Priority Assignment**:
+   ```cpp
+   message.priority = STest::Random::lowerUpper(0, std::numeric_limits<I8>::max());
+   ```
+   Assigns a random `FwQueuePriorityType` (I8) between 0 and the maximum I8 value to test priority-based queue behavior.
+
+3. **Random Data Population**:
+   ```cpp
+   message.sent.reset(new U8[message.size]);
+   for (FwSizeType i = 0; i < message.size; i++) {
+       message.sent[i] = STest::Random::lowerUpper(0, std::numeric_limits<U8>::max());
+   }
+   ```
+   Fills the message payload with random U8 values (0–255) to simulate arbitrary data content.
+
+This ensures tests validate queue correctness under diverse, realistic conditions (e.g., varying sizes, priorities, and data values). The `lowerUpper` method is critical for stress-testing edge cases in F' components.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+Describe the MultiArray serializable in FPP tests.
+---RESPONSE---
+The provided knowledge base does not include specific information about a "MultiArray" serializable in FPP tests. The examples and documentation referenced focus on basic serializable types (e.g., `Test` struct with `U32`, `I8`, `F64` elements) and test-driven development workflows, but no multi-dimensional array serializable is described. To proceed, you would need to consult additional F' test resources or source code that explicitly defines `MultiArray`.
+
+*Sources: docs/how-to/test-driven-development.md · Svc/CmdSequencer/docs/AMPCSSequence.md · Fw/SerializableFile/test/ut/Test.cpp · docs/user-manual/gds/gds-dev-guide.md · docs/how-to/test-driven-development.md*
+
+
+---USER---
+What is the FW_TASK_NAME_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not explicitly mention the `FW_TASK_NAME_BUFFER_SIZE` macro or its intended use. Based on common conventions in embedded systems and F', macros involving "BUFFER_SIZE" typically define the maximum allowable length for strings (e.g., task names, log messages). However, without direct documentation in the provided sources, I cannot specify its exact purpose or value within the F' framework. 
+
+You may need to consult additional F' documentation or source code files (e.g., `FpConfig.hpp` or task-related headers) for precise details. Would you like me to search for files that might contain this macro?
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/DataStructures/docs/ExternalStack.md · Fw/Port/docs/sdd.md*
+
+
+---USER---
+How does TcpClientSocket handle socket errors?
+---RESPONSE---
+The `TcpClientSocket` handles socket errors through a combination of return status codes and system-level error codes (`errno`). Here's how it works based on the implementation details:
+
+1. **Protocol-Specific Error Handling**:
+   - The `openProtocol(SocketDescriptor& socketDescriptor)` method (overridden in `TcpClientSocket`) returns a `SocketIpStatus` enum. This status indicates success (`Drv::SOCK_SUCCESS`) or failure (e.g., invalid ports, connection issues). For example, if the socket fails to bind or connect, this method returns an appropriate error code.
+
+2. **Error Propagation**:
+   - If `openProtocol` fails, the higher-level `IpSocket::open()` method propagates this error to the caller. The caller must check the return value of `open()` to detect failures (e.g., `Drv::SOCK_FAILURE`).
+
+3. **System-Level Error Details**:
+   - When errors occur during low-level socket operations (e.g., network issues), the underlying Berkeley socket API sets the `errno` variable. The `TcpClientSocket` leverages this via methods like `Drv::Test::force_recv_timeout` in test code, which explicitly checks `errno` to diagnose issues (e.g., timeout errors).
+
+4. **Retry and Recovery**:
+   - In test scenarios (e.g., `test_with_loop`), the code explicitly checks the return status of `open()` and uses `EXPECT_EQ` to ensure success. If an error occurs, the test fails with the specific `errno` value, enabling debugging.
+
+In summary, `TcpClientSocket` relies on `SocketIpStatus` for protocol-specific errors and `errno` for system-level details, requiring callers to check these values to handle errors robustly.
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Drv/Ip/TcpClientSocket.hpp · Drv/Ip/test/ut/TestTcp.cpp · Drv/Ip/docs/sdd.md*
+
+
+---USER---
+What is the FW_TASK_PRIORITY_BUFFER_SIZE macro used for?
+---RESPONSE---
+The `FW_TASK_PRIORITY_BUFFER_SIZE` macro is not mentioned or defined in the provided F' knowledge base sources. The available documentation covers topics like assertions (`FW_ASSERT`), data structures (Arrays, Stacks), and object registries, but does not reference this specific macro. To determine its purpose, additional context from the F' framework's source code or configuration files would be required.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'Overrun' port.
+---RESPONSE---
+The provided knowledge base does not mention an "Overrun" port in the `Svc::ActiveRateGroup` component. The `ActiveRateGroup.fpp` file defines ports such as `CycleIn` (async input) and `RateGroupMemberOut` (output), but no port explicitly named "Overrun" is listed. The test code (`ActiveRateGroupTester.cpp`) references overrun conditions indirectly (e.g., via `m_causeOverrun`), but this refers to a test mechanism rather than a named port. 
+
+If the "Overrun" port is part of a different component or undocumented in the provided sources, further context or file inspection would be required.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Svc/ActiveRateGroup/test/ut/ActiveRateGroupTester.cpp · Svc/ActivePhaser/ActivePhaser.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The **Fw::TimePort** is designed to pass **time stamps** throughout a system, primarily for telemetry and event logging purposes. It encapsulates time information using the `Fw::Time` class, which stores:
+
+1. **Time base** (project-specific)  
+2. **Time context**  
+3. **Seconds portion** of the time stamp  
+4. **Microseconds portion** of the time stamp  
+
+This structure aligns with the `FPP TimeValue` data definition in `Time.fpp`, enabling consistent time representation across the system. The port diagram (referenced in the source) illustrates how this time data is routed between components, though the visual details are not explicitly described in the text.  
+
+The `Fw::TimePort` is distinct from `Fw::TimeIntervalPort`, which handles time intervals rather than absolute timestamps.
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+The `STest::Random::lowerUpper()` function in F' tests is used to generate random values within a specified range. Here's how it's applied in the provided example:
+
+1. **Message Size Randomization**  
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   Generates a random integer between `1` and `max_size` (inclusive) to simulate variable message sizes.
+
+2. **Priority Randomization**  
+   ```cpp
+   message.priority = STest::Random::lowerUpper(0, std::numeric_limits<I8>::max());
+   ```
+   Produces a random 8-bit signed integer (range: `-128` to `127`) to test priority handling.
+
+3. **Payload Data Randomization**  
+   ```cpp
+   message.sent[i] = STest::Random::lowerUpper(0, std::numeric_limits<U8>::max());
+   ```
+   Fills message payload with random 8-bit unsigned values (range: `0` to `255`).
+
+This pattern ensures tests exercise edge cases (e.g., maximum sizes, boundary values) and verifies robustness against varied input scenarios. The randomness helps validate that components like queues correctly handle all possible operational conditions.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+**[SYSTEM]: Switched to MISSION CONTROL mode.**
+
+
+---USER---
+What is the ComCcsds subtopology and how is it used?
+---RESPONSE---
+The `ComCcsds` subtopology is the default communication subtopology in F Prime, providing a standard implementation of the **CCSDS (Consultative Committee for Space Data Systems)** protocol stack. It is used to handle **framing/deframing** of data packets for space communication systems, ensuring compatibility with NASA's standard telemetry and command protocols.
+
+### Key Uses of `ComCcsds` Subtopology:
+1. **Default Communication Stack**:  
+   Modern F Prime deployments include `Svc.ComCcsds` by default, enabling CCSDS-compliant communication (e.g., for spacecraft telemetry and command uplinks).
+
+2. **Framing/Deframing**:  
+   It includes components like `Framer` and `Deframer` to format data into packets (framing) and parse incoming packets (deframing), critical for reliable data transmission.
+
+3. **Integration with Subtopologies**:  
+   Developers can either use `ComCcsds` as-is or replace parts of it with custom implementations (e.g., for proprietary protocols) by manually importing and modifying its components in their main deployment topology.
+
+4. **Example Replacement**:  
+   In the "Radio Manager" tutorial, `ComStub` is replaced with `ComCcsds.FramingSubtopology` to integrate custom radio management logic while retaining CCSDS framing capabilities.
+
+For custom protocols, developers must first understand and potentially modify this subtopology's structure, as described in the [Subtopologies Guide](../user-manual/design-patterns/subtopologies.md).
+
+*Sources: docs/how-to/implement-radio-manager.md · docs/how-to/custom-framing.md · docs/how-to/custom-framing.md · docs/how-to/develop-subtopologies.md · docs/how-to/develop-subtopologies.md*
+
+
+---USER---
+/info
+---RESPONSE---
+The error "fprime-venv not found" indicates the F' toolchain's virtual environment (fprime-venv) is missing or not properly configured. This environment is critical for managing dependencies and running F' commands. 
+
+### Possible Causes:
+1. **Incomplete Installation**: The F' environment wasn't initialized during installation.
+2. **Path Issues**: The virtual environment was installed in a non-standard location, and the system can't locate it.
+3. **Corrupted Setup**: The virtual environment may have been deleted or moved inadvertently.
+
+### Next Steps (Outside Academy Mode):
+- Verify your F' installation by checking if `fprime-venv` exists in the expected directory (e.g., `~/.fprime/`).
+- Reinstall F' or reinitialize the environment using the official setup instructions.
+- Ensure environment variables (like `PATH`) include the correct paths for F' tools.
+
+Let me know if you'd like guidance on locating the virtual environment or troubleshooting installation issues!
+
+---USER---
+What is an ActiveComponent in F Prime and how does it differ from a PassiveComponent?
+---RESPONSE---
+In F Prime, **ActiveComponents** and **PassiveComponents** are two types of components that serve different roles in the flight software architecture. Let’s break them down using analogies and conceptual clarity:
+
+---
+
+### **1. ActiveComponent**  
+- **Role**: The "core engine" of the system.  
+- **Behavior**:  
+  - Runs independently in its own thread (managed by the **scheduler**).  
+  - Has a defined **lifecycle** (start, stop, etc.).  
+  - Can communicate with other components via **ports** (like electrical connectors).  
+  - Is **essential** for the system’s real-time operations (e.g., sensors, actuators, or critical control logic).  
+
+**Analogy**: Think of an ActiveComponent as a **powerful motor** in a robot. It runs on its own, drives the system, and can interact with other parts (like sensors or wheels) through wires (ports).  
+
+---
+
+### **2. PassiveComponent**  
+- **Role**: An "extension" or "plugin" that relies on ActiveComponents to function.  
+- **Behavior**:  
+  - Does **not** run independently. It is **activated** by an ActiveComponent.  
+  - No separate thread or lifecycle management.  
+  - Often used for **optional features** (e.g., logging, diagnostics, or non-critical utilities).  
+  - Requires an ActiveComponent to "kickstart" its execution.  
+
+**Analogy**: A PassiveComponent is like a **light bulb**. It doesn’t produce light on its own—it needs a switch (ActiveComponent) to turn it on and provide power (via ports).  
+
+---
+
+### **Key Differences**  
+| Feature                | ActiveComponent               | PassiveComponent               |
+|------------------------|------------------------------|-------------------------------|
+| **Scheduler**          | Runs in its own thread        | Shares thread with ActiveComponent |
+| **Lifecycle**          | Starts/stop managed           | Activated by ActiveComponent   |
+| **Independence**       | Fully independent             | Dependent on ActiveComponent   |
+| **Use Case**           | Core real-time tasks          | Optional features, utilities    |
+
+---
+
+### **Why It Matters**  
+- **ActiveComponents** ensure the system stays responsive and reliable (critical for flight software).  
+- **PassiveComponents** add flexibility without bloating the core system.  
+
+**Example**:  
+- An **ActiveComponent** might manage a sensor to read temperature data in real time.  
+- A **PassiveComponent** could log that data to a file—activated only when needed.  
+
+Let me know if you’d like to explore how they communicate via ports or how they’re structured in code! 🚀
+
+---USER---
+How do I declare ports in an FPP component definition?
+---RESPONSE---
+In F Prime, **ports** are declared in a component's `.fpp` file using the `port` keyword. Ports define how components communicate with each other (e.g., sending data, receiving commands). Here's how to declare them:
+
+---
+
+### **Syntax for Declaring Ports**
+```cpp
+port <PortType> <PortName>;
+```
+
+- **`<PortType>`**: The type of data the port carries (e.g., `uint32`, `float`, or a custom type defined in the component's interface).
+- **`<PortName>`**: The name of the port (e.g., `commandPort`, `statusPort`).
+
+---
+
+### **Example: Declaring Input and Output Ports**
+```cpp
+// Example: A component with input and output ports
+port uint32 commandPort;        // Input port (receives data)
+port uint32 statusPort;         // Output port (sends data)
+```
+
+---
+
+### **Key Details**
+1. **Port Direction**:
+   - **Input ports** (`port Type inputPort;`) receive data from other components.
+   - **Output ports** (`port Type outputPort;`) send data to other components.
+   - Direction is inferred by how the port is used in the component's logic (e.g., `commandPort` is input, `statusPort` is output).
+
+2. **Port Types**:
+   - Must be defined in the component's interface (e.g., `uint32`, `float`, or a custom type like `TelemetryPacket`).
+   - Types are typically declared in the component's `.fpp` file or in shared interface files.
+
+3. **Generated Code**:
+   - FPP generates C++ code that implements the port logic (e.g., queues, callbacks) based on these declarations.
+
+---
+
+### **Analogy**
+Think of ports as **electrical connectors** between components:
+- An **input port** is like a wire that receives power (data) from another component.
+- An **output port** is like a wire that sends power (data) to another component.
+
+---
+
+### **When to Use Ports**
+- **Input ports** are used for receiving commands or data (e.g., sensor readings).
+- **Output ports** are used for sending telemetry, status, or control signals.
+
+---
+
+### **Example Use Case**
+```cpp
+// A simple component that receives a command and sends a status
+port uint32 commandPort;        // Input: receives a command
+port uint32 statusPort;         // Output: sends a status
+
+// Logic: If commandPort has data, send a status via statusPort
+if (commandPort.hasData()) {
+    statusPort.send(1);  // Send status code 1
+}
+```
+
+Let me know if you'd like to explore how ports are connected between components or how types are defined! 🚀
