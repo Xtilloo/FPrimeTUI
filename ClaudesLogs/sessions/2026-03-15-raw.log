@@ -2027,3 +2027,563 @@ For precise implementation details, you would need to inspect the full source co
 test query
 ---RESPONSE---
 test
+
+---USER---
+How is Os::Task::suspend() used in F´?
+---RESPONSE---
+The `Os::Task::suspend()` method in F' is used to suspend a task, with the suspension type indicating whether the suspension is intentional or unintentional. Here's how it is utilized based on the provided knowledge base:
+
+### Key Details:
+1. **Method Signature**:
+   ```cpp
+   void suspend(SuspensionType suspensionType) override;
+   ```
+   - `suspensionType` specifies the intentionality of the suspension (e.g., `INTENTIONAL` or `UNINTENTIONAL`).
+
+2. **Purpose**:
+   - Suspends the task, pausing its execution. The suspension type is tracked and returned via `isSuspended()` when needed.
+
+3. **Usage Context**:
+   - **Testing**: In `TestTask`, this method is overridden to control task suspension during test scenarios (e.g., simulating task pauses).
+   - **Task Management**: Used in `StubTask` to manage task states, ensuring proper handling of suspended tasks (e.g., resuming via `resume()`).
+
+4. **Behavior**:
+   - Resuming a suspended task requires calling `resume()`, which is part of the `TaskInterface` (implied by the documentation in `StubTask`).
+
+### Example Usage (Hypothetical):
+```cpp
+task->suspend(SuspensionType::INTENTIONAL);
+// Later, resume the task
+task->resume();
+```
+
+This method is critical for managing task lifecycles in F', particularly in scenarios requiring controlled suspension and resumption (e.g., testing or resource management).
+
+*Sources: Os/Stub/Task.hpp · Os/Stub/test/Task.hpp · Os/Queue.hpp · docs/user-manual/index.md · docs/user-manual/design-patterns/app-man-drv.md*
+
+
+---USER---
+What is F Prime?
+---RESPONSE---
+Hello from Mission Control!
+
+---USER---
+test query
+---RESPONSE---
+test
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'OverrunIn' port.
+---RESPONSE---
+The provided knowledge base does not contain any information about an `OverrunIn` port for the `Svc::ActiveRateGroup` component. The available documentation only describes a `CycleIn` async input port and other ports/events for the component. If you have additional context or files related to this port, please provide them for further analysis.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+What is the purpose of the Fw::TimePort?
+---RESPONSE---
+The `Fw::Time` port (likely referred to as `Fw::TimePort` in context) is used to pass **time stamps** throughout the system. Its primary purpose is to transmit time information for telemetry and event logging, as well as other time-sensitive operations. This port carries instances of the `Fw::Time` class, which encapsulates time values with a project-specific time base, context, seconds, and microseconds portions. 
+
+This aligns with the description in [Fw/Time/docs/sdd.md](#source-fwtime-docs-sddmd-type-markdown-content-tutorial), which explicitly states:  
+> *"The `Fw::Time` port is used to pass time stamps around the system, either for telemetry and events or other uses."*
+
+*Sources: Fw/Time/docs/sdd.md · Fw/Time/docs/sdd.md · Fw/Log/docs/sdd.md · Fw/Tlm/docs/sdd.md · Svc/BufferManager/docs/sdd.md*
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+**[SYSTEM]: Command '/good' is not available in dev mode. (Allowed in: dev)**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+**[SYSTEM]: Command '/bad' is not available in dev mode. (Allowed in: dev)**
+
+
+**[SYSTEM]: Command '/good' is not available in dev mode. (Allowed in: dev)**
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+**[SYSTEM]: Command '/good' is not available in dev mode. (Allowed in: dev)**
+
+
+---USER---
+How is STest::Random::lowerUpper() used in F´ tests?
+---RESPONSE---
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+**[SYSTEM]: Command '/bad' is not available in dev mode. (Allowed in: dev)**
+
+
+**[SYSTEM]: Command '/good' is not available in dev mode. (Allowed in: dev)**
+In F' tests, `STest::Random::lowerUpper()` is used to generate random values within a specified range for testing edge cases and ensuring robustness. Here's how it's applied:
+
+1. **Random Message Size**:  
+   ```cpp
+   message.size = STest::Random::lowerUpper(1, max_size);
+   ```
+   Generates a random `FwSizeType` between 1 and `max_size` to simulate varying message sizes.
+
+2. **Random Priority**:  
+   ```cpp
+   message.priority = STest::Random::lowerUpper(0, std::numeric_limits<I8>::max());
+   ```
+   Produces a random `FwQueuePriorityType` between 0 and the maximum signed 8-bit value, testing priority handling.
+
+3. **Random Data Payload**:  
+   ```cpp
+   message.sent[i] = STest::Random::lowerUpper(0, std::numeric_limits<U8>::max());
+   ```
+   Fills message buffers with random byte values (0–255) to verify data integrity during transmission/reception.
+
+This utility ensures tests exercise a wide range of scenarios, aligning with F'’s test-driven development practices.
+
+*Sources: Os/test/ut/queue/QueueRules.cpp · docs/user-manual/index.md · docs/how-to/test-driven-development.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/custom-framing.md*
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+**[SYSTEM]: Command '/good' is not available in dev mode. (Allowed in: dev)**
+
+
+---USER---
+Describe the MultiSerializable serializable in FPP tests.
+---RESPONSE---
+The provided knowledge base does not contain specific information about the `MultiSerializable` serializable in FPP tests. The sources referenced focus on `TimeType`, `SerializableFile`, and basic serialization examples (e.g., the `Test` class in `Test.cpp`), but no details are given about a `MultiSerializable` type or its usage in testing scenarios. 
+
+If you have additional context or files related to `MultiSerializable`, please share them, and I can provide a more targeted explanation.
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/gds/gds-test-api-guide.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/SerializableFile/SerializableFile.cpp · Fw/SerializableFile/SerializableFile.hpp*
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+**[SYSTEM]: Command '/good' is not available in dev mode. (Allowed in: dev)**
+
+
+---USER---
+What are the loadParameters and readParameters phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `loadParameters` phase is described in the F' documentation as a method used to request parameter values via a parameter port, making them available for use in a component. It is typically called during software initialization but can be invoked again if parameters are re-read after startup.
+
+The `readParameters` phase is listed in the `Fpp::ToCpp::Phases` enum, but **no additional details about it are provided in the relevant F' documentation sources** included in the knowledge base. You may need to consult additional F' resources or source code for further clarification on its behavior.
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · docs/user-manual/framework/building-topology.md*
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/SequenceU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardTestStruct.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'PingIn' port used for?
+---RESPONSE---
+The `PingIn` port in the `Svc::ActiveRateGroup` component is used as part of the **health checking pattern** to receive ping messages from the system. This allows the component to signal its responsiveness and confirm it is operational. 
+
+When a ping is received via `PingIn`, the component's C++ implementation must respond by sending a ping via the `PingOut` port (as mandated by the health checking design pattern). This mechanism ensures the component is actively monitoring its health and can communicate its status to the system. 
+
+This aligns with the standard practice described in the [health-checking documentation](docs/user-manual/design-patterns/health-checking.md), where `PingIn` serves as the input port for receiving health pings.
+
+*Sources: Svc/ActiveRateGroup/ActiveRateGroup.fpp · Fw/Cmd/docs/sdd.md · Ref/BlockDriver/BlockDriver.fpp · docs/user-manual/design-patterns/health-checking.md · default/config/AcConstants.fpp*
+
+
+---USER---
+How do you specify a telemetry channel's 'update' offset in FPP?
+---RESPONSE---
+In FPP (F Prime Protocol Processor), the "update" behavior for a telemetry channel is specified using the `update` attribute in the channel definition. This attribute can be set to `"on_change"` to trigger updates only when the value changes, or omitted (default) to send the channel value on every update (even if it's the same as the previous value). 
+
+There is no concept of an "offset" for the `update` behavior itself. Instead, the channel's **ID** is automatically offset by the component's base ID to ensure global uniqueness. For example:
+
+```fpp
+channel MyChannel {
+  id = 1001;
+  name = "MyChannel";
+  data_type = uint32;
+  update = "on_change";
+}
+```
+
+Here, `id = 1001` is offset by the component's base ID (e.g., if the component's base ID is 1000, the global ID becomes 1000 + 1001 = 2001). The `update` attribute controls the update policy, not an offset. 
+
+If you meant something else by "update offset," clarify further!
+
+*Sources: docs/user-manual/overview/04-cmd-evt-chn-prm.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md*
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-231/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+What is F Prime?
+---RESPONSE---
+Hello from Mission Control!
+
+---USER---
+test query
+---RESPONSE---
+test
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicTestStruct.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardTestArray.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardU32.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+How do you specify a telemetry channel's 'update' kind in FPP?
+---RESPONSE---
+
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-233/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+---USER---
+Hello
+---RESPONSE---
+
+
+> *(Cancelled)*
+
+---USER---
+What is F Prime?
+---RESPONSE---
+Hello from Mission Control!
+
+---USER---
+test query
+---RESPONSE---
+testIn FPP (F Prime), the `telemetryUpdate` field in a telemetry channel's dictionary definition specifies when the channel should update. The valid values are:
+
+- `"always"`: The channel updates continuously (default behavior).
+- `"onDemand"`: The channel updates only when explicitly requested.
+
+### Example from Knowledge Base
+The provided `MyGroundChannelsDictionary.json` snippet shows:
+
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.The error suggests a JSON syntax issue. Let's troubleshoot:
+
+1. **Check quotes**: Ensure all string values are enclosed in double quotes (`"`) instead of single quotes (`'`).
+2. **Validate commas**: Confirm there are no trailing commas after the last key-value pair in an object.
+3. **Brace matching**: Verify that all `{` and `}` pairs are properly nested and closed.
+
+Could you share the specific JSON snippet causing the error? I'll help identify the syntax issue.
+
+*Sources: docs/user-manual/gds/gds-test-api-guide.md · docs/user-manual/gds/gds-test-api-guide.md · docs/how-to/derive-channels-on-ground.md · docs/how-to/derive-channels-on-ground.md · docs/user-manual/gds/gds-test-api-guide.md*
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardTestArray.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardU32.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+What is the Svc::ActiveRateGroup component's 'TimeIn' port used for?
+---RESPONSE---
+The `Svc::ActiveRateGroup` component's definition in the provided knowledge base does **not** include a port named `TimeIn`. The component's documented ports are:
+
+- `CycleIn` (async input for rate group cycles)
+- `RateGroupMemberOut` (output to rate group members)
+- `PingIn` (health check input)
+- `PingOut` (health check output)
+
+If `TimeIn` is a port in your specific implementation or a different component (e.g., `ActivePhaser` has a `Tick` internal port), please provide additional context or verify the component definition file (e.g., `ActiveRateGroup.fpp`).
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActivePhaser/ActivePhaser.fpp · Svc/ActiveRateGroup/ActiveRateGroup.fpp · Fw/Prm/docs/sdd.md · docs/user-manual/framework/configuring-fprime.md*
