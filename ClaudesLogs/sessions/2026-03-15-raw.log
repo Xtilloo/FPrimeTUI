@@ -1877,3 +1877,153 @@ The `Svc::FileManager::ShellCommand` command is part of the `Svc::FileManager` c
 For precise implementation details (e.g., parameters, error handling), review the `FileManager` source code or consult the full SDD documentation.
 
 *Sources: Svc/Health/test/int/test_cmd_health.py · Svc/FileManager/test/int/test_cmd_fileManager.py · Svc/FileManager/test/ut/FileManagerMain.cpp · Svc/CmdSequencer/docs/sdd.md · Svc/CmdSequencer/docs/sdd.md*
+
+
+---USER---
+What is the FW_TASK_PRIORITY_BUFFER_SIZE macro used for?
+---RESPONSE---
+The provided knowledge base does not mention the `FW_TASK_PRIORITY_BUFFER_SIZE` macro or its usage. It covers topics like asserts, data structures (Arrays, Stacks), port-based communication, and object registries, but none of the sources explain task priority buffer sizes in the F' framework. You may need to consult additional documentation or source code related to task scheduling parameters in F'.
+
+*Sources: docs/user-manual/framework/assert.md · Fw/DataStructures/docs/Array.md · Fw/DataStructures/docs/Stack.md · Fw/Port/docs/sdd.md · Fw/DataStructures/docs/ExternalStack.md*
+
+
+---USER---
+Describe the Svc::ActiveRateGroup component's 'OverrunIn' port.
+---RESPONSE---
+The provided knowledge base does not include a description of the `Svc::ActiveRateGroup` component's `OverrunIn` port. The available sources only mention the `CycleIn` async input port and other ports/events within the `ActiveRateGroup` component but do not reference an `OverrunIn` port. Further documentation or code sources would be required to describe this specific port.
+
+*Sources: Fw/Cmd/docs/sdd.md · Svc/ActiveRateGroup/ActiveRateGroup.fpp · FppTestProject/FppTest/topology/components/Receiver/Receiver.fpp · Fw/Ports/Ready/Ready.fpp · Svc/ActivePhaser/ActivePhaser.fpp*
+
+
+---USER---
+How is STest::Random::alpha() used in F´ tests?
+---RESPONSE---
+The provided knowledge base does not specifically address the usage of `STest::Random::alpha()` in F' tests. The sources mention test-driven development (TDD) practices, FPP modeling, and framework concepts but do not detail the `STest::Random::alpha()` function or its role in testing. To answer this question accurately, additional context from F' source code, API documentation, or specific test examples would be required. 
+
+For details, refer to the F' test framework documentation or inspect test cases in the `Test` subdirectory of an F' project.
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/index.md · docs/how-to/custom-framing.md · docs/user-manual/design-patterns/app-man-drv.md · docs/how-to/index.md*
+
+
+---USER---
+Describe the MultiSerializable serializable in FPP tests.
+---RESPONSE---
+The provided knowledge base and source code snippets do not mention a `MultiSerializable` serializable in the context of FPP (F Prime) tests. The examples and documentation focus on basic serializables (e.g., `Test` class with scalar fields) and file operations via `SerializableFile`, but there is no explicit description of a `MultiSerializable` type or its usage in test scenarios. 
+
+To proceed, you would need to consult additional F' documentation or source code (e.g., `Fw/Serializable` components) for details on `MultiSerializable`. Let me know if you'd like to explore related concepts like composite serializables or file I/O in F'.
+
+*Sources: docs/how-to/test-driven-development.md · docs/user-manual/gds/gds-test-api-guide.md · Fw/SerializableFile/test/ut/Test.cpp · Fw/SerializableFile/SerializableFile.cpp · Fw/SerializableFile/SerializableFile.hpp*
+
+
+---USER---
+What are the stopTasks and freeThreads phases in Fpp::ToCpp::Phases?
+---RESPONSE---
+The `stopTasks` and `freeThreads` phases in `Fpp::ToCpp::Phases` are part of the lifecycle management of component instances in F Prime. While the provided knowledge base does not explicitly describe their behavior, we can infer their purpose based on their names and the general pattern of phases in F':
+
+1. **`stopTasks`**:  
+   Likely corresponds to stopping or terminating background tasks associated with a component instance. This phase would execute code to gracefully halt active tasks, ensuring proper cleanup before transitioning to later phases (e.g., resource release).
+
+2. **`freeThreads`**:  
+   Likely involves releasing or freeing up threads allocated for the component. This phase would handle resource cleanup, such as deallocating thread resources or resetting thread states, to prevent memory leaks or resource contention.
+
+These phases are part of the "init specifiers" for component instances, as described in the F Prime documentation, and are tied to the unified FPP (F Prime Processing) workflow for configuring and managing components. For precise implementation details, you would need to inspect the generated C++ code or consult the F Prime source code. 
+
+To explore their implementation, you could use the `run_fprime_command` tool with the `generate` or `impl` subcommand.
+
+*Sources: Fpp/ToCpp.fpp · Fw/Types/docs/sdd.md · Fw/Prm/docs/sdd.md · docs/how-to/develop-subtopologies.md · Os/IntervalTimer.hpp*
+
+
+---USER---
+Describe the VMIN and VTIME configuration in LinuxUartDriver.
+---RESPONSE---
+The provided F' knowledge base does not explicitly document the `VMIN` and `VTIME` configuration parameters for the `LinuxUartDriver`. These parameters are part of the standard Linux `termios` API for configuring UART behavior, but their usage in the F' framework's `LinuxUartDriver` is not described in the sources provided.
+
+### General Linux UART Context (External Knowledge):
+- **VMIN**: Minimum number of characters to read before returning. If non-zero, `read()` blocks until at least `VMIN` characters are available.
+- **VTIME**: Time (in deciseconds) to wait for input after `VMIN` is met. If zero, `read()` returns immediately if fewer than `VMIN` characters are available.
+
+For F'-specific configuration, you would need to refer to the `LinuxUartDriver` implementation details (not included in the provided sources) or consult the F' framework's termios integration.
+
+*Sources: docs/how-to/implement-radio-manager.md · Drv/LinuxUartDriver/LinuxUartDriver.fpp · docs/how-to/develop-device-driver.md · docs/how-to/implement-radio-manager.md · Fw/Types/docs/sdd.md*
+
+
+---USER---
+What is the purpose of the m_driverIsReady flag in buffer adapters?
+---RESPONSE---
+The `m_driverIsReady` flag in buffer adapters is used to track the readiness state of the underlying byte stream driver. Its primary purposes are:
+
+1. **Synchronization**: It signals whether the driver is prepared to accept data (via `ByteStreamSend`) or has completed initialization (via `Fw::Ready` ports). This ensures data operations only occur when the driver is operational.
+
+2. **Error Prevention**: In synchronous interfaces (e.g., `ByteStreamDriver`), it prevents sending data when the driver is not ready, avoiding `SEND_RETRY` or `OTHER_ERROR` statuses. For asynchronous interfaces, it ensures callbacks (e.g., `sendReturnOut`) are only invoked when the driver is active.
+
+3. **Flow Control**: It coordinates with `ByteStreamReady` ports to manage data transmission timing, ensuring buffers are returned promptly via `*Return` ports as required by the Communication Adapter Protocol.
+
+This flag is critical for adhering to the "return buffers promptly" best practice and handling errors gracefully via `Fw::Success::FAILURE` when the driver is not ready.
+
+*Sources: Drv/Interfaces/ByteStreamDriver.fpp · Drv/Interfaces/AsyncByteStreamDriver.fpp · Fw/Ports/Ready/Ready.fpp · docs/how-to/implement-radio-manager.md · Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp*
+
+
+---USER---
+Define Drv::ByteStreamStatus::RECV_NO_DATA.
+---RESPONSE---
+The `Drv::ByteStreamStatus::RECV_NO_DATA` enum value is defined in the `ByteStreamDriverModel.fpp` file as:
+
+```cpp
+enum ByteStreamStatus : U8 {
+    OP_OK         @< Operation worked as expected
+    SEND_RETRY    @< Data send should be retried
+    RECV_NO_DATA  @< Receive worked, but there was no data 
+    OTHER_ERROR   @< Error occurred, retrying may succeed
+}
+```
+
+**Definition:**  
+`RECV_NO_DATA` indicates that a receive operation completed successfully (no error occurred), but no data was available to retrieve. This status is used in asynchronous receive scenarios where the driver signals that the receive operation is complete, but the buffer remains empty. 
+
+This aligns with the [ground interface documentation](https://github.com/nasa/fprime/blob/devel/Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp#L14-L17), which specifies this status as part of the byte stream driver model.
+
+*Sources: Drv/ByteStreamDriverModel/ByteStreamDriverModel.fpp · docs/user-manual/framework/ground-interface.md · Svc/ComQueue/docs/sdd.md · Drv/Interfaces/ByteStreamDriver.fpp · Svc/DpWriter/docs/sdd.md*
+
+
+---USER---
+How does TcpServerSocket limit concurrent clients?
+---RESPONSE---
+The `Drv::TcpServerSocket` limits concurrent clients by design, allowing **only one active client connection at a time**. Here's how it works:
+
+1. **Single-Client Focus**:  
+   The class is explicitly designed for **single-client communication**. It does **not support a listen queue** for handling multiple simultaneous connections.
+
+2. **Ignored Subsequent Connects**:  
+   If a client connects while another is already active, subsequent connections are **ignored** until the current client disconnects. This ensures only one client is active at any time.
+
+3. **Blocking Behavior**:  
+   - `startup()` prepares the server to listen but does **not block**.  
+   - `open()` blocks until a client connects.  
+   - `close()` terminates the active client connection, freeing the server to accept a new client.
+
+4. **No Multiplexing**:  
+   The server does **not multiplex** multiple clients. Once a client is connected, new connections are silently rejected until the existing one is closed.
+
+This behavior ensures strict single-client operation, as documented in the `Drv::TcpServerSocket` class description and example usage.
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/TcpServer/docs/sdd.md · Drv/Ip/TcpServerSocket.hpp · Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md*
+
+
+---USER---
+What is the SocketComponentHelper::reconnectLoop()?
+---RESPONSE---
+The specific details about `SocketComponentHelper::reconnectLoop()` are not explicitly described in the provided F' knowledge base sources. However, based on the context of `SocketComponentHelper` and related code:
+
+- `SocketComponentHelper` manages a receive thread and automatic reconnection logic for IP sockets.  
+- The `reconnectLoop` likely implements the logic for attempting reconnections when a socket disconnects or errors occur, as mentioned in the `start` method's documentation.  
+- This loop would likely interact with the `ReconnectState` enum (`NOT_RECONNECTING`, `REQUEST_RECONNECT`, `RECONNECT_IN_PROGRESS`) to manage reconnection states.  
+
+For precise implementation details, you would need to inspect the full source code of `SocketComponentHelper` in the `Drv/Ip` directory. Would you like me to locate or analyze specific files?
+
+*Sources: Drv/Ip/docs/sdd.md · Drv/Ip/docs/sdd.md · Drv/Ip/SocketComponentHelper.hpp · Fw/Comp/ActiveComponentBase.hpp · Svc/ComQueue/docs/sdd.md*
+
+
+---USER---
+test query
+---RESPONSE---
+test
