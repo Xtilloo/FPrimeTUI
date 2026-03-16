@@ -63,6 +63,13 @@ class FPrimeTUI(App):
         self.active_ai_widget = None
         self.in_ai_turn = False
         self.turn_buffer = "" # Tracks content for the current isolated Turn widget
+        self.exchange_history: list[tuple[str, str]] = []
+        self._last_rag_sources: list[str] = []
+        # Feedback file paths (overridable for testing)
+        _project_root = Path(__file__).parent.parent
+        self._curated_path = str(Path(__file__).parent / "rag" / "curated_qa.md")
+        self._jsonl_path = str(_project_root / "docs" / "training" / "fine_tuning.jsonl")
+        self._diagnosis_path = str(_project_root / "docs" / "training" / "diagnosis_log.md")
 
     def compose(self) -> ComposeResult:
         with FadingScrollContainer(id="chat-container"):
@@ -149,6 +156,7 @@ class FPrimeTUI(App):
             return
         await containers[0].mount(Static(text, classes="user-prompt"))
         self.chat_history += f"\n\nUser: {text}\n\n"
+        self.exchange_history.append(("user", text))
         with open(self._chat_log_path, "a") as _log:
             _log.write(f"\n\n---USER---\n{text}\n---RESPONSE---\n")
         self._scroll_to_end_if_at_bottom()
@@ -175,7 +183,7 @@ class FPrimeTUI(App):
             self.chat_history += f"Mission Control:\n{initial_text}"
         self._scroll_to_end_if_at_bottom()
 
-    _chat_log_path: str = "/Users/xtilloo/Projects/FPrimeTUI/ClaudesLogs/sessions/2026-03-14-raw.log"
+    _chat_log_path: str = "/Users/xtilloo/Projects/FPrimeTUI/ClaudesLogs/sessions/2026-03-15-raw.log"
 
     def _add_to_chat_history(self, message: str, is_agent_thought: bool = False) -> None:
         """Appends to the current Turn's widget and the global memory."""
@@ -291,10 +299,16 @@ class FPrimeTUI(App):
         self.ai_client.add_message("user", user_query)
         await self._stream_and_handle_tools(extra_ctx)
 
+        # Record the full AI response for exchange history
+        if self.turn_buffer:
+            self.exchange_history.append(("assistant", self.turn_buffer))
+
         # 3. Append sources footnote after AI response completes
         if rag_sources:
             source_lines = " · ".join(rag_sources)
             self._add_to_chat_history(f"\n\n*Sources: {source_lines}*\n")
+
+        self._last_rag_sources = rag_sources
 
     def _prepare_for_generation(self):
         try:
@@ -484,6 +498,8 @@ class FPrimeTUI(App):
         self.ai_client.clear_history()
         self.turn_buffer = ""
         self.active_ai_widget = None
+        self.exchange_history = []
+        self._last_rag_sources = []
         try:
             containers = self.query("#chat-container")
             if not containers:
