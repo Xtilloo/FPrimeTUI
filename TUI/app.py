@@ -245,6 +245,13 @@ class FPrimeTUI(App):
             else:
                 self._add_to_chat_history(f"\n\n**[SYSTEM]: Current mode: {self.mode.value}. Use /mode <dev|academy> to switch.**\n")
                 return
+        elif cmd_name == "/good":
+            self._handle_good_command()
+            return
+        elif cmd_name == "/bad":
+            reason = user_query[len("/bad"):].strip()
+            self._handle_bad_command(reason)
+            return
 
         command = user_query[1:].strip()
         self._prepare_for_generation()
@@ -309,6 +316,56 @@ class FPrimeTUI(App):
             self._add_to_chat_history(f"\n\n*Sources: {source_lines}*\n")
 
         self._last_rag_sources = rag_sources
+
+    def _handle_good_command(self) -> None:
+        """Save the last Q&A exchange to the curated knowledge store."""
+        # Need at least one user + one assistant message
+        user_entries = [(r, t) for r, t in self.exchange_history if r == "user"]
+        asst_entries = [(r, t) for r, t in self.exchange_history if r == "assistant"]
+        if not user_entries or not asst_entries:
+            self._add_to_chat_history(
+                "\n\n**[SYSTEM]: No Q&A exchange to save. Ask a question first.**\n"
+            )
+            return
+
+        question = user_entries[-1][1]
+        answer = asst_entries[-1][1]
+
+        from feedback import append_good_response
+        append_good_response(
+            question=question,
+            answer=answer,
+            rag_sources=self._last_rag_sources,
+            curated_path=self._curated_path,
+            jsonl_path=self._jsonl_path,
+        )
+        self._add_to_chat_history(
+            "\n\n**[SYSTEM]: Response saved to curated knowledge base.**\n"
+        )
+
+    def _handle_bad_command(self, reason: str) -> None:
+        """Flag the last Q&A exchange as incorrect."""
+        user_entries = [(r, t) for r, t in self.exchange_history if r == "user"]
+        asst_entries = [(r, t) for r, t in self.exchange_history if r == "assistant"]
+        if not user_entries or not asst_entries:
+            self._add_to_chat_history(
+                "\n\n**[SYSTEM]: No Q&A exchange to flag. Ask a question first.**\n"
+            )
+            return
+
+        question = user_entries[-1][1]
+        answer = asst_entries[-1][1]
+
+        from feedback import append_bad_response
+        append_bad_response(
+            question=question,
+            answer=answer,
+            reason=reason,
+            diagnosis_path=self._diagnosis_path,
+        )
+        self._add_to_chat_history(
+            "\n\n**[SYSTEM]: Response flagged for review.**\n"
+        )
 
     def _prepare_for_generation(self):
         try:
