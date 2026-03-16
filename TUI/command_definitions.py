@@ -32,4 +32,6 @@ COMMANDS = [
     CommandMetadata("/hash-to-file", "Convert FW_ASSERT hash to path", {TUIMode.MISSION_CONTROL}),
     CommandMetadata("/new", "Generate a new fprime object (component, deployment, etc.)", {TUIMode.MISSION_CONTROL}),
     CommandMetadata("/format", "Format C/C++ files using clang-format", {TUIMode.MISSION_CONTROL}),
+    CommandMetadata("/good", "Mark last response as correct (saves to curated store)", {TUIMode.MISSION_CONTROL}),
+    CommandMetadata("/bad", "Flag last response as incorrect (logs for review)", {TUIMode.MISSION_CONTROL}),
 ]
