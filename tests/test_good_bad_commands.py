@@ -1,9 +1,10 @@
 import json
-import os
+
 import pytest
-from TUI.app import FPrimeTUI
-from tests.test_helpers import submit_query
 from command_definitions import TUIMode
+
+from tests.test_helpers import submit_query
+from TUI.app import FPrimeTUI
 
 
 @pytest.fixture
@@ -28,16 +29,17 @@ def feedback_files(tmp_path):
 
 @pytest.mark.asyncio
 async def test_good_command_saves_last_exchange(mock_ai_client, feedback_files):
-    async with FPrimeTUI().run_test() as pilot:
-        app = pilot.app
-        app.mode = TUIMode.MISSION_CONTROL
-        app._curated_path = feedback_files["curated"]
-        app._jsonl_path = feedback_files["jsonl"]
-        app._diagnosis_path = feedback_files["diagnosis"]
+    app = FPrimeTUI()
+    app.mode = TUIMode.MISSION_CONTROL
+    app._curated_path = feedback_files["curated"]
+    app._jsonl_path = feedback_files["jsonl"]
+    app._diagnosis_path = feedback_files["diagnosis"]
 
+    async with app.run_test() as pilot:
         # Simulate a Q&A exchange
         await mock_ai_client.queue_response(["Active components have threads."])
         await submit_query(pilot, app, "What is an active component?")
+        await pilot.pause()
         await pilot.pause()
 
         # Now run /good
@@ -58,16 +60,17 @@ async def test_good_command_saves_last_exchange(mock_ai_client, feedback_files):
 
 @pytest.mark.asyncio
 async def test_bad_command_logs_last_exchange(mock_ai_client, feedback_files):
-    async with FPrimeTUI().run_test() as pilot:
-        app = pilot.app
-        app.mode = TUIMode.MISSION_CONTROL
-        app._curated_path = feedback_files["curated"]
-        app._jsonl_path = feedback_files["jsonl"]
-        app._diagnosis_path = feedback_files["diagnosis"]
+    app = FPrimeTUI()
+    app.mode = TUIMode.MISSION_CONTROL
+    app._curated_path = feedback_files["curated"]
+    app._jsonl_path = feedback_files["jsonl"]
+    app._diagnosis_path = feedback_files["diagnosis"]
 
+    async with app.run_test() as pilot:
         # Simulate a Q&A exchange
         await mock_ai_client.queue_response(["A port is a USB connector."])
         await submit_query(pilot, app, "What is a port?")
+        await pilot.pause()
         await pilot.pause()
 
         # Now run /bad with reason
@@ -83,13 +86,13 @@ async def test_bad_command_logs_last_exchange(mock_ai_client, feedback_files):
 
 @pytest.mark.asyncio
 async def test_good_command_no_exchange_shows_error(mock_ai_client, feedback_files):
-    async with FPrimeTUI().run_test() as pilot:
-        app = pilot.app
-        app.mode = TUIMode.MISSION_CONTROL
-        app._curated_path = feedback_files["curated"]
-        app._jsonl_path = feedback_files["jsonl"]
-        app._diagnosis_path = feedback_files["diagnosis"]
+    app = FPrimeTUI()
+    app.mode = TUIMode.MISSION_CONTROL
+    app._curated_path = feedback_files["curated"]
+    app._jsonl_path = feedback_files["jsonl"]
+    app._diagnosis_path = feedback_files["diagnosis"]
 
+    async with app.run_test() as pilot:
         # Run /good with no prior exchange
         await mock_ai_client.queue_response([])
         await submit_query(pilot, app, "/good")

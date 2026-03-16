@@ -1,7 +1,8 @@
 import json
-import os
+
 import pytest
-from TUI.feedback import append_good_response, append_bad_response
+
+from TUI.feedback import append_bad_response, append_good_response
 
 
 @pytest.fixture

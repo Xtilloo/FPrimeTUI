@@ -1,17 +1,18 @@
 import pytest
+
+from tests.test_helpers import submit_query
 from TUI.app import FPrimeTUI
 
 
 @pytest.mark.asyncio
 async def test_exchange_history_tracks_user_and_assistant(mock_ai_client):
     """exchange_history should record (role, text) tuples for each turn."""
-    async with FPrimeTUI().run_test() as pilot:
-        app = pilot.app
+    app = FPrimeTUI()
+    async with app.run_test() as pilot:
         assert app.exchange_history == []
 
         # Simulate a user turn + AI response
         await mock_ai_client.queue_response(["Hello from Mission Control!"])
-        from tests.test_helpers import submit_query
         await submit_query(pilot, app, "What is F Prime?")
         await pilot.pause()
 
@@ -24,10 +25,9 @@ async def test_exchange_history_tracks_user_and_assistant(mock_ai_client):
 @pytest.mark.asyncio
 async def test_exchange_history_cleared_on_clear(mock_ai_client):
     """action_clear_chat should reset exchange_history."""
-    async with FPrimeTUI().run_test() as pilot:
-        app = pilot.app
+    app = FPrimeTUI()
+    async with app.run_test() as pilot:
         await mock_ai_client.queue_response(["test"])
-        from tests.test_helpers import submit_query
         await submit_query(pilot, app, "test query")
         await pilot.pause()
 
