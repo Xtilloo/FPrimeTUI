@@ -363,3 +363,11 @@ def test_diversity_filter_preserves_order():
     result = apply_diversity_filter(chunks, "general", "", 5)
     scores = [c["score"] for c in result]
     assert scores == sorted(scores, reverse=True)
+
+
+def test_curated_qa_gets_curated_knowledge_category():
+    assert get_source_category("rag/curated_qa.md") == "curated_knowledge"
+
+
+def test_curated_knowledge_boost_is_1_15():
+    assert get_source_category_boost("rag/curated_qa.md") == 1.15

@@ -69,6 +69,7 @@ def extract_keywords(query: str) -> list[str]:
 # Categories are matched by prefix against the chunk's source_file path.
 _SOURCE_CATEGORY_RULES: list[tuple[str, str]] = [
     # Order matters: first match wins. More specific patterns first.
+    ("rag/curated_qa", "curated_knowledge"),
     ("FppTestProject/", "test_projects"),
     ("fprime-tools/", "tools"),
     ("Fw/", "framework_core"),
@@ -89,6 +90,7 @@ _SOURCE_CATEGORY_BOOSTS: dict[str, float] = {
     "service_docs": 1.0,
     "test_projects": 0.85,
     "tools": 0.9,
+    "curated_knowledge": 1.15,
 }
 
 
