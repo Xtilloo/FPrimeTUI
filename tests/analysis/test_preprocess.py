@@ -1,5 +1,7 @@
 # tests/analysis/test_preprocess.py
-from preprocess_responses import extract_signals, make_batches
+import json
+
+from preprocess_responses import extract_signals, make_batches, write_batches
 
 # --- extract_signals ---
 
@@ -140,3 +142,51 @@ def test_extract_signals_missing_response_key():
     assert s["has_gap"] is False
     assert s["has_fpp"] is False
     assert s["timeout"] is True  # len("") < 50
+
+
+# --- write_batches and main integration tests ---
+
+
+def test_write_batches_creates_files(tmp_path, monkeypatch):
+    import preprocess_responses as pp
+    monkeypatch.setattr(pp, "BATCHES_DIR", tmp_path)
+
+    items = [{"id": str(i)} for i in range(30)]
+    count = write_batches("accuracy", items)
+
+    assert count == 2
+    assert (tmp_path / "accuracy_001.json").exists()
+    assert (tmp_path / "accuracy_002.json").exists()
+    batch1 = json.loads((tmp_path / "accuracy_001.json").read_text())
+    assert len(batch1) == pp.BATCH_SIZE
+    batch2 = json.loads((tmp_path / "accuracy_002.json").read_text())
+    assert len(batch2) == 5  # 30 - 25
+
+
+def test_preprocess_main_writes_manifest_and_signals(tmp_path, monkeypatch):
+    """End-to-end: write a small JSONL, run main(), check manifest and signals."""
+    import preprocess_responses as pp
+
+    input_file = tmp_path / "responses.jsonl"
+    entries = [
+        {"id": str(i), "category": "Architecture", "question": f"Q{i}?",
+         "expected": "answer", "response": "A" * 100, "status": "ok",
+         "timestamp": "2026-03-17T00:00:00"}
+        for i in range(1, 6)
+    ]
+    input_file.write_text("\n".join(json.dumps(e) for e in entries))
+
+    monkeypatch.setattr(pp, "INPUT_FILE", input_file)
+    monkeypatch.setattr(pp, "ANALYSIS_DIR", tmp_path / "analysis")
+    monkeypatch.setattr(pp, "BATCHES_DIR", tmp_path / "analysis" / "batches")
+
+    pp.main()
+
+    manifest = json.loads((tmp_path / "analysis" / "manifest.json").read_text())
+    assert manifest["total"] == 5
+    assert manifest["batches"]["accuracy"] == 1  # 5 items fits in 1 batch of 25
+
+    signals = json.loads((tmp_path / "analysis" / "signals.json").read_text())
+    assert "1" in signals
+    assert "has_gap" in signals["1"]
+    assert "has_fpp" in signals["1"]
