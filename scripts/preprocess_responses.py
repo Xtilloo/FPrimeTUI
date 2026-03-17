@@ -34,13 +34,16 @@ BATCHES_DIR = ANALYSIS_DIR / "batches"
 BATCH_SIZE = 25
 
 GAP_KEYWORDS = [
-    "knowledge base",
+    "not in my knowledge base",
+    "not in the knowledge base",
+    "not mentioned in",
     "do not have",
     "don't have",
-    "no information",
-    "not aware",
+    "no information about",
+    "not aware of",
     "cannot find",
     "not enough info",
+    "not enough information",
 ]
 
 
@@ -50,7 +53,7 @@ def extract_signals(entry: dict) -> dict:
     response_lower = response.lower()
 
     # Knowledge gap detection
-    has_gap = any(kw in response_lower for kw in GAP_KEYWORDS)
+    has_gap = any(re.search(r'\b' + re.escape(kw) + r'\b', response_lower) for kw in GAP_KEYWORDS)
 
     # FPP code blocks
     fpp_blocks = re.findall(r"```fpp\n(.*?)```", response, re.DOTALL)
@@ -120,8 +123,13 @@ def main() -> None:
 
     # Extract signals for all entries
     signals_map: dict[str, dict] = {}
+    skipped = 0
     for entry in entries:
-        signals_map[str(entry["id"])] = extract_signals(entry)
+        try:
+            signals_map[str(entry["id"])] = extract_signals(entry)
+        except (KeyError, TypeError) as exc:
+            print(f"[WARN] Skipping malformed entry: {exc}", file=sys.stderr)
+            skipped += 1
 
     # Write signals.json for aggregator
     (ANALYSIS_DIR / "signals.json").write_text(
@@ -129,56 +137,57 @@ def main() -> None:
     )
 
     # Build per-concern item lists (only the fields each agent needs)
+    valid_entries = [e for e in entries if str(e.get("id", "")) in signals_map]
     accuracy_items = [
         {
             "id": e["id"],
-            "category": e["category"],
-            "question": e["question"],
-            "expected": e["expected"],
-            "response": e["response"],
+            "category": e.get("category"),
+            "question": e.get("question"),
+            "expected": e.get("expected"),
+            "response": e.get("response"),
         }
-        for e in entries
+        for e in valid_entries
     ]
     gap_items = [
         {
             "id": e["id"],
-            "category": e["category"],
-            "question": e["question"],
-            "response": e["response"],
+            "category": e.get("category"),
+            "question": e.get("question"),
+            "response": e.get("response"),
         }
-        for e in entries
+        for e in valid_entries
         if signals_map[str(e["id"])]["has_gap"]
     ]
     fpp_items = [
         {
             "id": e["id"],
-            "category": e["category"],
-            "question": e["question"],
-            "expected": e["expected"],
+            "category": e.get("category"),
+            "question": e.get("question"),
+            "expected": e.get("expected"),
             "fpp_blocks": signals_map[str(e["id"])]["fpp_blocks"],
         }
-        for e in entries
+        for e in valid_entries
         if signals_map[str(e["id"])]["has_fpp"]
     ]
     sources_items = [
         {
             "id": e["id"],
-            "category": e["category"],
-            "question": e["question"],
+            "category": e.get("category"),
+            "question": e.get("question"),
             "sources_cited": signals_map[str(e["id"])]["sources_cited"],
-            "response": e["response"][:1000],
+            "response": e.get("response", "")[:1000],
         }
-        for e in entries
+        for e in valid_entries
         if signals_map[str(e["id"])]["source_count"] > 0
     ]
     commands_items = [
         {
             "id": e["id"],
-            "category": e["category"],
-            "question": e["question"],
+            "category": e.get("category"),
+            "question": e.get("question"),
             "tool_calls": signals_map[str(e["id"])]["tool_calls"],
         }
-        for e in entries
+        for e in valid_entries
         if signals_map[str(e["id"])]["has_tool_call"]
     ]
 
@@ -196,6 +205,8 @@ def main() -> None:
         "generated_at": datetime.now().isoformat(),
     }
     (ANALYSIS_DIR / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    if skipped:
+        print(f"[WARN] Skipped {skipped} malformed entries", file=sys.stderr)
 
     print(f"Preprocessed {len(entries)} responses")
     for concern, count in batch_counts.items():

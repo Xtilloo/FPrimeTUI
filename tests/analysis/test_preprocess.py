@@ -121,3 +121,22 @@ def test_make_batches_smaller_than_size():
     batches = make_batches(items, 25)
     assert len(batches) == 1
     assert len(batches[0]) == 10
+
+
+def test_gap_no_false_positive_on_component_description():
+    """A response that mentions 'no information' in context should not flag as gap."""
+    entry = {
+        "response": "The component stores no information in persistent memory and operates statelessly.",
+        "status": "ok",
+    }
+    s = extract_signals(entry)
+    assert s["has_gap"] is False
+
+
+def test_extract_signals_missing_response_key():
+    """extract_signals handles missing response key gracefully."""
+    entry = {"status": "ok"}  # no "response" key
+    s = extract_signals(entry)
+    assert s["has_gap"] is False
+    assert s["has_fpp"] is False
+    assert s["timeout"] is True  # len("") < 50
