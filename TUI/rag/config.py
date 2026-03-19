@@ -13,3 +13,5 @@ DEFAULT_TIER: int = 1
 RERANK_K: int = 50  # Fixed — large enough for all tiers + query adjustments
 
 KEYWORD_WEIGHT: float = 0.3  # Multiplicative tiebreaker: score *= (1 + kw * weight)
+
+EMBED_BATCH_SIZE: int = 32  # Chunks per ollama embed request

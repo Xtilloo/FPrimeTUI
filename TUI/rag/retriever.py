@@ -271,15 +271,16 @@ def reciprocal_rank_fusion(dense_ids: list[str], sparse_ids: list[str]) -> dict[
     return scores
 
 
+_QUERY_INSTRUCTIONS: dict[str, str] = {
+    "code_seeking": "Prioritize code examples and exact syntax from the sources below.",
+    "concept_seeking": "Explain the concept using the sources below. Cite specific F' terminology.",
+    "file_specific": "Answer using the content from the requested file below.",
+    "comparison": "Compare using specific details from the sources below.",
+}
+
+
 def format_context(chunks: list[dict], query_type: str = "general") -> str:
     """Format retrieved chunks into labeled context blocks for the prompt."""
-    # Query-type instruction prefix
-    _QUERY_INSTRUCTIONS: dict[str, str] = {
-        "code_seeking": "Prioritize code examples and exact syntax from the sources below.",
-        "concept_seeking": "Explain the concept using the sources below. Cite specific F' terminology.",
-        "file_specific": "Answer using the content from the requested file below.",
-        "comparison": "Compare using specific details from the sources below.",
-    }
     blocks = []
     instruction = _QUERY_INSTRUCTIONS.get(query_type, "")
     if instruction:
@@ -302,16 +303,23 @@ def _embed(text: str) -> list[float]:
     return result
 
 
-def _load_index() -> tuple:
-    client = chromadb.PersistentClient(path=DB_PATH)
-    collection = client.get_collection("fprime")
-    with open(BM25_PATH, "rb") as f:
-        bm25_data = pickle.load(f)
-    return collection, bm25_data
-
+# Module-level index cache — loaded once per process, never reloaded.
+_index_collection: Optional[object] = None
+_index_bm25_data: Optional[dict] = None
 
 # Module-level cache for known entities (built once on first query)
 _known_entities: Optional[set[str]] = None
+
+
+def _get_index() -> tuple:
+    """Return (collection, bm25_data), loading from disk only on first call."""
+    global _index_collection, _index_bm25_data
+    if _index_collection is None or _index_bm25_data is None:
+        client = chromadb.PersistentClient(path=DB_PATH)
+        _index_collection = client.get_collection("fprime")
+        with open(BM25_PATH, "rb") as f:
+            _index_bm25_data = pickle.load(f)
+    return _index_collection, _index_bm25_data
 
 
 def _build_known_entities(chunks: dict[str, dict]) -> set[str]:
@@ -351,7 +359,7 @@ def query(text: str, tier: int = DEFAULT_TIER) -> dict:
             "RAG index not found. Run: python -m rag.indexer"
         )
 
-    collection, bm25_data = _load_index()
+    collection, bm25_data = _get_index()
     all_chunks: dict[str, dict] = bm25_data["chunks"]
     bm25: BM25Okapi = bm25_data["bm25"]
     chunk_ids: list[str] = bm25_data["ids"]

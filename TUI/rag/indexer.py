@@ -25,6 +25,7 @@ from rag.chunker import (
     chunk_python,
     deduplicate,
 )
+from rag.config import EMBED_BATCH_SIZE
 from rag.retriever import tokenize
 from rank_bm25 import BM25Okapi
 
@@ -160,7 +161,6 @@ def build_index(chunks: list[dict[str, Any]], db_path: Path) -> None:
     texts: list[str] = []
     metadatas: list[dict[str, Any]] = []
 
-    BATCH = 32
     for i, chunk in enumerate(chunks):
         cid = hashlib.sha256(chunk["text"].encode()).hexdigest()[:16]
         chunk_map[cid] = chunk
@@ -176,7 +176,7 @@ def build_index(chunks: list[dict[str, Any]], db_path: Path) -> None:
             # at query time rather than stored metadata. Deferred to iteration 4.
         })
 
-        if len(ids) == BATCH or i == len(chunks) - 1:
+        if len(ids) == EMBED_BATCH_SIZE or i == len(chunks) - 1:
             embs = embed_batch(texts)
             collection.upsert(ids=ids, documents=texts, metadatas=metadatas, embeddings=embs)  # type: ignore[arg-type]
             print(f"  Indexed {i+1}/{len(chunks)} chunks", end="\r")

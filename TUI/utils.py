@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 from typing import Optional
 
@@ -13,10 +12,3 @@ def find_fprime_venv(start_path: Optional[Path] = None) -> Optional[Path]:
             return potential_venv
         current = current.parent
     return None
-
-def escape_markdown(text: str) -> str:
-    """Escapes Markdown special characters to render as literal text."""
-    # Escape triple backticks first, then single ones
-    text = text.replace("```", "\\`\\`\\`").replace("`", "\\`")
-    # Escape other common Markdown characters (at line start or anywhere)
-    return re.sub(r'([#*_{}\[\]()|+-])', r'\\\1', text)

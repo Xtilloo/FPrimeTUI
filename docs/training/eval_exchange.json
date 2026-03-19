@@ -1,0 +1,7 @@
+{
+  "question_id": "130",
+  "question_text": "What is the `library.cmake` file?",
+  "tui_response": "The `library.cmake` file is a CMake script that defines how a library (e.g., a shared/static library) is built as part of an F' project. It contains instructions for:\n\n1. **Compiling source files** (e.g., `.c` or `.cpp` files) into object files.\n2. **Linking object files** into a library (e.g., `libmylibrary.a` or `mylibrary.so`).\n3. **Specifying compiler flags** (e.g., optimization levels, warnings).\n4. **Including header directories** for the library's API.\n5. **Exporting targets** so other parts of the project can link against it.\n\nIn F' projects, this file is typically part of the `build` directory and is used by CMake to generate platform-specific build files (e.g., Makefiles, Visual Studio projects). It\u2019s critical for ensuring the library is built correctly and integrated with the rest of the system.\n\nIf you\u2019d like to see the contents of a specific `library.cmake` file, you can use the `read_file` tool to inspect it. Would you like me to do that for a particular file?",
+  "expected_answer": "Every F\u00b4 library must have a `library.cmake` file at its root. It uses `add_fprime_subdirectory` calls to include the library's components, ports, and subtopologies in the project's build system, serving as the central integration point for reusable code.",
+  "status": "processing"
+}

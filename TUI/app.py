@@ -3,10 +3,12 @@ import json
 import os
 import re
 import time
+from datetime import date
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Optional, cast
 
 from command_definitions import COMMANDS, TUIMode
+from feedback import append_bad_response, append_good_response
 from fprime_ai_client import FPrimeAIClient
 from shell import run_fprime_command
 from textual import on, work
@@ -70,6 +72,10 @@ class FPrimeTUI(App):
         self._curated_path = str(Path(__file__).parent / "rag" / "curated_qa.md")
         self._jsonl_path = str(_project_root / "docs" / "training" / "fine_tuning.jsonl")
         self._diagnosis_path = str(_project_root / "docs" / "training" / "diagnosis_log.md")
+        # Chat log — one file per calendar day, held open for the session
+        _log_dir = _project_root / "ClaudesLogs" / "sessions"
+        _log_dir.mkdir(parents=True, exist_ok=True)
+        self._chat_log = open(_log_dir / f"{date.today().isoformat()}-raw.log", "a", buffering=1)  # noqa: SIM115
 
     def compose(self) -> ComposeResult:
         with FadingScrollContainer(id="chat-container"):
@@ -157,8 +163,7 @@ class FPrimeTUI(App):
         await containers[0].mount(Static(text, classes="user-prompt"))
         self.chat_history += f"\n\nUser: {text}\n\n"
         self.exchange_history.append(("user", text))
-        with open(self._chat_log_path, "a") as _log:
-            _log.write(f"\n\n---USER---\n{text}\n---RESPONSE---\n")
+        self._chat_log.write(f"\n\n---USER---\n{text}\n---RESPONSE---\n")
         self._scroll_to_end_if_at_bottom()
 
     async def _mount_ai_turn(self, initial_text: str = ""):
@@ -183,16 +188,15 @@ class FPrimeTUI(App):
             self.chat_history += f"Mission Control:\n{initial_text}"
         self._scroll_to_end_if_at_bottom()
 
-    _chat_log_path: str = "/Users/xtilloo/Projects/FPrimeTUI/ClaudesLogs/sessions/2026-03-15-raw.log"
+    def on_unmount(self) -> None:
+        self._chat_log.close()
 
     def _add_to_chat_history(self, message: str, is_agent_thought: bool = False) -> None:
         """Appends to the current Turn's widget and the global memory."""
         if is_agent_thought and not self._show_agent_thoughts:
             return
 
-        with open(self._chat_log_path, "a") as _log:
-            _log.write(message)
-
+        self._chat_log.write(message)
         self.chat_history += message
         if self.active_ai_widget:
             self.turn_buffer += message
@@ -300,8 +304,10 @@ class FPrimeTUI(App):
                 if rag_result["answer_context"]:
                     extra_ctx += f"\n\n### RELEVANT F' KNOWLEDGE BASE ###\n{rag_result['answer_context']}\n###################################\n"
                     rag_sources = rag_result["sources"]
-            except Exception:
-                pass  # Index not built or retriever error — proceed with plain LLM call
+            except FileNotFoundError:
+                pass  # Index not built yet — proceed with plain LLM call
+            except Exception as rag_err:
+                self._add_to_chat_history(f"\n> *[RAG error: {rag_err}]*\n", is_agent_thought=True)
 
         self.ai_client.add_message("user", user_query)
         await self._stream_and_handle_tools(extra_ctx)
@@ -317,21 +323,21 @@ class FPrimeTUI(App):
 
         self._last_rag_sources = rag_sources
 
+    def _last_exchange(self) -> Optional[tuple[str, str]]:
+        """Return (question, answer) from the most recent Q&A pair, or None."""
+        user_texts = [t for r, t in self.exchange_history if r == "user"]
+        asst_texts = [t for r, t in self.exchange_history if r == "assistant"]
+        if not user_texts or not asst_texts:
+            return None
+        return user_texts[-1], asst_texts[-1]
+
     def _handle_good_command(self) -> None:
         """Save the last Q&A exchange to the curated knowledge store."""
-        # Need at least one user + one assistant message
-        user_entries = [(r, t) for r, t in self.exchange_history if r == "user"]
-        asst_entries = [(r, t) for r, t in self.exchange_history if r == "assistant"]
-        if not user_entries or not asst_entries:
-            self._add_to_chat_history(
-                "\n\n**[SYSTEM]: No Q&A exchange to save. Ask a question first.**\n"
-            )
+        exchange = self._last_exchange()
+        if exchange is None:
+            self._add_to_chat_history("\n\n**[SYSTEM]: No Q&A exchange to save. Ask a question first.**\n")
             return
-
-        question = user_entries[-1][1]
-        answer = asst_entries[-1][1]
-
-        from feedback import append_good_response
+        question, answer = exchange
         append_good_response(
             question=question,
             answer=answer,
@@ -339,33 +345,22 @@ class FPrimeTUI(App):
             curated_path=self._curated_path,
             jsonl_path=self._jsonl_path,
         )
-        self._add_to_chat_history(
-            "\n\n**[SYSTEM]: Response saved to curated knowledge base.**\n"
-        )
+        self._add_to_chat_history("\n\n**[SYSTEM]: Response saved to curated knowledge base.**\n")
 
     def _handle_bad_command(self, reason: str) -> None:
         """Flag the last Q&A exchange as incorrect."""
-        user_entries = [(r, t) for r, t in self.exchange_history if r == "user"]
-        asst_entries = [(r, t) for r, t in self.exchange_history if r == "assistant"]
-        if not user_entries or not asst_entries:
-            self._add_to_chat_history(
-                "\n\n**[SYSTEM]: No Q&A exchange to flag. Ask a question first.**\n"
-            )
+        exchange = self._last_exchange()
+        if exchange is None:
+            self._add_to_chat_history("\n\n**[SYSTEM]: No Q&A exchange to flag. Ask a question first.**\n")
             return
-
-        question = user_entries[-1][1]
-        answer = asst_entries[-1][1]
-
-        from feedback import append_bad_response
+        question, answer = exchange
         append_bad_response(
             question=question,
             answer=answer,
             reason=reason,
             diagnosis_path=self._diagnosis_path,
         )
-        self._add_to_chat_history(
-            "\n\n**[SYSTEM]: Response flagged for review.**\n"
-        )
+        self._add_to_chat_history("\n\n**[SYSTEM]: Response flagged for review.**\n")
 
     def _prepare_for_generation(self):
         try:
@@ -419,8 +414,7 @@ class FPrimeTUI(App):
         if final_displayed_seg.strip():
             self.turn_buffer = initial_turn_prefix + final_displayed_seg
             self.chat_history += final_displayed_seg
-            with open(self._chat_log_path, "a") as _log:
-                _log.write(final_displayed_seg)
+            self._chat_log.write(final_displayed_seg)
 
         self.ai_client.add_message("assistant", full_res)
         if self.active_ai_widget:

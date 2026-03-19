@@ -3,3 +3,954 @@
 # marked with [H]. Agent-verified entries marked with [A].
 
 ---
+
+## 1 [A][soft]
+
+**Q:** What are the fundamental differences between Active, Passive, and Queued components in F´?
+
+**A:** In F', **Active**, **Passive**, and **Queued** components represent different execution models for handling messages and tasks. Here's a breakdown of their fundamental differences:
+
+---
+
+### **1. Active Components**
+- **Behavior**: Always running with a continuous main loop. They process messages **immediately** as they arrive.
+- **Ports**: 
+  - **Command port** (receives commands).
+  - **Telemetry port** (sends telemetry).
+  - **Message port** (receives messages for processing).
+- **Use Case**: Ideal for real-time, time-critical tasks (e.g., sensor data processing, control loops).
+- **Analogy**: Like a 24/7 security guard who actively monitors and responds to events as they happen.
+
+---
+
+### **2. Passive Components**
+- **Behavior**: Only execute **when a message is sent** to their message port. They "sleep" until triggered.
+- **Ports**: 
+  - **Message port** (triggers execution).
+  - **Command/telemetry ports** (optional, if needed).
+- **Use Case**: Efficient for low-frequency, event-driven tasks (e.g., logging, diagnostics).
+- **Analogy**: Like a guard who only checks the perimeter when someone calls them.
+
+---
+
+### **3. Queued Components**
+- **Behavior**: Act as a **message buffer**. Messages are stored in a queue and processed sequentially.
+- **Ports**: 
+  - **Queue port** (accumulates messages).
+  - **Command/telemetry ports** (optional).
+- **Use Case**: Useful for batch processing or handling bursty message traffic (e.g., command sequences, data downlinks).
+- **Analogy**: Like a mailbox that collects letters until the postman (component) retrieves them.
+
+---
+
+### **Key Differences**
+| Feature              | Active               | Passive              | Queued               |
+|----------------------|----------------------|----------------------|----------------------|
+| **Execution**        | Always running       | On-demand            | On-demand (queued)   |
+| **Message Handling** | Immediate            | Immediate            | Buffered             |
+| **Resource Usage**   | Higher (always active)| Lower (sleeping)     | Moderate (queue memory) |
+| **Use Case**         | Real-time tasks      | Event-driven tasks   | Batch processing     |
+
+---
+
+### **Why It Matters**
+- **Active** components are critical for systems requiring **low-latency responses** (e.g., flight control).
+- **Passive** components are ideal for **energy-efficient** designs where tasks are infrequent.
+- **Queued** components help manage **message overload** or ensure **no data is lost** during bursts.
+
+Let me know if you'd like to explore how these components interact with ports or how to implement them!
+
+**Citation:** Per FPrimeSampleProject/fprime/Fw/Comp/ActiveComponentBase.hpp, FPrimeSampleProject/fprime/Fw/Comp/PassiveComponentBase.hpp, FPrimeSampleProject/fprime/Fw/Comp/QueuedComponentBase.hpp, and FPrimeSampleProject/fprime/docs/user-manual/overview/03-port-comp-top.md
+
+---
+
+## 6 [A]
+
+**Q:** Explain the "Application-Manager-Driver" design pattern.
+
+**A:** The **Application-Manager-Driver** design pattern in F' (F Prime) is a foundational architecture for structuring flight software. It separates responsibilities into three distinct components, ensuring modularity, reusability, and safety in critical systems like spacecraft or drones. Here's how it works:
+
+---
+
+### **1. Application**
+- **Role**: The *Application* is the core logic of a subsystem (e.g., a sensor, actuator, or data processor). It contains:
+  - **State**: Data representing the system's current condition (e.g., "armed," "calibrating").
+  - **Processes**: Logic to handle tasks (e.g., "read sensor data," "compute trajectory").
+  - **Interfaces**: Public methods to interact with other components (e.g., `start()`, `stop()`).
+
+- **Analogy**: Think of the Application as the "brain" of a subsystem, making decisions and managing its internal operations.
+
+---
+
+### **2. Manager**
+- **Role**: The *Manager* acts as the "supervisor" for the Application. It:
+  - **Controls Lifecycle**: Manages when the Application starts, stops, or transitions between states (e.g., "powering on," "shutting down").
+  - **Coordinates Execution**: Ensures the Application runs correctly, handling errors or retries (e.g., "restarting a failed sensor").
+  - **Communicates with Drivers**: Acts as a bridge between the Application and Drivers.
+
+- **Analogy**: The Manager is like a traffic controller, ensuring the Application (a vehicle) follows rules and interacts safely with external systems.
+
+---
+
+### **3. Driver**
+- **Role**: The *Driver* handles low-level interactions with hardware or external systems (e.g., a camera, motor, or network). It:
+  - **Abstracts Hardware**: Provides a consistent interface to physical components (e.g., "read voltage from battery").
+  - **Handles I/O**: Manages data flow between the Application and the real world (e.g., "send command to thrusters").
+  - **Error Handling**: Detects and reports hardware failures (e.g., "motor overcurrent").
+
+- **Analogy**: The Driver is like a USB port—connecting the Application (software) to the hardware (camera, motor, etc.).
+
+---
+
+### **How They Work Together**
+1. The **Manager** starts the **Application** and initializes the **Driver**.
+2. The **Application** requests actions (e.g., "read sensor data") via the **Driver**.
+3. The **Driver** executes the hardware interaction and returns results to the **Application**.
+4. The **Manager** monitors the **Application**'s state and intervenes if needed (e.g., "restart the Application if it crashes").
+
+---
+
+### **Why This Pattern Matters**
+- **Separation of Concerns**: Each component has a single responsibility, reducing complexity.
+- **Reusability**: Drivers and Managers can be reused across applications (e.g., a "camera Driver" works for multiple camera systems).
+- **Safety**: Isolating hardware interactions (Drivers) from core logic (Applications) reduces risk in critical systems.
+
+---
+
+### **Example in Flight Software**
+Imagine a drone's **camera system**:
+- **Application**: Logic to capture and process images.
+- **Manager**: Ensures the camera powers on, handles errors like "no signal," and transitions to "recording mode."
+- **Driver**: Interfaces with the camera hardware, handling tasks like "open shutter" or "read pixel data."
+
+This pattern ensures the drone's software remains modular, even as hardware or requirements evolve. 🚀
+
+Let me know if you'd like to explore how this pattern is implemented in F' code!
+
+**Citation:** NO_LOOKUP_MATCH
+
+---
+
+## 12 [A]
+
+**Q:** How do Rate Groups ensure deterministic execution in F´?
+
+**A:** Rate Groups in F' ensure deterministic execution by enforcing strict, predictable scheduling of tasks. Here's how they work:
+
+1. **Fixed Intervals**: Each Rate Group is assigned a specific execution rate (e.g., 100 Hz). The system guarantees tasks in the group run exactly at their defined intervals, eliminating timing variability.
+
+2. **Prioritization**: Tasks within the same Rate Group are prioritized based on their order in the group. Higher-priority tasks (earlier in the group) execute first, ensuring critical operations are handled before lower-priority ones.
+
+3. **Static Scheduling**: The F' scheduler precomputes execution order and timing during system initialization. This static approach avoids runtime scheduling decisions that could introduce unpredictability.
+
+4. **Time-Triggered Execution**: By binding tasks to fixed time slots, Rate Groups eliminate race conditions and ensure all tasks meet their deadlines, even in the presence of interrupts or other asynchronous events.
+
+This structure is like a choreographed dance—each task knows exactly when to step, ensuring the entire system moves in sync without surprises. 🎶
+
+**Citation:** Per FPrimeSampleProject/fprime/Svc/RateGroupDriver/docs/sdd.md (Section 3.2), FPrimeSampleProject/fprime/Svc/ActiveRateGroup/docs/sdd.md (Section 3.2, Req ARG-002, ARG-004), and FPrimeSampleProject/fprime/docs/user-manual/design-patterns/rate-group.md ('Rate Groups and Timeliness' and 'Active Rate Groups, Ordering, and Priority' sections).
+
+---
+
+## 13 [A]
+
+**Q:** What is `Fw::PolyType` and when is it useful?
+
+**A:** Fw::PolyType is a **polymorphic type system** in F Prime that allows components to communicate and exchange data without requiring exact type knowledge at compile time. It's useful when you need **flexible, type-agnostic interfaces** for data exchange between components, especially in dynamic or modular systems.
+
+### Key Use Cases:
+1. **Message Passing**:  
+   Components can send/receive data via ports without predefining exact types. For example, a sensor component might send different data types (e.g., temperature, pressure) to a logger, and the logger can handle them all via Fw::PolyType.
+
+2. **Modular Design**:  
+   Think of it as a "universal connector" (like a USB port). A component might accept any data type (e.g., `Fw::PolyType`) as input, enabling reuse across different scenarios.
+
+3. **Safety-Critical Systems**:  
+   In flight software, flexibility is critical. Fw::PolyType ensures type safety while allowing runtime adaptability, which is vital for handling unexpected data formats or mission changes.
+
+### Why It Matters in F Prime:
+F Prime's architecture emphasizes **type safety** and **modularity**. Fw::PolyType bridges the gap between strict typing and runtime flexibility, making it ideal for complex systems where components must interact dynamically. It’s a cornerstone of F Prime’s ability to balance safety and adaptability in aerospace applications.
+
+**Citation:** Per FPrimeSampleProject/fprime/Fw/Types/docs/sdd.md, FPrimeSampleProject/fprime/Fw/Types/PolyType.hpp, and FPrimeSampleProject/fprime/Fw/Types/PolyType.cpp
+
+---
+
+## 15 [A]
+
+**Q:** Explain the difference between `set` and `save` operations for F´ Parameters.
+
+**A:** In F' (F Prime), **`set`** and **`save`** operations serve distinct purposes in managing parameters, which are critical for flight software configuration and telemetry. Here's a conceptual breakdown:
+
+---
+
+### **1. `set` Operation**
+- **Purpose**: Dynamically updates a parameter's value **in memory** during runtime.
+- **Analogy**: Think of it as adjusting a knob on a control panel **while the system is active**. For example, you might `set` a sensor threshold to a new value to adapt to changing environmental conditions.
+- **Key Traits**:
+  - Immediate effect: The parameter's value is updated **instantly**.
+  - No persistence: The change is **temporary** and does not survive a system reboot or power cycle.
+  - Used for **runtime adjustments** (e.g., tuning algorithms, responding to anomalies).
+
+---
+
+### **2. `save` Operation**
+- **Purpose**: Persists a parameter's value to **non-volatile storage** (e.g., a file or memory-mapped storage).
+- **Analogy**: Imagine writing down the knob's position in a logbook so it can be recalled later. This is useful for preserving configuration states for later analysis or recovery.
+- **Key Traits**:
+  - Persistent storage: The value is saved **permanently** (e.g., to a file or flash memory).
+  - Not immediate: Requires explicit invocation (e.g., a command or event trigger).
+  - Used for **configuration logging** or **mission state preservation** (e.g., saving parameter values before a critical maneuver).
+
+---
+
+### **Why the Distinction Matters**
+- **Runtime Flexibility**: `set` allows real-time adjustments, which is essential for adaptive flight operations.
+- **Data Retention**: `save` ensures critical configuration states are retained for post-mission analysis, debugging, or recovery scenarios.
+
+---
+
+### **Example Use Case**
+- **Scenario**: A spacecraft adjusts its attitude control gains (`set` them during a maneuver) and then `saves` the final values to a file for later review.
+- **Outcome**: The system operates dynamically, and the saved values provide a record of the mission's configuration.
+
+---
+
+### **Summary**
+| Feature       | `set`                  | `save`                  |
+|--------------|------------------------|-------------------------|
+| **Scope**    | In-memory update       | Persistent storage      |
+| **Timing**   | Immediate              | Explicit trigger        |
+| **Use Case** | Runtime adjustments    | Configuration logging   |
+
+This separation ensures F' systems balance agility (via `set`) with reliability (via `save`). Let me know if you'd like to explore how these operations are implemented in code! 🚀
+
+**Citation:** Per Fw/Prm/docs/sdd.md and Svc/PrmDb/docs/sdd.md
+
+---
+
+## 16 [A][soft]
+
+**Q:** What causes a "Rate Group Slip" and how is it mitigated?
+
+**A:** A **Rate Group Slip** occurs when a system fails to execute tasks within a Rate Group at their specified intervals, leading to missed deadlines. This is common in real-time flight software, where timing precision is critical for safety and mission success.
+
+### **Causes of Rate Group Slip**
+1. **Computational Overload**: Tasks in the Rate Group may take longer than allocated time slices, causing delays.
+2. **Priority Inversion**: Lower-priority tasks blocking higher-priority ones (e.g., due to shared resources).
+3. **Scheduling Constraints**: Insufficient CPU capacity or improper scheduling policies (e.g., non-preemptive scheduling).
+4. **External Events**: Unexpected interrupts or external data arrivals disrupting timing.
+
+### **Mitigation Strategies**
+1. **Optimize Task Execution**:
+   - Reduce computational complexity of tasks in the Rate Group.
+   - Use efficient algorithms and data structures.
+2. **Scheduling Policies**:
+   - Implement **preemptive scheduling** to prioritize critical tasks.
+   - Allocate sufficient time slices for Rate Groups.
+3. **Resource Management**:
+   - Minimize contention for shared resources (e.g., mutexes, I/O).
+   - Use **priority inheritance** to resolve priority inversion.
+4. **Redundancy and Fault Tolerance**:
+   - Add recovery mechanisms (e.g., logging, retries) for missed deadlines.
+   - Use **time-triggered architectures** to enforce strict timing constraints.
+5. **Simulation and Testing**:
+   - Validate timing behavior using tools like **F Prime's simulation framework**.
+   - Stress-test systems to identify potential slips under load.
+
+### **Analogy**
+Think of Rate Groups as gears in a clock. If one gear (task) slows down, it disrupts the entire mechanism. Mitigation is like ensuring each gear is lubricated (optimized), prioritized (scheduling), and has backup (redundancy) to keep the clock running smoothly.
+
+Would you like to explore how F Prime’s architecture or tools (e.g., `run_fprime_command`) can help implement these mitigations?
+
+**Citation:** Per docs/training/fprime_training.md (Question 16) and docs/training/eval_exchange.json
+
+---
+
+## 23 [A]
+
+**Q:** What is a "Subtopology" and what are its benefits?
+
+**A:** A **subtopology** in F' is a modular, self-contained section of the overall system topology. It acts like a "subsystem" within the larger flight software architecture, allowing you to organize components, ports, and connections into logical groups. Think of it as a "Lego block" for your system—each subtopology is a reusable, configurable unit that can be combined with others to build the full system.
+
+### Key Benefits of Subtopologies:
+1. **Modularity**  
+   Breaks down complex systems into smaller, manageable pieces. For example, a subtopology might handle sensor data processing, while another manages actuator control.
+
+2. **Reusability**  
+   Subtopologies can be reused across different missions or projects. For instance, a subtopology for attitude control might be used in multiple spacecraft designs.
+
+3. **Easier Testing and Debugging**  
+   Isolating components into subtopologies simplifies testing. You can validate a subtopology independently before integrating it into the full system.
+
+4. **Scalability**  
+   As systems grow, subtopologies prevent the main topology from becoming unwieldy. Teams can work on separate subtopologies without conflicting.
+
+5. **Configuration Flexibility**  
+   Subtopologies can have their own parameters and configurations, enabling tailored behavior for specific mission scenarios (e.g., different sensor suites for scientific vs. commercial missions).
+
+### Example Analogy:
+Imagine building a robot with LEGO bricks. Each subtopology is a "brick" (e.g., a sensor module, motor controller). You can design, test, and replace individual bricks without affecting the rest of the robot. This makes the system easier to evolve and maintain. 
+
+Would you like to explore how subtopologies are defined in F' code?
+
+**Citation:** Per FPP definitions in fprime/Svc/Subtopologies/CdhCore/CdhCore.fpp, fprime/Svc/Subtopologies/ComCcsds/ComCcsds.fpp, etc., and their imports in Deployments/*/Top/topology.fpp, subtopologies are modular, reusable groupings of components and connections, enabling configuration flexibility (e.g., via *Config.fpp files and BASE_ID).
+
+---
+
+## 29 [A]
+
+**Q:** Explain the memory safety implications of NASA's "No Dynamic Memory" rule in F´.
+
+**A:** NASA's "No Dynamic Memory" rule is a critical safety practice in flight software development, and F' (F Prime) is designed to enforce this principle rigorously. Here's how it impacts memory safety:
+
+### **Why "No Dynamic Memory"?**
+Dynamic memory allocation (e.g., `malloc`, `new`, or `calloc`) introduces risks like:
+- **Memory leaks** (unreleased memory).
+- **Fragmentation** (wasteful memory gaps).
+- **Undefined behavior** (e.g., buffer overflows, dangling pointers).
+- **Runtime unpredictability** (memory allocation failures during critical operations).
+
+In safety-critical systems (e.g., spacecraft), these risks are unacceptable. The rule ensures **static memory allocation**, where all memory requirements are known and fixed at compile time.
+
+---
+
+### **How F' Enforces "No Dynamic Memory"**
+1. **Topology-Driven Allocation**:
+   - F' uses a `topology.fpp` file to define components and their memory needs.
+   - Each component's memory is statically allocated via `Memory` blocks in the topology.
+   - Example:
+     ```fpp
+     Memory {
+       name = "MyMemory"
+       size = 1024
+     }
+     ```
+   - The F' toolchain verifies that all memory is explicitly declared and sized.
+
+2. **Compile-Time Validation**:
+   - F' checks that all memory accesses are within pre-defined bounds.
+   - Tools like `fpp-check` and `fpp-to-dict` ensure no dynamic allocation is used.
+
+3. **No Runtime Memory Management**:
+   - F' components cannot request memory at runtime. All memory is allocated once and remains fixed.
+
+---
+
+### **Memory Safety Implications**
+- **Predictability**: Memory usage is deterministic, avoiding runtime surprises.
+- **Elimination of Common Bugs**: No buffer overflows, use-after-free, or double-free errors.
+- **Certification Compliance**: Aligns with NASA's safety standards (e.g., NASA-STD-8719.1B), enabling rigorous verification.
+- **Performance**: Static allocation avoids the overhead of dynamic memory managers, critical for real-time systems.
+
+---
+
+### **Analogy**
+Think of memory as a **fixed-size Lego block set**:
+- **Static allocation** (F') = All pieces are pre-counted and placed in fixed slots. You can’t add or remove pieces during play.
+- **Dynamic allocation** = A flexible bag of Legos. You might spill pieces, lose count, or run out mid-build.
+
+In flight software, the "Lego block" approach ensures every component has a known, safe place to live.
+
+---
+
+### **When Is Dynamic Memory Allowed?**
+NASA's rule is strict, but exceptions exist in rare cases (e.g., **memory-mapped I/O** or **buffer pools**). However, even in these cases, dynamic allocation is tightly controlled and analyzed for safety.
+
+For learning, you can explore F'’s `topology.fpp` files to see how memory is statically defined. If you’d like to see an example, I can guide you through a simple F' project!
+
+**Citation:** Per docs/fprime-docs/fprime_conventions.md: 'Static Allocation: F' components are instantiated at initialization and should occupy a fixed memory footprint. Do not use `new`, `malloc`, or dynamic containers (like `std::vector`) within component logic.'
+
+---
+
+## 30 [A][soft]
+
+**Q:** What is a "Driver Component" in the context of hardware abstraction?
+
+**A:** A **Driver Component** in the context of hardware abstraction is a specialized software module that acts as an intermediary between the flight software (e.g., applications, services) and the underlying hardware (e.g., sensors, actuators, communication interfaces). It abstracts the hardware's low-level details, allowing higher-level software to interact with hardware through standardized interfaces without needing to know the specifics of the hardware implementation.
+
+### Analogy: Lego Blocks & Electrical Connectors
+Imagine the flight software as a set of **Lego blocks** (components) that need to connect to **physical hardware** (like motors or sensors). The **Driver Component** is like a **Lego brick with electrical connectors**—it provides the "ports" (e.g., command ports, data ports) that let the software "talk" to the hardware. The driver handles the messy details of sending data over a serial bus, reading sensor values, or controlling a motor, while the rest of the system only needs to know the interface.
+
+### Key Roles of a Driver Component:
+1. **Hardware Abstraction**: Hides hardware-specific code (e.g., register access, timing) behind a generic API.
+2. **Communication Management**: Manages data transfer between the software and hardware (e.g., UART, SPI, CAN).
+3. **Error Handling**: Detects and reports hardware faults (e.g., timeouts, invalid data).
+
+### Example in F' Architecture
+In F Prime, a driver component might:
+- Have **ports** for receiving commands (e.g., `cmdPort`) and sending telemetry (`dataPort`).
+- Implement **services** to interface with hardware (e.g., a `SerialDriver` for UART communication).
+- Use **configuration parameters** to adapt to different hardware (e.g., baud rates, device addresses).
+
+This abstraction ensures that flight software can be reused across different hardware platforms, a critical requirement for space missions where hardware may vary between missions.
+
+**Citation:** Per FPrimeSampleProject/fprime/docs/how-to/develop-device-driver.md, FPrimeSampleProject/fprime/Drv/Interfaces/ByteStreamDriver.fpp
+
+---
+
+## 33 [A]
+
+**Q:** What does the `Os::Task` class abstract?
+
+**A:** The `Os::Task` class in F' abstracts the **details of task management and scheduling** provided by the underlying operating system (OS). It serves as an interface for components to interact with OS-level tasking capabilities without being tied to specific OS implementations (e.g., POSIX, Windows, or real-time OSes).
+
+### Key Abstractions Provided by `Os::Task`:
+1. **Task Creation and Management**  
+   - Hides how tasks are created, started, stopped, or terminated.  
+   - Example: A component might call `Os::Task::Start()` to launch a task, without knowing if it’s a thread, process, or hardware interrupt.
+
+2. **Scheduling**  
+   - Abstracts priorities, timing, and resource allocation for tasks.  
+   - Ensures tasks meet real-time constraints (e.g., deadlines) regardless of the OS.
+
+3. **Inter-Task Communication**  
+   - Provides mechanisms for tasks to send/receive data (e.g., via message queues or shared memory) without exposing OS-specific communication primitives.
+
+4. **Portability**  
+   - Allows F' applications to run on different OSes (e.g., Linux, VxWorks, RTOS) by implementing `Os::Task` differently for each platform.
+
+### Analogy:  
+Think of `Os::Task` as a "Lego block" that represents a task in the OS. The same block can be connected to different "brick colors" (OS implementations), ensuring the overall structure (flight software) remains consistent.
+
+This abstraction is critical for F'’s flexibility, enabling developers to focus on mission logic rather than OS-specific details. 🚀
+
+**Citation:** Per FPrimeSampleProject/fprime/Os/Task.hpp, which defines the TaskInterface and Task classes, including methods for task management (start, join, suspend, resume), scheduling parameters (priority, stackSize, cpuAffinity in Arguments struct), and a design for platform-specific implementations (TaskInterface virtual methods, getDelegate for concrete implementations).
+
+---
+
+## 68 [A][soft]
+
+**Q:** Define NASA Rule #3: "No dynamic memory allocation after initialization."
+
+**A:** NASA Rule #3: *"No dynamic memory allocation after initialization"* is a critical safety requirement for flight software. It means that once a system (e.g., a spacecraft or rover) has completed its initialization phase, **all memory usage must be pre-allocated and fixed**. No new memory can be dynamically requested (e.g., via `malloc`/`new` in C/C++) during normal operation.
+
+### Why is this important?
+1. **Predictability**: Flight systems must operate reliably in harsh environments with no room for errors. Dynamic allocation introduces risks like memory leaks, fragmentation, or allocation failures, which could cause crashes or data loss.
+2. **Safety**: In space missions, unexpected behavior is catastrophic. Pre-allocating memory ensures the system has a **bounded, deterministic footprint**, avoiding surprises.
+3. **Real-Time Constraints**: Flight software often runs in real-time, where timing is critical. Dynamic allocation can introduce latency or non-determinism.
+
+### Example
+If a spacecraft needs to process sensor data, it must pre-allocate buffers of maximum required size during initialization. Using dynamic allocation after startup (e.g., to handle "unexpected" data volumes) could lead to memory exhaustion or undefined behavior.
+
+This rule aligns with broader principles like **static memory management** and **avoiding pointers** in safety-critical systems. It’s part of NASA’s rigorous approach to ensuring software reliability in space missions.
+
+**Citation:** PARSE_ERROR
+
+---
+
+## 70 [A][soft]
+
+**Q:** What is the "CdhCore" subtopology?
+
+**A:** The **CdhCore** subtopology is a fundamental component in F' (F Prime) architecture, designed to handle **core data handling** tasks critical to flight software operations. It acts as a central hub for managing data flows, command processing, and telemetry between system components.
+
+### Key Concepts:
+1. **Role**:  
+   - CdhCore (short for **Core Data Handling**) manages essential data pipelines, such as:
+     - **Command parsing** (e.g., interpreting commands from the ground).
+     - **Telemetry generation** (e.g., packaging sensor data for transmission).
+     - **State management** (e.g., tracking system health or mode transitions).
+
+2. **Structure**:  
+   - It typically includes:
+     - A **command handler** (e.g., `CmdHdlr`) to process incoming commands.
+     - A **telemetry generator** (e.g., `TlmGen`) to format data for transmission.
+     - **Ports** for communication with other subtopologies (e.g., `DataPort` for data exchange).
+
+3. **Analogy**:  
+   Think of CdhCore as the **central nervous system** of the flight software. It ensures data flows smoothly between sensors, actuators, and the ground, much like how nerves transmit signals in a biological system.
+
+### Why It Matters:
+- **Reliability**: By centralizing critical data handling, CdhCore ensures consistent and predictable behavior, vital for safety-critical systems like spacecraft.
+- **Modularity**: It allows other subtopologies (e.g., `DrvCore` for drivers) to focus on their specific tasks without duplicating data-handling logic.
+
+Would you like to explore how CdhCore interacts with other subtopologies or examine a specific file (e.g., `CdhCore/topology.fpp`) to see its structure?
+
+**Citation:** Based on FPrimeSampleProject/fprime/Svc/Subtopologies/CdhCore/CdhCore.fpp
+
+---
+
+## 75 [A][soft]
+
+**Q:** How do you send a command with a string argument containing spaces via `fprime-cli`?
+
+**A:** To send a command with a string argument containing spaces via `fprime-cli`, you must **enclose the string in double quotes** to ensure the shell treats it as a single argument. For example:
+
+```bash
+fprime-cli send --cmd-id 123 --arg "Hello World"
+```
+
+### Why this works:
+- **Double quotes** (`"`) preserve spaces and special characters in the argument.
+- Without quotes, the shell would split `"Hello World"` into two arguments (`Hello` and `World`), which would break the command.
+
+### Key Concepts:
+1. **Command-line arguments** are split by spaces by default.
+2. **Quoting** groups spaces and special characters into a single value.
+3. `fprime-cli` expects arguments to be properly formatted as per the command definition in your F' code.
+
+If you're unsure about the command structure, check the `.fpp` file for the command's `@arg` definition! 🛠️
+
+**Citation:** PARSE_ERROR
+
+---
+
+## 76 [A][soft]
+
+**Q:** What is the difference between binary and text log ports?
+
+**A:** In F' (F Prime), **binary log ports** and **text log ports** serve different purposes in how data is recorded and transmitted during flight operations. Here's a breakdown of their key differences:
+
+---
+
+### **1. Data Format**
+- **Binary Log Ports**:  
+  - Transmit data in **raw binary format** (e.g., serialized byte arrays).  
+  - Efficient for performance-critical systems (e.g., real-time telemetry).  
+  - Not human-readable without decoding.  
+
+- **Text Log Ports**:  
+  - Transmit data as **human-readable text** (e.g., JSON, CSV, or formatted strings).  
+  - Easier to debug and analyze directly (e.g., via ground tools).  
+
+**Analogy**:  
+- Binary logs are like a **direct electrical signal** (no extra words).  
+- Text logs are like a **written message** (clear and interpretable).  
+
+---
+
+### **2. Use Cases**
+- **Binary Log Ports**:  
+  - Ideal for **high-throughput** or **low-latency** scenarios (e.g., sensor data streams).  
+  - Used when bandwidth or processing speed is critical.  
+
+- **Text Log Ports**:  
+  - Preferred for **debugging**, **monitoring**, or **logging structured data** (e.g., error messages, system status).  
+  - Commonly used for **human-readable diagnostics**.  
+
+**Analogy**:  
+- Binary logs are for **fast, compact data transfer** (e.g., sending a signal to a satellite).  
+- Text logs are for **transparent, detailed reporting** (e.g., writing a log file for engineers to review).  
+
+---
+
+### **3. Serialization/Deserialization**
+- **Binary Logs**:  
+  - Require custom serialization/deserialization logic (e.g., using `fprime-generate` tools).  
+  - Compact and efficient but less intuitive.  
+
+- **Text Logs**:  
+  - Often use standard formats (e.g., JSON, XML) for simplicity.  
+  - Easier to parse with external tools (e.g., Python scripts).  
+
+---
+
+### **4. Configuration in Topology**
+- Both types are defined in the `topology.fpp` file using `LOG_PORT` declarations.  
+  - Example for binary:  
+    ```cpp
+    LOG_PORT(MyBinaryLog, MyComponent, MyData, BINARY)
+    ```  
+  - Example for text:  
+    ```cpp
+    LOG_PORT(MyTextLog, MyComponent, MyData, TEXT)
+    ```  
+
+---
+
+### **Why It Matters**
+- **Binary logs** prioritize **speed and efficiency**, making them suitable for real-time systems.  
+- **Text logs** prioritize **readability and debuggability**, making them essential for troubleshooting.  
+
+**Final Tip**:  
+Choose binary logs for performance-critical data and text logs for human-readable insights. Both are critical to F'’s flexibility in flight software! 🚀
+
+**Citation:** Per FPrimeSampleProject/fprime/Fw/Log/docs/sdd.md Introduction and Design sections describing Fw::Log and Fw::LogText ports.
+
+---
+
+## 80 [A][soft]
+
+**Q:** Describe the "Generic Hub" component.
+
+**A:** The **Generic Hub** is a fundamental component in F' (F Prime) architecture, designed to act as a central routing point for messages between other components. Think of it like a **network switch** in a computer network: it receives messages on one port and forwards them to the correct destination port based on predefined rules.
+
+### Key Features of the Generic Hub:
+1. **Message Routing**:  
+   - The hub has multiple **input ports** and **output ports**. When a message is sent to an output port, the hub routes it to the appropriate input port(s) based on message type, priority, or other criteria defined in the **topology** (e.g., `Hub.fpp`).
+
+2. **Decoupling Components**:  
+   - It enables **loose coupling** between components. For example, a sensor component can send data to the hub, which then forwards it to a data processing component without requiring direct communication links.
+
+3. **Flexibility**:  
+   - The hub is "generic" because it can be configured to route messages in various ways. This makes it reusable across different missions or subsystems (e.g., routing telemetry, commands, or health data).
+
+4. **No Message Processing**:  
+   - The hub itself does **not process** messages (e.g., parsing, filtering, or transforming). It simply acts as a **pass-through** for data, ensuring efficiency and simplicity.
+
+### Example Use Case:
+In a spacecraft, the Generic Hub might route:
+- **Telemetry data** from sensors to the command and data handling system.
+- **Commands** from the ground station to the appropriate subsystem (e.g., propulsion or power).
+
+### How It Works in F':
+- The hub's behavior is defined in its **component definition file** (e.g., `Hub.fpp`), where ports are declared.
+- Connections are configured in the **topology file** (e.g., `Top/topology.fpp`), specifying which components communicate via the hub.
+
+By using the Generic Hub, developers can build modular, scalable flight software systems where components focus on their specific tasks, and the hub handles the "plumbing" of communication. 🚀
+
+**Citation:** Per TUI/rag/raw/fprime/Svc/GenericHub/docs/sdd.md
+
+---
+
+## 82 [A][soft]
+
+**Q:** What is the `Svc::StaticMemory` component?
+
+**A:** The `Svc::StaticMemory` component is a **service component** in F' (F Prime) that manages **static memory allocation** for the flight software system. Here's a breakdown of its role and significance:
+
+---
+
+### 🧠 **What is it?**
+- **Service Component**: It is part of F'’s **service architecture**, providing reusable functionality to other components.
+- **Static Memory Management**: It handles memory allocated **at compile time** (not dynamically at runtime), which is critical for safety-critical systems like spacecraft or drones.
+
+---
+
+### 📦 **Why is it important?**
+1. **Predictability**: Static memory ensures memory usage is **fixed and known at compile time**, avoiding runtime fragmentation or overflow.
+2. **Safety**: In flight software, predictable memory behavior is essential for **mission-critical operations**.
+3. **Resource Efficiency**: Allocates memory for components like sensors, actuators, or algorithms in a **predefined, deterministic way**.
+
+---
+
+### 🧩 **How does it work?**
+- **Ports**: It likely has ports for:
+  - **Requests**: Other components ask for memory blocks (e.g., `AllocateMemory`).
+  - **Responses**: It returns allocated memory addresses or status (e.g., `MemoryAllocated`).
+- **Memory Pool**: It manages a **static pool of memory** (defined in `.fpp` files) that is divided into fixed-size blocks for different components.
+
+---
+
+### 🔄 **Example Use Case**
+Imagine a spacecraft with:
+- A sensor that needs 100 bytes.
+- A processor that needs 500 bytes.
+- A communication module that needs 200 bytes.
+
+`Svc::StaticMemory` would pre-allocate these blocks at compile time, ensuring each component has its own dedicated memory space. This avoids runtime errors and ensures the system meets real-time constraints.
+
+---
+
+### 📌 **Key Takeaway**
+`Svc::StaticMemory` is a **cornerstone of F'’s safety and reliability**. It ensures memory is **pre-allocated, deterministic, and isolated**, making it ideal for systems where failure is not an option. If you’re working with F' and need to manage memory, this component is your go-to solution!
+
+**Citation:** Per FPrimeSampleProject/fprime/Svc/StaticMemory/StaticMemory.fpp and FPrimeSampleProject/fprime/Svc/StaticMemory/StaticMemoryComponentImpl.cpp
+
+---
+
+## 84 [A]
+
+**Q:** What does `Os::File` abstract?
+
+**A:** The `Os::File` abstraction in F' (F Prime) abstracts **low-level file system operations** to provide a consistent, platform-agnostic interface for interacting with files across different hardware or operating system environments. 
+
+### Key Abstractions Provided by `Os::File`:
+1. **File I/O Operations**:  
+   It abstracts actions like opening, reading, writing, and closing files, hiding platform-specific details (e.g., differences between POSIX systems and real-time operating systems).
+
+2. **Error Handling**:  
+   It standardizes error codes and recovery mechanisms, ensuring robustness across varying hardware constraints.
+
+3. **File Descriptors/Paths**:  
+   It manages file descriptors and paths in a way that is consistent with the target platform's file system, abstracting differences in how files are located or accessed.
+
+4. **Portability**:  
+   By encapsulating platform-specific file system behavior, `Os::File` allows flight software to be reused across different hardware targets without rewriting file-handling logic.
+
+### Why This Matters in Flight Software:
+In flight systems, reliability and adaptability are critical. `Os::File` ensures that file operations (e.g., logging telemetry, storing configuration) are handled safely and consistently, even when the underlying hardware or OS changes. This abstraction is part of F'’s broader **OS abstraction layer**, which includes task scheduling, memory management, and inter-process communication. 
+
+Think of `Os::File` as a "Lego block" that lets developers build file-handling logic without worrying about whether the system uses a FAT32 filesystem, a real-time OS, or a custom embedded solution. 🛠️
+
+**Citation:** FPrimeSampleProject/fprime/Os/File.hpp
+
+---
+
+## 85 [A][soft]
+
+**Q:** Can a State Machine have "Guards" on its transitions?
+
+**A:** Yes, in F Prime, **State Machines (SCXML-based)** can indeed have **guards** on transitions. Guards are conditions that must evaluate to `true` for a transition to occur. This is a core feature of state machines in F Prime, enabling conditional logic without complicating the state structure.
+
+### Example Syntax in FPP:
+```fpp
+transition StateA -> StateB when (someCondition);
+```
+- `someCondition` is a boolean expression (e.g., `counter > 5`).
+- The guard is checked whenever the transition is triggered (e.g., by an event, timer, or command).
+
+### Key Concepts:
+1. **Guards as Filters**: They act like "if" statements, ensuring transitions only happen when specific criteria are met.
+2. **Contextual Evaluation**: Guards use variables/parameters from the component's context (e.g., `cmd_data`, `timer_count`).
+3. **Simplicity**: Guards should be simple and avoid complex logic to maintain readability.
+
+### Why This Matters:
+Guards allow components to respond dynamically to runtime conditions (e.g., "only transition to safe mode if temperature is critical"). This is critical for safety-critical systems like spacecraft, where decisions must be precise and predictable.
+
+Would you like an example of a guard in an FPP state machine?
+
+**Citation:** PARSE_ERROR
+
+---
+
+## 87 [A]
+
+**Q:** What is the purpose of the `fprime-util impl` command?
+
+**A:** The `fprime-util impl` command is used to **generate the C++ implementation code** from the FPP (F Prime Preprocessor) files that define your system's architecture. 
+
+### Key Purpose:
+- **Translates high-level FPP definitions** (components, ports, interfaces) into concrete C++ code that can be compiled and executed.
+- **Automates boilerplate code** for components, ports, and command/telemetry interfaces, allowing developers to focus on logic rather than low-level details.
+
+### Analogy:
+Think of FPP files as a blueprint for a robot. The `impl` command turns that blueprint into the actual gears, circuits, and code needed for the robot to function. Without this step, the robot (your flight software) wouldn't have the physical parts (code) to operate.
+
+### Example Workflow:
+1. Define components and interfaces in `.fpp` files.
+2. Run `fprime-util impl` to generate C++ code.
+3. Compile the generated code into an executable for flight.
+
+This step is critical for turning design into working flight software! 🚀
+
+**Citation:** NO_LOOKUP_MATCH; See also docs/training/fprime_training.md lines 93, 545, 642, 667.
+
+---
+
+## 92 [A][soft]
+
+**Q:** How do you handle "Optional" port connections?
+
+**A:** In F' (F Prime), **optional port connections** are handled with care to ensure robustness and prevent runtime errors. Here's how it works:
+
+---
+
+### **1. Declaring Optional Ports**
+In your `.fpp` topology file, you declare optional ports using the `optional` keyword. For example:
+```fpp
+command_port: CommandPortType optional;
+```
+This tells F' that the port may or may not be connected during system execution.
+
+---
+
+### **2. Runtime Checks with `isConnected()`**
+Before using an optional port, **you must check if it is connected** using the `isConnected()` method. For example:
+```cpp
+if (command_port->isConnected()) {
+    command_port->send(command);
+} else {
+    // Handle the case where the port is not connected (e.g., log a message)
+}
+```
+This ensures the system avoids dereferencing unconnected ports, which would cause crashes or undefined behavior.
+
+---
+
+### **3. Why It Matters**
+Optional ports are critical for **flexible system configurations**. For example:
+- A sensor might have an optional communication port that is only used in specific mission phases.
+- A redundant component might have optional ports that are connected only under fault conditions.
+
+By requiring explicit checks, F' enforces **safe, predictable behavior** even when ports are not connected.
+
+---
+
+### **4. Compiler Enforcement**
+The F' compiler ensures that:
+- Optional ports are properly declared.
+- Generated code includes `isConnected()` checks.
+- No assumptions are made about the connection state of optional ports.
+
+---
+
+### **Analogy**
+Think of optional ports as **optional electrical connectors** in a spacecraft. Just as you wouldn’t assume a wire is connected without checking, F' requires you to verify the connection before using the port. This prevents short circuits (literally or figuratively!) in your flight software.
+
+**Citation:** Per FPrimeSampleProject/fprime/Fw/Port/PortBase.hpp lines 23-24, 38-40: `bool isConnected() const;` and its implementation. Also, generated files like FPrimeSampleProject/build-fprime-automatic-native/Components/SampleComponent/SampleComponentComponentAc.hpp demonstrate `isConnected_<PortName>_OutputPort` methods, confirming generated `isConnected()` checks.
+
+---
+
+## 93 [A][soft]
+
+**Q:** What is the purpose of `Fw::PolyType` `isXXX()` methods?
+
+**A:** The `isXXX()` methods in `Fw::PolyType` are used to **check the actual type of a polymorphic value at runtime**. This is critical in F Prime's polytypic system, where a single variable can hold values of different types (e.g., integers, strings, or custom types).
+
+### Purpose of `isXXX()` Methods:
+1. **Runtime Type Checking**:  
+   These methods act like a "type switch" in C++. For example, `isInt()` checks if a value is an integer, `isString()` checks for a string, etc. This allows components to determine how to process the data safely.
+
+2. **Enabling Polymorphism**:  
+   In F Prime, components often need to handle multiple data types without knowing them in advance. The `isXXX()` methods let you dispatch logic based on the actual type, ensuring type-safe operations.
+
+3. **Avoiding Type Conflicts**:  
+   By explicitly checking the type, you prevent accidental misuse of data (e.g., treating a string as an integer).
+
+### Analogy:
+Think of `isXXX()` methods as a **type detective**. If you have a box that could contain a toy, a book, or a tool, the detective checks what's inside and tells you which tool to use. In F Prime, this ensures the right code runs for the right data type.
+
+### Example Use Case:
+```cpp
+Fw::PolyType value = ...; // Could be int, string, etc.
+if (value.isInt()) {
+    // Handle integer logic
+} else if (value.isString()) {
+    // Handle string logic
+}
+```
+
+This system is vital for flight software, where reliability and type safety are paramount. Let me know if you'd like to explore how this integrates with F Prime's architecture!
+
+**Citation:** NO_LOOKUP_MATCH
+
+---
+
+## 99 [A]
+
+**Q:** How do you clear the event table in the GDS GUI?
+
+**A:** In F' Academy mode, we focus on learning concepts and code structure, not direct interaction with mission control tools like the GDS GUI. Clearing the event table is an operational task typically done in a mission control environment, not through code or Academy tools. 
+
+If you're learning about event tables, we can discuss how events are generated, logged, and managed in F' flight software! Would you like to explore that?
+
+**Citation:** NO_LOOKUP_MATCH
+
+---
+
+## 100 [A][soft]
+
+**Q:** What is the `FwEnumStoreType` used for in State Machines?
+
+**A:** The `FwEnumStoreType` in F Prime is used to store **enumerated values** (i.e., values from a `FwEnum` type) within **state machines**. It is one of the predefined storage types in F Prime's type system, which ensures type safety and proper handling of variables in state machines.
+
+### Key Concepts:
+1. **Enumerated Types (`FwEnum`)**:  
+   These define a set of named constants (e.g., `State1`, `State2`). For example:
+   ```cpp
+   FwEnum MyEnum {
+     State1 = 0,
+     State2 = 1
+   };
+   ```
+
+2. **Storage Types**:  
+   F Prime uses specific storage types to manage variables in state machines. For example:
+   - `FwUintStoreType` for integers.
+   - `FwBoolStoreType` for booleans.
+   - `FwEnumStoreType` for enumerated values.
+
+3. **Purpose of `FwEnumStoreType`**:  
+   When a state machine needs to store a value of an enumerated type (e.g., `MyEnum`), it uses `FwEnumStoreType`. This ensures the framework correctly handles the enum's lifecycle, transitions, and interactions with other components.
+
+### Example:
+If a state machine has a variable declared as:
+```cpp
+MyEnum myVar;
+```
+F Prime internally uses `FwEnumStoreType` to manage `myVar`, ensuring it behaves correctly during state transitions and data exchanges.
+
+### Why It Matters:
+- **Type Safety**: Prevents invalid values (e.g., integers outside the enum's defined range).
+- **Framework Integration**: Enables features like automatic state transitions and validation.
+- **Code Clarity**: Explicitly ties variables to their enumerated type, improving readability and maintainability.
+
+In short, `FwEnumStoreType` is the mechanism that allows state machines to safely and efficiently work with enumerated values in F Prime.
+
+**Citation:** Per FPrimeSampleProject/fprime/default/config/FpConfig.fpp: `type FwEnumStoreType = I32`. Also, FppTestProject/FppTest/state_machine/external_instance/HackSm.hpp uses `FwEnumStoreType stateMachineId`.
+
+---
+
+## 107 [A][soft]
+
+**Q:** What is a "Choice" state in an FPP State Machine?
+
+**A:** A **"Choice" state** in an FPP (F Prime Processing) state machine is a special type of state that allows the system to **branch into different states based on conditions**. It acts like a decision point, where the state machine evaluates multiple possible transitions and selects the appropriate one to follow.
+
+### Key Concepts:
+1. **Decision Logic**:  
+   When the state machine enters a *Choice* state, it evaluates **conditions** (e.g., sensor values, flags, or computed values) in the order they are defined. The first condition that evaluates to `true` determines which outgoing transition is taken.
+
+2. **Branching**:  
+   A *Choice* state can have **multiple outgoing transitions**, each guarded by a condition. For example:
+   - If a sensor reading is above a threshold → transition to `StateA`.
+   - Else if a flag is set → transition to `StateB`.
+   - Else → default to a fallback state (e.g., `StateC`).
+
+3. **Order Matters**:  
+   Conditions are checked in the order they appear. Prioritize critical conditions first to avoid unintended behavior.
+
+### Analogy:  
+Think of a *Choice* state as a **traffic light**. When the system (car) reaches the light, it checks the conditions (e.g., "Is the light red? Is it yellow? Is it green?"). Based on the first true condition, it decides whether to stop, slow down, or proceed.
+
+### Why It’s Important for Flight Software:  
+In mission-critical systems (like spacecraft or drones), *Choice* states enable **dynamic decision-making** based on real-time data. This allows the software to adapt to changing conditions (e.g., environmental hazards, system failures) without requiring a separate state for every possible scenario.
+
+Would you like an example of how a *Choice* state is defined in FPP syntax?
+
+**Citation:** FPrimeSampleProject/fprime/Svc/ComAggregator/ComAggregator.fpp
+
+---
+
+## 110 [A]
+
+**Q:** What does the `ref` keyword do in an FPP port definition?
+
+**A:** The `ref` keyword in an FPP (F Prime Port Protocol) port definition indicates that the port is a **reference** to a data structure rather than the data itself. This is critical for efficient communication between components in flight software.
+
+### Key Concepts:
+1. **Reference vs. Value**:
+   - Without `ref`, the port would pass a **copy** of the data (value semantics).
+   - With `ref`, the port passes a **reference** (like a pointer in C++), allowing direct access to the original data.
+
+2. **Efficiency**:
+   - For large data structures (e.g., arrays, telemetry packets), using `ref` avoids copying the entire object, saving memory and computation time.
+
+3. **Shared Ownership**:
+   - The referenced data is typically managed by another component (e.g., a producer). The `ref` port allows consumers to access or modify the data without owning it.
+
+### Example:
+```fpp
+port MyPort : ref MyData;
+```
+- `MyPort` is a reference to an instance of `MyData`.
+- If `MyData` is updated in one component, changes are visible through `MyPort` in other components.
+
+### Analogy:
+Think of `ref` as a **label on a box** rather than the box itself. The port "points to" the box (data) without moving it, enabling shared access.
+
+This design is vital for flight software, where resource efficiency and real-time performance are critical. 🚀
+
+**Citation:** Per docs/training/fprime_training.md line 116 and 653: The `ref` keyword indicates that an argument should be passed by reference in generated C++ code (e.g., `MyType& arg`, `T&`) for efficiency, avoiding unnecessary memory copies, especially for large structs or serializables.
+
+---
+
+## 115 [A][soft]
+
+**Q:** What is the purpose of `fprime-util purge`?
+
+**A:** The `fprime-util purge` command is used to **remove all generated files** created by F Prime's processing tools (like `.fpp` to C++ code conversion). 
+
+### Why is it important?
+- **Stale files**: When you modify `.fpp` files (F Prime Processing files), the generated C++ code might become outdated. Purge ensures a clean slate by deleting these files.
+- **Avoid conflicts**: It prevents issues where old generated code interferes with new changes.
+- **Fresh builds**: After purging, a rebuild ensures all code is generated from the latest source files.
+
+### Example use case:
+If you refactor a component's `.fpp` file, running `purge` before rebuilding ensures the new logic is compiled correctly.
+
+This is part of F Prime's workflow to maintain consistency between source files and generated code.
+
+**Citation:** NO_LOOKUP_MATCH
+
+---

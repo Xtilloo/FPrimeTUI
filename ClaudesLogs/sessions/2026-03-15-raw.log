@@ -2909,3 +2909,454 @@ if (commandPort.hasData()) {
 ```
 
 Let me know if you'd like to explore how ports are connected between components or how types are defined! 🚀
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-234/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+What is F Prime?
+---RESPONSE---
+Hello from Mission Control!
+
+---USER---
+test query
+---RESPONSE---
+test
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*Tool call finished.
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+What is an active component?
+---RESPONSE---
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/SequenceU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardTestStruct.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-238/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+What is F Prime?
+---RESPONSE---
+Hello from Mission Control!
+
+---USER---
+test query
+---RESPONSE---
+test
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/SequenceU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardU32.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---
+
+
+---USER---
+Hello
+---RESPONSE---
+I will read the file now.
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+/build
+---RESPONSE---
+
+> *Running fprime-util build...*
+
+```
+Mock Build Success
+```
+Build successful.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+```json
+{"tool_name": "replace_in_file", "path": "/private/var/folders/vl/4_rj28fn5p9gw342dmcqy6h00000gn/T/pytest-of-xtilloo/pytest-239/test_ui_hitl_flow0/test.txt", "old_content": "Hello", "new_content": "Goodbye"}
+```
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+
+> *Tool Result:*
+```
+File updated successfully.
+```
+Okay, I have updated the file as you requested.
+
+---USER---
+Please read this file: @test.md
+---RESPONSE---
+Acknowledged.
+
+> *(Cancelled)*
+
+---USER---
+What is F Prime?
+---RESPONSE---
+Hello from Mission Control!
+
+---USER---
+test query
+---RESPONSE---
+test
+
+---USER---
+Generate a C++ main function.
+---RESPONSE---
+Here is the requested code:
+
+```cpp
+int main() {
+    return 0;
+}
+```
+Does this look correct?
+
+---USER---
+Read the file and show example.
+---RESPONSE---
+I will show you an example and then read the file.
+
+Example code:
+```python
+print('hello')
+```
+
+Now reading tool:
+
+
+> *[Reading test.txt... (PENDING)]*
+
+---USER---
+```
+---RESPONSE---
+I see you typed some backticks.
+
+---USER---
+replace hello with goodbye
+---RESPONSE---
+I will replace the content.
+
+> *[Updating test.txt... (PENDING)]*
+
+**Action Required:** AI wants to modify `test.txt`.
+Do you approve? (1: Approve, 2: Decline)
+
+
+---USER---
+Approved
+---RESPONSE---
+Okay, I have updated the file as you requested.
+
+---USER---
+What is an active component?
+---RESPONSE---
+Active components have threads.
+
+*Sources: Svc/FpySequencer/FpySequencer.fpp · FppTestProject/FppTest/state_machine/internal_instance/choice/Sequence.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardTestArray.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicU32.fpp · FppTestProject/FppTest/state_machine/internal_instance/state/BasicGuardU32.fpp*
+
+
+**[SYSTEM]: Response saved to curated knowledge base.**
+
+
+---USER---
+What is a port?
+---RESPONSE---
+A port is a USB connector.
+
+*Sources: Fw/Cmd/docs/sdd.md · docs/user-manual/overview/03-port-comp-top.md · docs/user-manual/framework/autocoded-functions.md · Fw/Port/InputSerializePort.cpp · Fw/Obj/ObjBase.hpp*
+
+
+**[SYSTEM]: Response flagged for review.**
+
+
+**[SYSTEM]: No Q&A exchange to save. Ask a question first.**
+
+
+---USER---
+Hello
+---RESPONSE---

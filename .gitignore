@@ -38,6 +38,17 @@ CLAUDE.md
 TUI/rag/db/
 TUI/rag/raw/
 
+# Training pipeline intermediate artifacts
+docs/training/analysis/batches/
+docs/training/analysis/results/
+docs/training/analysis/manifest.json
+docs/training/analysis/signals.json
+docs/training/analysis/progress.json
+docs/training/verifier_logs/
+docs/training/evaluator.log
+docs/training/orchestrator.log
+docs/training/collector.log
+
 # Claude's working directory — always tracked
 !ClaudesLogs/
 !ClaudesLogs/**
