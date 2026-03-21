@@ -459,6 +459,8 @@ def _extract_cpp_macros(text: str, source: str) -> list[dict]:
         "component_name": "",
         "content_type": "reference",
     }]
+
+
 _CPP_NAMESPACE = re.compile(r"namespace\s+([\w:]+)\s*\{")
 _CPP_CLASS_OR_STRUCT = re.compile(r"(?:class|struct)\s+(\w+)(?:\s*:\s*(?:public|protected|private)\s+[\w:]+)?\s*\{")
 _CPP_ENUM = re.compile(r"enum\s+(?:class\s+)?(\w+)\s*\{")
