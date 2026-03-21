@@ -250,3 +250,289 @@ def test_fpp_spec_larger_chunks():
     chunks = chunk_markdown(text, source="docs/reference/fpp-user-guide.md")
     # Should NOT be truncated at 1200 — FPP spec gets 2000 char limit
     assert len(chunks[0]["text"]) > 1200
+
+
+def test_chunk_fpp_extracts_enum():
+    text = (
+        "@ Basic enum\n"
+        "enum MyEnum {\n"
+        "  VAL_A\n"
+        "  VAL_B\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    chunk = chunks[0]
+    assert chunk["component_name"] == "MyEnum"
+    assert "VAL_A" in chunk["text"]
+    assert chunk["chunk_type"] == "fpp_block"
+    assert chunk["content_type"] == "code"
+
+
+def test_chunk_fpp_extracts_enum_with_base_type():
+    text = (
+        "@ Enum with base type\n"
+        "enum StatusEnum : U8 {\n"
+        "  OK\n"
+        "  ERROR\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert "StatusEnum" in chunks[0]["text"]
+    assert ": U8" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_struct():
+    text = (
+        "@ A simple struct\n"
+        "struct MyStruct {\n"
+        "  mVal : U32\n"
+        "  mFlag : bool\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "MyStruct"
+    assert "mVal" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_struct_with_default_block():
+    text = (
+        "struct ComplexStruct {\n"
+        "  mEnum : MyEnum\n"
+        "} default {\n"
+        "  mEnum = MyEnum.VAL_A\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert "default" in chunks[0]["text"]
+    assert "VAL_A" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_constant():
+    text = "@ Size constant\nconstant STRING_SIZE = 80\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "STRING_SIZE"
+    assert "STRING_SIZE = 80" in chunks[0]["text"]
+    assert "@ Size constant" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_type_alias():
+    text = "@ A type alias\ntype MyU32 = U32\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "MyU32"
+    assert "type MyU32 = U32" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_abstract_type():
+    text = "@ Abstract type\ntype MyOpaqueBuffer\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "MyOpaqueBuffer"
+
+
+def test_chunk_fpp_extracts_array():
+    text = "@ Fixed-size array\narray MyArray = [3] U32\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "MyArray"
+    assert "[3] U32" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_port_no_args():
+    text = "@ No-arg port\nport NoArgsPort\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "NoArgsPort"
+
+
+def test_chunk_fpp_extracts_port_multiline():
+    text = (
+        "@ Port with args\n"
+        "port PrimitiveArgsPort(\n"
+        "  val  : U32\n"
+        "  flag : bool\n"
+        ") -> bool\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "PrimitiveArgsPort"
+    assert "val  : U32" in chunks[0]["text"]
+    assert "-> bool" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_interface():
+    text = (
+        "interface TimeInterface {\n"
+        "  time get port timeGetOut\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "TimeInterface"
+
+
+def test_chunk_fpp_extracts_state_machine_block():
+    text = (
+        "@ A simple SM\n"
+        "state machine BasicSM {\n"
+        "  action doWork\n"
+        "  signal SIG_START\n"
+        "  initial enter IDLE\n"
+        "  state IDLE {\n"
+        "    on SIG_START enter RUNNING\n"
+        "  }\n"
+        "  state RUNNING\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "BasicSM"
+    assert "state IDLE" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_bare_state_machine_declaration():
+    text = "@ External SM type\nstate machine MyStateMachine\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "MyStateMachine"
+
+
+def test_chunk_fpp_extracts_topology():
+    text = (
+        "topology RefTopology {\n"
+        "  instance myComp\n"
+        "  connections Normal {\n"
+        "    myComp.out -> myComp.in\n"
+        "  }\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "RefTopology"
+    assert "connections Normal" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_instance():
+    text = (
+        "instance myActive: MyActiveComp base id 0x03000 \\\n"
+        "  queue size 25 \\\n"
+        "  priority 50\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "myActive"
+    assert "queue size 25" in chunks[0]["text"]
+
+
+def test_chunk_fpp_extracts_instance_with_phase_block():
+    text = (
+        "instance myComp: MyComp base id 0x01000 \\\n"
+        "  queue size 10 \\\n"
+        "  priority 30 \\\n"
+        "{\n"
+        "  phase Fpp.ToCpp.Phases.configConstants \"\"\"\n"
+        "  enum { MY_CONST = 42 };\n"
+        "  \"\"\"\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == "myComp"
+    assert "MY_CONST" in chunks[0]["text"]
+
+
+def test_chunk_fpp_module_prefix_applied_to_chunks():
+    text = (
+        "module Ref {\n"
+        "  constant FOO = 1\n"
+        "  enum Bar {\n"
+        "    A\n"
+        "  }\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 2
+    for chunk in chunks:
+        assert chunk["text"].startswith("module Ref :: ")
+
+
+def test_chunk_fpp_nested_enum_inside_component():
+    text = (
+        "active component MyComp {\n"
+        "  enum OperatingMode : U8 {\n"
+        "    IDLE\n"
+        "    RUNNING\n"
+        "  }\n"
+        "  async input port schedIn: NoArgsPort\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    names = {c["component_name"] for c in chunks}
+    assert "MyComp" in names
+    assert "OperatingMode" in names
+
+
+def test_chunk_fpp_annotation_included_in_chunk_text():
+    text = "@ This is a doc annotation\nconstant MY_CONST = 42\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert "@ This is a doc annotation" in chunks[0]["text"]
+
+
+def test_chunk_fpp_state_machine_block_not_double_emitted():
+    """A state machine block must not be emitted once by Pass 1 and again by Pass 3."""
+    text = (
+        "state machine BasicSM {\n"
+        "  signal SIG_START\n"
+        "  state IDLE\n"
+        "}\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    names = [c["component_name"] for c in chunks]
+    assert names.count("BasicSM") == 1
+
+
+def test_chunk_fpp_port_inside_component_not_separately_emitted():
+    """Ports declared inside a component block must not be emitted as separate port chunks."""
+    text = (
+        "passive component MyComp {\n"
+        "  sync input port dataIn: NoArgsPort\n"
+        "  output port dataOut: NoArgsPort\n"
+        "}\n"
+        "port StandalonePort\n"
+    )
+    chunks = chunk_fpp(text, source="test.fpp")
+    names = {c["component_name"] for c in chunks}
+    assert "MyComp" in names
+    assert "StandalonePort" in names
+    assert "dataIn" not in names
+    assert "dataOut" not in names
+
+
+def test_chunk_fpp_reference_file_covers_all_constructs():
+    """Smoke test: fpp_reference.fpp must produce chunks for all expected construct types."""
+    from pathlib import Path
+    ref = Path(__file__).parents[2] / "docs/fprime-docs/fpp_reference.fpp"
+    text = ref.read_text()
+    chunks = chunk_fpp(text, source="docs/fprime-docs/fpp_reference.fpp")
+
+    names = {c["component_name"] for c in chunks}
+    assert "MyEnum" in names
+    assert "StatusEnum" in names
+    assert "PrimitiveStruct" in names
+    assert "MyArray" in names
+    assert "STRING_SIZE" in names
+    assert "MyU32" in names
+    assert "NoArgsPort" in names
+    assert "PrimitiveArgsPort" in names
+    assert "TimeInterface" in names
+    assert "MyPassiveComp" in names
+    assert "MyQueuedComp" in names
+    assert "MyActiveComp" in names
+    assert "BasicSM" in names
+    assert "RefTopology" in names
+    assert "myActive" in names

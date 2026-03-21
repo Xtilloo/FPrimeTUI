@@ -78,25 +78,269 @@ def chunk_markdown(text: str, source: str) -> list[dict]:
     return chunks
 
 
+# ---------------------------------------------------------------------------
+# FPP chunker helpers
+# ---------------------------------------------------------------------------
+
+def _fpp_extract_block(text: str, start: int) -> int:
+    """
+    Given text and the index of the opening '{', return the index one past
+    the matching closing '}' using a brace-depth counter.
+    Returns -1 if no matching brace is found.
+    """
+    depth = 0
+    i = start
+    while i < len(text):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    return -1
+
+
+def _fpp_collect_annotation(lines: list[str], idx: int) -> str:
+    """
+    Walk backward from line idx-1 to collect consecutive `@` annotation lines.
+    Returns them joined with newlines (empty string if none).
+    """
+    ann_lines: list[str] = []
+    j = idx - 1
+    while j >= 0 and lines[j].strip().startswith("@"):
+        ann_lines.insert(0, lines[j])
+        j -= 1
+    return "\n".join(ann_lines)
+
+
+def _fpp_make_chunk(text: str, name: str, source: str, module_prefix: str) -> dict:
+    full_text = (module_prefix + text) if module_prefix else text
+    return {
+        "text": _truncate(full_text),
+        "source_file": source,
+        "chunk_type": "fpp_block",
+        "component_name": name,
+        "content_type": "code",
+    }
+
+
+def _in_extracted(pos: int, ranges: list[tuple[int, int]]) -> bool:
+    """Return True if pos falls within any already-extracted character range."""
+    return any(start <= pos < end for start, end in ranges)
+
+
+# Regex patterns for FPP construct detection.
+# _FPP_BLOCK_OPEN uses a named 'brace' group so the '{' position is robust
+# to future additions of capturing groups before it.
+_FPP_BLOCK_OPEN = re.compile(
+    r"^[ \t]*(?P<keyword>"
+    r"(?:active\s+|passive\s+|queued\s+)?component"
+    r"|enum"
+    r"|struct"
+    r"|interface"
+    r"|state\s+machine(?!\s+instance\b)"
+    r"|topology"
+    r")\s+(?P<name>\w+)(?:[^{\n]*)(?P<brace>\{)",
+    re.MULTILINE,
+)
+_FPP_LINE_CONSTRUCTS = re.compile(
+    r"^[ \t]*(?P<keyword>type|constant|array|instance|state\s+machine)\s+(?P<name>\w+)",
+    re.MULTILINE,
+)
+_FPP_PORT_LINE = re.compile(r"^[ \t]*port\s+(?P<name>\w+)", re.MULTILINE)
+
+
 def chunk_fpp(text: str, source: str) -> list[dict]:
-    """Split .fpp files on component/port/command block boundaries."""
-    pattern = re.compile(
-        r'((?:active\s+|passive\s+|queued\s+)?(?:component|port|command)\s+(\w+)\s*\{[^}]*\})',
-        re.DOTALL
-    )
-    chunks = []
-    for match in pattern.finditer(text):
-        block = match.group(1).strip()
-        name = match.group(2)
-        chunks.append({
-            "text": _truncate(block),
-            "source_file": source,
-            "chunk_type": "fpp_block",
-            "component_name": name,
-            "content_type": "code",
-        })
+    """
+    Extract all FPP language constructs from a .fpp file.
+
+    Strategies:
+    - Block constructs (component, enum, struct, interface, state machine,
+      topology): brace-counting extractor.
+    - Port: paren-depth counter for multi-line argument lists.
+    - Line constructs (type, constant, array, instance): line collector with
+      backslash-continuation and optional phase-block for instances.
+    - Module blocks: tracked as namespace prefix, not emitted as chunks.
+    - Annotations (@): included in chunk text.
+    - Nested constructs inside components: second pass over component text.
+    - _in_extracted() prevents Pass 2/3 from double-emitting items from Pass 1.
+    """
+    chunks: list[dict] = []
+    lines = text.split("\n")
+
+    # ------------------------------------------------------------------
+    # Build per-line module prefix by scanning module open/close braces.
+    # ------------------------------------------------------------------
+    module_stack: list[str] = []
+    line_module_prefix: list[str] = [""] * len(lines)
+    module_open_depths: list[tuple[int, str]] = []  # (depth_when_opened, name)
+    depth = 0
+
+    for i, line in enumerate(lines):
+        m = re.match(r"^[ \t]*module\s+(\w+)\s*\{", line)
+        if m:
+            depth += line.count("{") - line.count("}")
+            module_stack.append(m.group(1))
+            module_open_depths.append((depth, m.group(1)))
+        else:
+            depth += line.count("{") - line.count("}")
+            # Pop modules whose enclosing brace depth has been exited
+            while module_open_depths and depth < module_open_depths[-1][0]:
+                module_open_depths.pop()
+                if module_stack:
+                    module_stack.pop()
+
+        prefix = " :: ".join(module_stack)
+        line_module_prefix[i] = (f"module {prefix} :: ") if prefix else ""
+
+    # ------------------------------------------------------------------
+    # Pass 1: extract block constructs using brace-counter.
+    # ------------------------------------------------------------------
+    extracted_ranges: list[tuple[int, int]] = []  # (start_char, end_char)
+
+    for m in _FPP_BLOCK_OPEN.finditer(text):
+        brace_start = m.start("brace")
+        end = _fpp_extract_block(text, brace_start)
+        if end == -1:
+            continue
+
+        # For structs: extend extraction to include optional "default { ... }" clause.
+        keyword = m.group("keyword").strip()
+        if keyword == "struct":
+            default_m = re.match(r"\s*default\s*\{", text[end:end + 30])
+            if default_m:
+                default_brace = end + default_m.end() - 1
+                default_end = _fpp_extract_block(text, default_brace)
+                if default_end != -1:
+                    end = default_end
+
+        block_text = text[m.start():end]
+        name = m.group("name")
+        line_idx = text[:m.start()].count("\n")
+        ann = _fpp_collect_annotation(lines, line_idx)
+        if ann:
+            block_text = ann + "\n" + block_text
+
+        module_prefix = line_module_prefix[line_idx] if line_idx < len(line_module_prefix) else ""
+        chunks.append(_fpp_make_chunk(block_text, name, source, module_prefix))
+        extracted_ranges.append((m.start(), end))
+
+        # Second pass for nested constructs inside component blocks.
+        keyword = m.group("keyword").strip()
+        if "component" in keyword:
+            inner_text = text[brace_start + 1:end - 1]
+            inner_chunks = _fpp_extract_inner_constructs(inner_text, source, module_prefix)
+            chunks.extend(inner_chunks)
+
+    # ------------------------------------------------------------------
+    # Pass 2: extract port signatures (paren-depth counter).
+    # Skips ports inside already-extracted blocks via _in_extracted.
+    # ------------------------------------------------------------------
+    for m in _FPP_PORT_LINE.finditer(text):
+        if _in_extracted(m.start(), extracted_ranges):
+            continue
+        name = m.group("name")
+        line_idx = text[:m.start()].count("\n")
+        ann = _fpp_collect_annotation(lines, line_idx)
+        module_prefix = line_module_prefix[line_idx] if line_idx < len(line_module_prefix) else ""
+
+        # Walk forward using a paren-depth counter.
+        i = m.start()
+        paren_depth = 0
+        found_open = False
+        while i < len(text):
+            ch = text[i]
+            if ch == "(":
+                paren_depth += 1
+                found_open = True
+            elif ch == ")":
+                paren_depth -= 1
+                if paren_depth == 0:
+                    i += 1
+                    break
+            elif ch == "\n" and not found_open:
+                # No opening paren on this line — single-line port, done.
+                i += 1
+                break
+            i += 1
+
+        # Capture optional "-> ReturnType" after closing paren.
+        remainder = text[i:i + 40]
+        ret_m = re.match(r"[ \t]*->[ \t]*\w+", remainder)
+        if ret_m:
+            i += ret_m.end()
+
+        port_text = text[m.start():i].rstrip()
+        if ann:
+            port_text = ann + "\n" + port_text
+
+        chunks.append(_fpp_make_chunk(port_text, name, source, module_prefix))
+
+    # ------------------------------------------------------------------
+    # Pass 3: extract line/continuation constructs.
+    # Skips items already captured as blocks via _in_extracted.
+    # ------------------------------------------------------------------
+    for m in _FPP_LINE_CONSTRUCTS.finditer(text):
+        if _in_extracted(m.start(), extracted_ranges):
+            continue
+        keyword = m.group("keyword").strip()
+        name = m.group("name")
+        line_idx = text[:m.start()].count("\n")
+        ann = _fpp_collect_annotation(lines, line_idx)
+        module_prefix = line_module_prefix[line_idx] if line_idx < len(line_module_prefix) else ""
+
+        # Collect from this line, following \ continuations.
+        construct_lines: list[str] = []
+        j = line_idx
+        while j < len(lines):
+            construct_lines.append(lines[j])
+            if lines[j].rstrip().endswith("\\"):
+                j += 1
+                continue
+            # For instances: handle phase block.
+            if keyword == "instance":
+                # Case 1: current stopping line IS the '{' (e.g. continuation ended with \
+                # on the previous line, next line is '{')
+                if lines[j].strip().startswith("{"):
+                    char_pos = sum(len(lines[n]) + 1 for n in range(j)) + lines[j].index("{")
+                    end = _fpp_extract_block(text, char_pos)
+                    if end != -1:
+                        end_line = text[:end].count("\n")
+                        # Replace last appended line with the full block content
+                        construct_lines.pop()
+                        construct_lines.extend(lines[j:end_line + 1])
+                else:
+                    # Case 2: check if the next non-empty line opens a phase block.
+                    k = j + 1
+                    while k < len(lines) and not lines[k].strip():
+                        k += 1
+                    if k < len(lines) and lines[k].strip().startswith("{"):
+                        char_pos = sum(len(lines[n]) + 1 for n in range(k)) + lines[k].index("{")
+                        end = _fpp_extract_block(text, char_pos)
+                        if end != -1:
+                            end_line = text[:end].count("\n")
+                            construct_lines.extend(lines[k:end_line + 1])
+            break  # Non-continuation, non-instance-phase: collection complete.
+
+        construct_text = "\n".join(construct_lines)
+
+        # Belt-and-suspenders: a "state machine" match from _FPP_LINE_CONSTRUCTS
+        # that includes a '{' was already handled by Pass 1 and excluded via
+        # _in_extracted above. This guard catches any edge case where the range
+        # check missed it.
+        if keyword == "state machine" and "{" in construct_text:
+            continue
+
+        if ann:
+            construct_text = ann + "\n" + construct_text
+
+        chunks.append(_fpp_make_chunk(construct_text, name, source, module_prefix))
+
+    # ------------------------------------------------------------------
+    # Fallback: if nothing extracted, emit whole file as one chunk.
+    # ------------------------------------------------------------------
     if not chunks:
-        # Fallback: treat whole file as one chunk
         chunks.append({
             "text": _truncate(text),
             "source_file": source,
@@ -104,6 +348,38 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
             "component_name": "",
             "content_type": "code",
         })
+
+    return chunks
+
+
+def _fpp_extract_inner_constructs(inner_text: str, source: str, module_prefix: str) -> list[dict]:
+    """Extract enum, struct, constant definitions nested inside a component block."""
+    chunks: list[dict] = []
+    lines = inner_text.split("\n")
+
+    # Block inner constructs: enum, struct
+    for m in re.finditer(r"^[ \t]*(?P<keyword>enum|struct)\s+(?P<name>\w+)[^{]*(?P<brace>\{)", inner_text, re.MULTILINE):
+        brace_start = m.start("brace")
+        end = _fpp_extract_block(inner_text, brace_start)
+        if end == -1:
+            continue
+        block_text = inner_text[m.start():end]
+        line_idx = inner_text[:m.start()].count("\n")
+        ann = _fpp_collect_annotation(lines, line_idx)
+        if ann:
+            block_text = ann + "\n" + block_text
+        chunks.append(_fpp_make_chunk(block_text, m.group("name"), source, module_prefix))
+
+    # Line inner constructs: constant
+    for m in re.finditer(r"^[ \t]*constant\s+(\w+)", inner_text, re.MULTILINE):
+        name = m.group(1)
+        line_idx = inner_text[:m.start()].count("\n")
+        ann = _fpp_collect_annotation(lines, line_idx)
+        line_text = lines[line_idx] if line_idx < len(lines) else ""
+        if ann:
+            line_text = ann + "\n" + line_text
+        chunks.append(_fpp_make_chunk(line_text, name, source, module_prefix))
+
     return chunks
 
 
