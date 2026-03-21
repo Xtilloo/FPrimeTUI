@@ -411,6 +411,54 @@ def chunk_python(text: str, source: str) -> list[dict]:
 
 # Patterns for C++ chunking
 _CPP_PREPROCESSOR = re.compile(r"^\s*#\s*(?:ifndef|define|endif|include|pragma)\b.*$", re.MULTILINE)
+_DEFINE_LINE = re.compile(r"^\s*#\s*define\s+(\w+)")
+_IFNDEF_LINE = re.compile(r"^\s*#\s*ifndef\s+(\w+)")
+_COMMENT_LINE = re.compile(r"^\s*(?://|/\*)")
+
+
+def _extract_cpp_macros(text: str, source: str) -> list[dict]:
+    """
+    Scan a C++ file for #define macros, skipping include guards.
+    Returns a list with 0 or 1 chunks (one grouped macro chunk per file).
+
+    Guard detection: a '#define X' is an include guard if and only if the
+    immediately preceding non-empty line is '#ifndef X' with the same
+    identifier. This handles all naming conventions without regex on names.
+    """
+    lines = text.split("\n")
+    macro_lines: list[str] = []
+
+    for i, line in enumerate(lines):
+        m = _DEFINE_LINE.match(line)
+        if not m:
+            continue
+        identifier = m.group(1)
+
+        # Walk back to find the immediately preceding non-empty line.
+        j = i - 1
+        while j >= 0 and not lines[j].strip():
+            j -= 1
+        if j >= 0:
+            ifndef_m = _IFNDEF_LINE.match(lines[j])
+            if ifndef_m and ifndef_m.group(1) == identifier:
+                continue  # include guard — skip
+
+        # Collect preceding comment if present (immediately preceding line).
+        if i > 0 and _COMMENT_LINE.match(lines[i - 1]):
+            macro_lines.append(lines[i - 1].rstrip())
+
+        macro_lines.append(line.rstrip())
+
+    if not macro_lines:
+        return []
+
+    return [{
+        "text": _truncate("\n".join(macro_lines)),
+        "source_file": source,
+        "chunk_type": "cpp_macros",
+        "component_name": "",
+        "content_type": "reference",
+    }]
 _CPP_NAMESPACE = re.compile(r"namespace\s+([\w:]+)\s*\{")
 _CPP_CLASS_OR_STRUCT = re.compile(r"(?:class|struct)\s+(\w+)(?:\s*:\s*(?:public|protected|private)\s+[\w:]+)?\s*\{")
 _CPP_ENUM = re.compile(r"enum\s+(?:class\s+)?(\w+)\s*\{")
@@ -419,7 +467,10 @@ _CPP_SPLIT = re.compile(r"(?=(?:class|struct|enum)\s+\w+)")
 
 def chunk_cpp(text: str, source: str) -> list[dict]:
     """Split C++ header/source files on class, struct, and enum boundaries."""
-    # Strip preprocessor lines
+    # Extract #define macros before stripping preprocessor lines.
+    chunks: list[dict] = _extract_cpp_macros(text, source)
+
+    # Strip preprocessor lines for class/struct/enum extraction.
     cleaned = _CPP_PREPROCESSOR.sub("", text)
 
     # Detect enclosing namespace for context prefix
@@ -428,7 +479,6 @@ def chunk_cpp(text: str, source: str) -> list[dict]:
 
     # Split on class/struct/enum declarations
     sections = _CPP_SPLIT.split(cleaned)
-    chunks: list[dict] = []
 
     for section in sections:
         section = section.strip()

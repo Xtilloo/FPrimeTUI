@@ -1,5 +1,6 @@
 # tests/rag/test_chunker.py
 from rag.chunker import (
+    _extract_cpp_macros,
     chunk_autocoded_cpp,
     chunk_cpp,
     chunk_fpp,
@@ -551,3 +552,87 @@ def test_chunk_fpp_no_module_prefix_at_top_level():
     chunks = chunk_fpp(text, source="test.fpp")
     assert len(chunks) == 1
     assert not chunks[0]["text"].startswith("module ")
+
+
+def test_extract_cpp_macros_basic():
+    text = (
+        "#ifndef FW_CONFIG_HPP\n"
+        "#define FW_CONFIG_HPP\n"           # include guard — must be skipped
+        "\n"
+        "// Maximum task name length\n"
+        "#define FW_TASK_NAME_BUFFER_SIZE 40\n"
+        "// Number of com buffer bytes\n"
+        "#define FW_COM_BUFFER_MAX_SIZE 128\n"
+        "#endif\n"
+    )
+    chunks = _extract_cpp_macros(text, source="Fw/Cfg/FpConfig.h")
+    assert len(chunks) == 1
+    chunk = chunks[0]
+    assert chunk["chunk_type"] == "cpp_macros"
+    assert chunk["content_type"] == "reference"
+    assert chunk["component_name"] == ""
+    assert chunk["source_file"] == "Fw/Cfg/FpConfig.h"
+    assert "FW_TASK_NAME_BUFFER_SIZE" in chunk["text"]
+    assert "FW_COM_BUFFER_MAX_SIZE" in chunk["text"]
+    # Guard must NOT appear
+    assert "FW_CONFIG_HPP" not in chunk["text"]
+
+
+def test_extract_cpp_macros_includes_preceding_comment():
+    text = (
+        "// Size of the internal buffer\n"
+        "#define MY_BUFFER_SIZE 256\n"
+    )
+    chunks = _extract_cpp_macros(text, source="test.h")
+    assert len(chunks) == 1
+    assert "// Size of the internal buffer" in chunks[0]["text"]
+    assert "#define MY_BUFFER_SIZE 256" in chunks[0]["text"]
+
+
+def test_extract_cpp_macros_guard_only_returns_empty():
+    text = (
+        "#ifndef FOO_HPP\n"
+        "#define FOO_HPP\n"
+        "class Foo {};\n"
+        "#endif\n"
+    )
+    chunks = _extract_cpp_macros(text, source="Foo.hpp")
+    assert chunks == []
+
+
+def test_extract_cpp_macros_non_conventional_guard_names():
+    """Guard detection must work for leading-underscore and non-HPP suffixes."""
+    text = (
+        "#ifndef _FOO_H_INCLUDED\n"
+        "#define _FOO_H_INCLUDED\n"
+        "#define REAL_MACRO 99\n"
+        "#endif\n"
+    )
+    chunks = _extract_cpp_macros(text, source="foo.h")
+    assert len(chunks) == 1
+    assert "REAL_MACRO" in chunks[0]["text"]
+    assert "_FOO_H_INCLUDED" not in chunks[0]["text"]
+
+
+def test_chunk_cpp_emits_macro_chunk_alongside_class_chunks():
+    text = (
+        "#ifndef GUARD\n"
+        "#define GUARD\n"
+        "// Buffer size\n"
+        "#define MY_SIZE 64\n"
+        "\n"
+        "class Foo {\n"
+        "  public:\n"
+        "    void bar();\n"
+        "};\n"
+        "#endif\n"
+    )
+    chunks = chunk_cpp(text, source="test.hpp")
+    types = {c["chunk_type"] for c in chunks}
+    assert "cpp_macros" in types
+    assert "cpp" in types
+    macro_chunk = next(c for c in chunks if c["chunk_type"] == "cpp_macros")
+    assert "MY_SIZE" in macro_chunk["text"]
+    # Guard must not appear in any macro chunk
+    for chunk in chunks:
+        assert "GUARD" not in chunk["text"] or chunk["chunk_type"] not in ("cpp_macros",)
