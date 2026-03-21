@@ -208,6 +208,9 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
         # For structs: extend extraction to include optional "default { ... }" clause.
         keyword = m.group("keyword").strip()
         if keyword == "struct":
+            # Look ahead up to 30 chars for a 'default {' clause immediately after the
+            # closing '}' of a struct. FPP style always puts 'default' on the same or
+            # next line with no intervening content — 30 chars is a safe window.
             default_m = re.match(r"\s*default\s*\{", text[end:end + 30])
             if default_m:
                 default_brace = end + default_m.end() - 1
@@ -303,6 +306,8 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
                 # Case 1: current stopping line IS the '{' (e.g. continuation ended with \
                 # on the previous line, next line is '{')
                 if lines[j].strip().startswith("{"):
+                    # Note: assumes Unix line endings (\n only). FPP source files are always
+                    # Unix-terminated (the fpp toolchain enforces this).
                     char_pos = sum(len(lines[n]) + 1 for n in range(j)) + lines[j].index("{")
                     end = _fpp_extract_block(text, char_pos)
                     if end != -1:
@@ -316,6 +321,8 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
                     while k < len(lines) and not lines[k].strip():
                         k += 1
                     if k < len(lines) and lines[k].strip().startswith("{"):
+                        # Note: assumes Unix line endings (\n only). FPP source files are always
+                        # Unix-terminated (the fpp toolchain enforces this).
                         char_pos = sum(len(lines[n]) + 1 for n in range(k)) + lines[k].index("{")
                         end = _fpp_extract_block(text, char_pos)
                         if end != -1:

@@ -536,3 +536,18 @@ def test_chunk_fpp_reference_file_covers_all_constructs():
     assert "BasicSM" in names
     assert "RefTopology" in names
     assert "myActive" in names
+
+
+def test_chunk_fpp_fallback_for_unrecognised_content():
+    text = "# Just a comment with no constructs\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert chunks[0]["component_name"] == ""
+    assert chunks[0]["chunk_type"] == "fpp_block"
+
+
+def test_chunk_fpp_no_module_prefix_at_top_level():
+    text = "constant TOP_LEVEL = 1\n"
+    chunks = chunk_fpp(text, source="test.fpp")
+    assert len(chunks) == 1
+    assert not chunks[0]["text"].startswith("module ")
