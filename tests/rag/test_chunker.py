@@ -457,9 +457,11 @@ def test_chunk_fpp_module_prefix_applied_to_chunks():
         "}\n"
     )
     chunks = chunk_fpp(text, source="test.fpp")
+    # Module blocks are not emitted as chunks; the two inner constructs are.
     assert len(chunks) == 2
-    for chunk in chunks:
-        assert chunk["text"].startswith("[module: Ref]\n")
+    names = {c["component_name"] for c in chunks}
+    assert "FOO" in names
+    assert "Bar" in names
 
 
 def test_chunk_fpp_nested_enum_inside_component():

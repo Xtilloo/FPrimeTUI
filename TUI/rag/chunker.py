@@ -192,9 +192,9 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
                     module_stack.pop()
 
         prefix = " :: ".join(module_stack)
-        # Use bracket notation so the module context cannot be mistaken for
-        # FPP declaration syntax (e.g. "module Foo :: component Bar { }").
-        line_module_prefix[i] = (f"[module: {prefix}]\n") if prefix else ""
+        # Module membership is carried by source_file path — no text prefix
+        # needed, and any prefix format risks being misread as FPP syntax.
+        line_module_prefix[i] = ""
 
     # ------------------------------------------------------------------
     # Pass 1: extract block constructs using brace-counter.
