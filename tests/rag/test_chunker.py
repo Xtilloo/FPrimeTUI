@@ -459,7 +459,7 @@ def test_chunk_fpp_module_prefix_applied_to_chunks():
     chunks = chunk_fpp(text, source="test.fpp")
     assert len(chunks) == 2
     for chunk in chunks:
-        assert chunk["text"].startswith("module Ref :: ")
+        assert chunk["text"].startswith("[module: Ref]\n")
 
 
 def test_chunk_fpp_nested_enum_inside_component():

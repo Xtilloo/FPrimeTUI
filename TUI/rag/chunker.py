@@ -192,7 +192,9 @@ def chunk_fpp(text: str, source: str) -> list[dict]:
                     module_stack.pop()
 
         prefix = " :: ".join(module_stack)
-        line_module_prefix[i] = (f"module {prefix} :: ") if prefix else ""
+        # Use bracket notation so the module context cannot be mistaken for
+        # FPP declaration syntax (e.g. "module Foo :: component Bar { }").
+        line_module_prefix[i] = (f"[module: {prefix}]\n") if prefix else ""
 
     # ------------------------------------------------------------------
     # Pass 1: extract block constructs using brace-counter.
